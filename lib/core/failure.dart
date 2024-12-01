@@ -1,4 +1,4 @@
-/// Failure Class
+/// Failure Class for returning error in development
 class Failure {
   /// Failure Constructor
   Failure({required this.message, this.stackTrace = StackTrace.empty});

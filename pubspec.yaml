@@ -44,6 +44,21 @@ dependencies:
   # for functional programming
   fpdart: ^1.1.1
 
+  # for state management
+  flutter_riverpod: ^2.6.1
+
+  # for generating riverpod provider using @riverpod
+  riverpod_annotation: ^2.6.1
+
+  # for generating data classes, unions, and cloning using @freezed
+  freezed_annotation: ^2.4.4
+
+  # for generating fromJson/toJson alongside freezed
+  json_annotation: ^4.9.0
+
+  # for declarative routing/navigation
+  go_router: ^14.6.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,6 +70,12 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
   very_good_analysis: ^6.0.0
+  riverpod_generator: ^2.6.3
+  build_runner: ^2.4.13
+  custom_lint: ^0.7.0
+  riverpod_lint: ^2.6.3
+  freezed: ^2.5.7
+  json_serializable: ^6.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

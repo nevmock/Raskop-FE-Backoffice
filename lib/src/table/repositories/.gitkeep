@@ -1,0 +1,3 @@
+DEFINISI: TEMPAT MEMBUAT REPOSITORY
+
+REPOSITORY (dalam konteks clean architecture) adalah bagian dari program yang bertugas untuk melakukan request dan fetch response dengan API atau DATABASE

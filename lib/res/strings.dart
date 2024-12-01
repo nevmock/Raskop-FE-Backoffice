@@ -26,4 +26,7 @@ class FailureMessages {
 
   /// on PARSING JSON DATA Failure
   static const failedToParseJson = 'Failed to Parse JSON Data';
+
+  /// for ErrorScreen
+  static const somethingWentWrong = 'Something Went Wrong!';
 }

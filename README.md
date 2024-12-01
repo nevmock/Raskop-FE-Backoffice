@@ -1,16 +1,41 @@
 # Raskop-FE-Backoffice
 
-For Raskop-FE-Backoffice
+Characteristics:
 
-## Getting Started
+- Clean Architecture
+- State Management: riverpod
+- Routing: go_router
+- Data Modelling: freezed & json_serializable
+- Analysis Options: very_good_analysis
 
-This project is a starting point for a Flutter application.
+## IMPORTANT CMD
 
-A few resources to get you started if this is your first Flutter project:
+-> Inisialisasi awal custom_lint dan riverpod_lint (cukup sekali) :
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- `dart run custom_lint`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+-> Generate file _.g.dart, _.freezed.dart (dijalankan tiap kali membuat/memodifikasi file yang berisi riverpod_annotation atau freezed_annotation atau json_annotation) :
+
+- `dart run build_runner build`
+
+## Referensi
+
+- [Riverpod Docs](https://riverpod.dev/docs/essentials/first_request)
+- [Clean Architecture Introduction](https://codewithandrea.com/articles/flutter-app-architecture-riverpod-introduction/)
+- [Flutter Packages](https://pub.dev/)
+
+## Development Guide
+
+### 1. Run Flutter Pub Get
+
+`flutter pub get`
+
+### 2. Run Build Runner
+
+`dart run build_runner build`
+
+### 3. Run Project
+
+`flutter run`
+
+NOTE: Jika menemukan error yang berhubungan dengan Android SDK, tolong update Android SDK di Android Studio
