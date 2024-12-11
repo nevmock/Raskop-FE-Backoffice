@@ -59,6 +59,9 @@ dependencies:
   # for declarative routing/navigation
   go_router: ^14.6.1
 
+  # for importing icons similar with the design
+  iconify_flutter: ^0.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
