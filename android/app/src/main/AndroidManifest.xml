@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="raskop_fe_backoffice"
+        android:label="RASA KOPI - BACKOFFICE"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
