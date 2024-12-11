@@ -1,37 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
 
-/// Template Home Page [REPLACE WITH OFFICIAL DESIGN FROM MAS ZIYAD]
-class MyHomePage extends StatefulWidget {
+/// Home Page
+class HomeScreen extends StatefulWidget {
   /// Home Page constructor
-  const MyHomePage({required this.title, super.key});
+  const HomeScreen({required this.title, super.key});
 
-  ///
+  /// HomeScreen route name
   static const String route = 'home';
 
-  ///
+  /// HomeScreen title
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomeScreenState extends State<HomeScreen> {
+  // URUTAN INDEX: 0. DASHBOARD, 1. ORDER, 2. MENU, 3. RESERVATION, 4. TABLE, 5. SUPPLIER
+  List<Widget> screens = [
+    //const DashboardScreen(),
+    //const OrderScreen(),
+    //const MenuScreen(),
+    //const ReservationScreen(),
+    //const TableScreen(),
+    //const SupplierScreen(),
+  ];
+  int index = -1;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'Welcome To Rasa Kopi - BackOffice',
+      body: Row(
+        children: [
+          Flexible(
+            child: SidebarWidget(
+              changeIndex: (idx) {
+                setState(() {
+                  index = idx;
+                });
+              },
             ),
-          ],
-        ),
+          ),
+          const Spacer(),
+          if (screens.isNotEmpty && index != -1)
+            Flexible(child: screens[index])
+          else
+            Flexible(
+              child: Text(widget.title),
+            ),
+        ],
       ),
     );
   }
