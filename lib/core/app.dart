@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 
@@ -10,11 +11,18 @@ class RasKopBackOfficeApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: AppStrings.appName,
-      routeInformationParser: router.routeInformationParser,
-      routerDelegate: router.routerDelegate,
-      routeInformationProvider: router.routeInformationProvider,
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    return ScreenUtilInit(
+      designSize:
+          Size(1194 / view.devicePixelRatio, 834 / view.devicePixelRatio),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) => MaterialApp.router(
+        title: AppStrings.appName,
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        routeInformationProvider: router.routeInformationProvider,
+      ),
     );
   }
 }
