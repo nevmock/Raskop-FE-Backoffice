@@ -44,7 +44,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   /// HARDCODED SIDEBAR
   Widget designedSidebar() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
+      padding: EdgeInsets.only(left: 10.w, bottom: 10.w, top: 10.h),
       child: Drawer(
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -61,7 +61,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
             ListTile(
               selected: isSelected[0],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 RadixIcons.dashboard,
                 color: iconColor[0],
@@ -86,10 +86,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 widget.changeIndex(0);
               },
             ),
+            SizedBox(
+              height: 5.h,
+            ),
             ListTile(
               selected: isSelected[1],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 Majesticons.receipt_text,
                 color: iconColor[1],
@@ -115,10 +118,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 widget.changeIndex(1);
               },
             ),
+            SizedBox(
+              height: 5.h,
+            ),
             ListTile(
               selected: isSelected[2],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 Bxs.dish,
                 color: iconColor[2],
@@ -144,10 +150,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 widget.changeIndex(2);
               },
             ),
+            SizedBox(
+              height: 5.h,
+            ),
             ListTile(
               selected: isSelected[3],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 Ri.calendar_fill,
                 color: iconColor[3],
@@ -173,10 +182,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 widget.changeIndex(3);
               },
             ),
+            SizedBox(
+              height: 5.h,
+            ),
             ListTile(
               selected: isSelected[4],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 Mdi.table_chair,
                 color: iconColor[4],
@@ -202,10 +214,13 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 widget.changeIndex(4);
               },
             ),
+            SizedBox(
+              height: 5.h,
+            ),
             ListTile(
               selected: isSelected[5],
               selectedTileColor: Colors.white,
-              contentPadding: EdgeInsets.all(10.h),
+              contentPadding: EdgeInsets.all(3.h),
               title: Iconify(
                 Carbon.scis_transparent_supply,
                 color: iconColor[5],

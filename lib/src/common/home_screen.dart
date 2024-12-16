@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
+import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
 
 /// Home Page
 class HomeScreen extends StatefulWidget {
@@ -21,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> screens = [
     //const DashboardScreen(),
     //const OrderScreen(),
-    //const MenuScreen(),
+    const MenuScreen(),
     //const ReservationScreen(),
     //const TableScreen(),
     //const SupplierScreen(),
@@ -32,8 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
+        mainAxisSize: MainAxisSize.max,
         children: [
-          Flexible(
+          SizedBox(
+            width: 120,
             child: SidebarWidget(
               changeIndex: (idx) {
                 setState(() {
@@ -42,13 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          const Spacer(),
-          if (screens.isNotEmpty && index != -1)
-            Flexible(child: screens[index])
-          else
-            Flexible(
-              child: Text(widget.title),
-            ),
+          Expanded(
+            child: (screens.isNotEmpty && index != -1)
+                ? screens[index]
+                : Center(child: Text(widget.title)),
+          ),
         ],
       ),
     );
