@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
+import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 
 /// Home Page
 class HomeScreen extends StatefulWidget {
@@ -25,32 +27,33 @@ class _HomeScreenState extends State<HomeScreen> {
     const MenuScreen(),
     //const ReservationScreen(),
     //const TableScreen(),
-    //const SupplierScreen(),
+    const SupplierScreen(),
   ];
   int index = -1;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          SizedBox(
-            width: 120,
-            child: SidebarWidget(
-              changeIndex: (idx) {
-                setState(() {
-                  index = idx;
-                });
-              },
+    return SafeArea(
+      child: Scaffold(
+        body: Row(
+          children: [
+            SizedBox(
+              width: 55.w,
+              child: SidebarWidget(
+                changeIndex: (idx) {
+                  setState(() {
+                    index = idx;
+                  });
+                },
+              ),
             ),
-          ),
-          Expanded(
-            child: (screens.isNotEmpty && index != -1)
-                ? screens[index]
-                : Center(child: Text(widget.title)),
-          ),
-        ],
+            Expanded(
+              child: (screens.isNotEmpty && index != -1)
+                  ? screens[index]
+                  : Center(child: Text(widget.title)),
+            ),
+          ],
+        ),
       ),
     );
   }
