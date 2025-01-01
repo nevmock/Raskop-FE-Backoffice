@@ -44,7 +44,8 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   /// HARDCODED SIDEBAR
   Widget designedSidebar() {
     return Padding(
-      padding: EdgeInsets.only(left: 10.w, bottom: 10.w, top: 10.h),
+      padding:
+          EdgeInsets.only(left: 10.w, bottom: 10.w, top: 10.h, right: 7.5.w),
       child: Drawer(
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
