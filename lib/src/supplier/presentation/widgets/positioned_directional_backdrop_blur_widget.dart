@@ -46,11 +46,11 @@ class _PositionedDirectionalBackdropBlurWidgetState
       end: widget.isPanelVisible ? 10.w : widget.end,
       width: widget.width,
       child: Material(
+        type: MaterialType.card,
         color: hexToColor('#1F4940').withOpacity(0.2),
         borderRadius: const BorderRadius.all(
           Radius.circular(20),
         ),
-        elevation: 10,
         child: ClipRRect(
           borderRadius: const BorderRadius.all(
             Radius.circular(20),
@@ -60,7 +60,15 @@ class _PositionedDirectionalBackdropBlurWidgetState
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  color: hexToColor('#1F4940').withOpacity(0.2),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        hexToColor('#1F4940').withOpacity(0.6),
+                        hexToColor('#1F4940').withOpacity(0.4),
+                        hexToColor('#1F4940').withOpacity(0.2),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               Container(
