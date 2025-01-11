@@ -62,6 +62,9 @@ dependencies:
   # for importing icons similar with the design
   iconify_flutter: ^0.0.7
 
+  # for interactive slidable UI
+  flutter_slidable: ^3.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -2,6 +2,15 @@
 class AppStrings {
   /// App Name
   static const appName = 'BackOffice - Rasa Kopi';
+
+  /// Tambah Btn Label
+  static const tambahBtn = 'Tambah';
+
+  /// ON Switch Label
+  static const swOn = 'ON';
+
+  /// OFF Swtich Label
+  static const swOff = 'OFF';
 }
 
 /// Failure/Error-Related Strings
