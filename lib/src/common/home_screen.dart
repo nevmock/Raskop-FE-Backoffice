@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
+import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/reservation_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 
 /// Home Page
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     //const DashboardScreen(),
     const OrderScreen(),
     const MenuScreen(),
-    //const ReservationScreen(),
+    const ReservationScreen(),
     //const TableScreen(),
     const SupplierScreen(),
   ];
