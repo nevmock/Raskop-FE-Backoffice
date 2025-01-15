@@ -316,6 +316,9 @@ class _OrderScreenState extends State<OrderScreen> {
                     end: -MediaQuery.of(context).size.width * 0.3,
                     content: [
                       Container(
+                        margin: EdgeInsets.only(
+                          right: MediaQuery.of(context).size.width * 0.238,
+                        ),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.all(Radius.circular(50)),
