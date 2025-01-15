@@ -18,6 +18,11 @@ class RasKopBackOfficeApp extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) => MaterialApp.router(
+        theme: ThemeData(
+          fontFamily: 'Inter',
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          useMaterial3: true,
+        ),
         title: AppStrings.appName,
         routeInformationParser: router.routeInformationParser,
         routerDelegate: router.routerDelegate,
