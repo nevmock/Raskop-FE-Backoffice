@@ -4,36 +4,36 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
+import 'package:intl/intl.dart';
+import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
 
 ///
-class SupplierScreen extends StatefulWidget {
+class ReservationScreen extends StatefulWidget {
   ///
-  const SupplierScreen({super.key});
+  const ReservationScreen({super.key});
 
   ///
-  static const String route = 'supplier';
+  static const String route = 'reservation';
 
   @override
-  State<SupplierScreen> createState() => _SupplierScreenState();
+  State<ReservationScreen> createState() => _ReservationScreenState();
 }
 
-class _SupplierScreenState extends State<SupplierScreen>
-    with SingleTickerProviderStateMixin {
+class _ReservationScreenState extends State<ReservationScreen> {
   bool isDetailPanelVisible = false;
   bool isCreatePanelVisible = false;
   bool isEditPanelVisible = false;
   TextEditingController nama = TextEditingController();
   TextEditingController kontak = TextEditingController();
-  TextEditingController harga = TextEditingController();
-  TextEditingController unit = TextEditingController();
-  TextEditingController biaya = TextEditingController();
-  TextEditingController alamat = TextEditingController();
-  TextEditingController produk = TextEditingController();
-  String? tipe;
+  TextEditingController startText = TextEditingController();
+  TextEditingController endText = TextEditingController();
+  TextEditingController catatan = TextEditingController();
+  TextEditingController komunitas = TextEditingController();
+  DateTime start = DateTime.now();
   @override
   Widget build(BuildContext context) {
     void toggleDetailPanel() {
@@ -53,14 +53,12 @@ class _SupplierScreenState extends State<SupplierScreen>
         isEditPanelVisible = !isEditPanelVisible;
         nama.value = const TextEditingValue(text: 'Christine Brooks');
         kontak.value = const TextEditingValue(text: '+621234567890');
-        harga.value = const TextEditingValue(text: '80000');
-        unit.value = const TextEditingValue(text: 'Liter');
-        biaya.value = const TextEditingValue(text: '15000');
-        alamat.value = const TextEditingValue(
-          text: 'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
+        startText.value = const TextEditingValue(text: '23/11/24; 11:30 PM');
+        endText.value = const TextEditingValue(text: '24/11/24; 03:00 AM');
+        catatan.value = const TextEditingValue(
+          text: 'Minta kursi bayi satu yaa',
         );
-        produk.value = const TextEditingValue(text: 'Buah Naga');
-        tipe = 'Buah';
+        komunitas.value = const TextEditingValue(text: 'Dosen Telyu');
       });
     }
 
@@ -69,12 +67,10 @@ class _SupplierScreenState extends State<SupplierScreen>
         isEditPanelVisible = !isEditPanelVisible;
         nama.clear();
         kontak.clear();
-        harga.clear();
-        unit.clear();
-        biaya.clear();
-        alamat.clear();
-        produk.clear();
-        tipe = null;
+        startText.clear();
+        endText.clear();
+        catatan.clear();
+        komunitas.clear();
       });
     }
 
@@ -83,7 +79,6 @@ class _SupplierScreenState extends State<SupplierScreen>
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             AnimatedContainer(
@@ -142,7 +137,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                             ),
                           ),
                           Expanded(
-                            flex: 4,
+                            flex: 2,
                             child: Text(
                               'NAMA',
                               style: TextStyle(
@@ -153,7 +148,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                             ),
                           ),
                           Expanded(
-                            flex: 3,
+                            flex: 2,
                             child: Text(
                               'KONTAK',
                               style: TextStyle(
@@ -167,7 +162,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                             flex: 3,
                             child: Center(
                               child: Text(
-                                'TIPE',
+                                'START',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: hexToColor('#202224'),
@@ -180,7 +175,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                             flex: 3,
                             child: Center(
                               child: Text(
-                                'HARGA',
+                                'END',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: hexToColor('#202224'),
@@ -193,7 +188,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                             flex: 5,
                             child: Center(
                               child: Text(
-                                'UNIT, BIAYA, ALAMAT, PRODUK',
+                                'CATT, KOMUNITAS',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: hexToColor('#202224'),
@@ -355,7 +350,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                   ),
                                   Expanded(
-                                    flex: 4,
+                                    flex: 2,
                                     child: Text(
                                       'Christine Brooks',
                                       style: TextStyle(
@@ -366,7 +361,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                   ),
                                   Expanded(
-                                    flex: 3,
+                                    flex: 2,
                                     child: Text(
                                       '+621234567890',
                                       style: TextStyle(
@@ -380,7 +375,9 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     flex: 3,
                                     child: Center(
                                       child: Text(
-                                        'BUAH',
+                                        DateFormat('dd/MM/yy; hh:mm a').format(
+                                          DateTime.utc(2024, 11, 23, 23, 30),
+                                        ),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w500,
                                           color: hexToColor('#202224'),
@@ -393,7 +390,9 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     flex: 3,
                                     child: Center(
                                       child: Text(
-                                        'Rp80.000,00',
+                                        DateFormat('dd/MM/yy; hh:mm a').format(
+                                          DateTime.utc(2024, 11, 24, 3),
+                                        ),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w500,
                                           color: hexToColor('#202224'),
@@ -414,8 +413,10 @@ class _SupplierScreenState extends State<SupplierScreen>
                                           style: TextButton.styleFrom(
                                             backgroundColor:
                                                 hexToColor('#f6e9e0'),
-                                            minimumSize:
-                                                const Size(double.infinity, 40),
+                                            minimumSize: const Size(
+                                              double.infinity,
+                                              40,
+                                            ),
                                           ),
                                           child: Text(
                                             'Lihat',
@@ -469,7 +470,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                   height: 20.h,
                 ),
                 Text(
-                  'Unit',
+                  'Catatan',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -487,7 +488,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                     fontSize: 14,
                     overflow: TextOverflow.fade,
                   ),
-                  initialValue: 'Liter',
+                  initialValue: 'Minta kursi bayi satu yaa',
                   decoration: const InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
@@ -503,7 +504,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                   height: 10.h,
                 ),
                 Text(
-                  'Biaya Pengiriman',
+                  'Komunitas',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -521,77 +522,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                     fontSize: 14,
                     overflow: TextOverflow.fade,
                   ),
-                  initialValue: 'Rp15.000,00',
-                  decoration: const InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 10.h,
-                ),
-                Text(
-                  'Alamat',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 8.sp,
-                  ),
-                ),
-                SizedBox(
-                  height: 5.h,
-                ),
-                TextFormField(
-                  readOnly: true,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black,
-                    fontSize: 14,
-                    overflow: TextOverflow.fade,
-                  ),
-                  maxLines: 3,
-                  initialValue:
-                      'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
-                  decoration: const InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 10.h,
-                ),
-                Text(
-                  'Produk',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 8.sp,
-                  ),
-                ),
-                SizedBox(
-                  height: 5.h,
-                ),
-                TextFormField(
-                  readOnly: true,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black,
-                    fontSize: 14,
-                    overflow: TextOverflow.fade,
-                  ),
-                  initialValue: 'Buah Naga',
+                  initialValue: 'Dosen Telyu',
                   decoration: const InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
@@ -646,7 +577,7 @@ class _SupplierScreenState extends State<SupplierScreen>
                                 width: itemWidth.w,
                                 child: _buildTextField(
                                   'Nama',
-                                  'Masukkan nama pemilik',
+                                  'Masukkan nama',
                                   nama,
                                   TextInputType.name,
                                 ),
@@ -662,54 +593,41 @@ class _SupplierScreenState extends State<SupplierScreen>
                               ),
                               SizedBox(
                                 width: itemWidth.w,
-                                child: _buildDropdownField(
-                                  'Tipe',
-                                  'Pilih tipe yang diinginkan',
-                                  null,
+                                child: _buildDateTimePickerField(
+                                  label: 'Start',
+                                  hint: 'Masukkan waktu mulai',
+                                  controller: startText,
+                                  onTap: () async {
+                                    await pickStartDateTime();
+                                  },
                                 ),
                               ),
                               SizedBox(
                                 width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Harga',
-                                  'Masukkan harga',
-                                  harga,
-                                  TextInputType.number,
+                                child: _buildDateTimePickerField(
+                                  label: 'End',
+                                  hint: 'Masukkan waktu berakhir',
+                                  controller: endText,
+                                  onTap: () async {
+                                    await pickEndDateTime();
+                                  },
                                 ),
                               ),
                               SizedBox(
-                                width: itemWidth.w,
+                                width: (itemWidth * 2 + 5).w,
                                 child: _buildTextField(
-                                  'Unit',
-                                  'Masukkan jenis unit',
-                                  unit,
+                                  'Catatan',
+                                  'Masukkan catatan',
+                                  catatan,
                                   TextInputType.text,
                                 ),
                               ),
                               SizedBox(
                                 width: itemWidth.w,
                                 child: _buildTextField(
-                                  'Biaya Pengiriman',
-                                  'Masukkan total biaya pengiriman',
-                                  biaya,
-                                  TextInputType.number,
-                                ),
-                              ),
-                              SizedBox(
-                                width: (itemWidth * 2 + 5).w,
-                                child: _buildTextField(
-                                  'Alamat',
-                                  'Masukkan alamat lengkap',
-                                  alamat,
-                                  TextInputType.streetAddress,
-                                ),
-                              ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Produk',
-                                  'Masukkan nama produk',
-                                  produk,
+                                  'Komunitas',
+                                  'Masukkan komunitas',
+                                  komunitas,
                                   TextInputType.text,
                                 ),
                               ),
@@ -782,110 +700,95 @@ class _SupplierScreenState extends State<SupplierScreen>
                               (270.w * (crossAxisCount - 2))) /
                           crossAxisCount;
                       return Form(
-                        child: SingleChildScrollView(
-                          child: Wrap(
-                            spacing: 10,
-                            children: [
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Nama',
-                                  'Masukkan nama pemilik',
-                                  nama,
-                                  TextInputType.name,
-                                ),
+                        child: Wrap(
+                          spacing: 10,
+                          children: [
+                            SizedBox(
+                              width: itemWidth.w,
+                              child: _buildTextField(
+                                'Nama',
+                                'Masukkan nama',
+                                nama,
+                                TextInputType.name,
                               ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Kontak',
-                                  'Masukkan nomor telepon',
-                                  kontak,
-                                  TextInputType.phone,
-                                ),
+                            ),
+                            SizedBox(
+                              width: itemWidth.w,
+                              child: _buildTextField(
+                                'Kontak',
+                                'Masukkan nomor telepon',
+                                kontak,
+                                TextInputType.phone,
                               ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildDropdownField(
-                                  'Tipe',
-                                  'Pilih tipe yang diinginkan',
-                                  tipe,
-                                ),
+                            ),
+                            SizedBox(
+                              width: itemWidth.w,
+                              child: _buildDateTimePickerField(
+                                label: 'Start',
+                                hint: 'Masukkan waktu mulai',
+                                controller: startText,
+                                onTap: () async {
+                                  await pickStartDateTime();
+                                },
                               ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Harga',
-                                  'Masukkan harga',
-                                  harga,
-                                  TextInputType.number,
-                                ),
+                            ),
+                            SizedBox(
+                              width: itemWidth.w,
+                              child: _buildDateTimePickerField(
+                                label: 'End',
+                                hint: 'Masukkan waktu berakhir',
+                                controller: endText,
+                                onTap: () async {
+                                  await pickEndDateTime();
+                                },
                               ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Unit',
-                                  'Masukkan jenis unit',
-                                  unit,
-                                  TextInputType.text,
-                                ),
+                            ),
+                            SizedBox(
+                              width: (itemWidth * 2 + 5).w,
+                              child: _buildTextField(
+                                'Catatan',
+                                'Masukkan catatan',
+                                catatan,
+                                TextInputType.text,
                               ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Biaya Pengiriman',
-                                  'Masukkan total biaya pengiriman',
-                                  biaya,
-                                  TextInputType.number,
-                                ),
+                            ),
+                            SizedBox(
+                              width: itemWidth.w,
+                              child: _buildTextField(
+                                'Komunitas',
+                                'Masukkan komunitas',
+                                komunitas,
+                                TextInputType.text,
                               ),
-                              SizedBox(
-                                width: (itemWidth * 2 + 5).w,
-                                child: _buildTextField(
-                                  'Alamat',
-                                  'Masukkan alamat lengkap',
-                                  alamat,
-                                  TextInputType.streetAddress,
-                                ),
-                              ),
-                              SizedBox(
-                                width: itemWidth.w,
-                                child: _buildTextField(
-                                  'Produk',
-                                  'Masukkan nama produk',
-                                  produk,
-                                  TextInputType.text,
-                                ),
-                              ),
-                              SizedBox(
-                                width: (itemWidth * 3 - 60).w,
-                              ),
-                              ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: hexToColor('#1F4940'),
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(30),
-                                    ),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: 6.4.h,
-                                    horizontal: 8.w,
-                                  ),
-                                  child: const Text(
-                                    'Edit',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            ),
+                            SizedBox(
+                              width: (itemWidth * 3 - 60).w,
+                            ),
+                            ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: hexToColor('#1F4940'),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(30),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 6.4.h,
+                                  horizontal: 8.w,
+                                ),
+                                child: const Text(
+                                  'Edit',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -899,6 +802,109 @@ class _SupplierScreenState extends State<SupplierScreen>
       ),
     );
   }
+
+  FutureVoid pickStartDateTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 100),
+    );
+    if (date == null) return;
+
+    final time = await pickTime();
+    if (time == null) return;
+
+    final newDateTime =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+    setState(() {
+      start = newDateTime;
+      startText.value = TextEditingValue(
+        text: DateFormat('dd/MM/yy; hh:mm a').format(newDateTime),
+      );
+    });
+  }
+
+  FutureVoid pickEndDateTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: start,
+      lastDate: start.copyWith(year: start.year + 100),
+    );
+    if (date == null) return;
+
+    final time = await pickTime();
+    if (time == null) return;
+
+    final newDateTime =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+    setState(() {
+      endText.value = TextEditingValue(
+        text: DateFormat('dd/MM/yy; hh:mm a').format(newDateTime),
+      );
+    });
+  }
+
+  Future<TimeOfDay?> pickTime() =>
+      showTimePicker(context: context, initialTime: TimeOfDay.now());
+}
+
+Widget _buildDateTimePickerField({
+  required String label,
+  required String hint,
+  required TextEditingController controller,
+  void Function()? onTap,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 8.sp,
+          ),
+        ),
+        SizedBox(
+          height: 5.h,
+        ),
+        TextField(
+          onTap: onTap,
+          controller: controller,
+          readOnly: true,
+          style: const TextStyle(
+            fontWeight: FontWeight.w400,
+            color: Colors.black,
+            fontSize: 14,
+            overflow: TextOverflow.fade,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.black.withOpacity(0.3),
+              fontWeight: FontWeight.w600,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+            ),
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 Widget _buildTextField(
@@ -951,93 +957,4 @@ Widget _buildTextField(
       ],
     ),
   );
-}
-
-Widget _buildDropdownField(String label, String hint, String? value) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 8.sp,
-          ),
-        ),
-        SizedBox(
-          height: 5.h,
-        ),
-        DropdownButtonFormField<String>(
-          value: value,
-          menuMaxHeight: 300.h,
-          icon: const Iconify(Zondicons.cheveron_down),
-          hint: Center(
-            child: Text(
-              hint,
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.3),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          decoration: const InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-          ),
-          items: _buildDropdownItemsWithDividers(),
-          onChanged: (value) {
-            // Tambahkan logika dropdown di sini
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-List<DropdownMenuItem<String>> _buildDropdownItemsWithDividers() {
-  final options = <String>['Syrup', 'Beans', 'Buah'];
-  final items = <DropdownMenuItem<String>>[];
-
-  for (var i = 0; i < options.length; i++) {
-    items.add(
-      DropdownMenuItem(
-        value: options[i],
-        child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  options[i],
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
-                ),
-                if (i < options.length - 1)
-                  SizedBox(
-                    height: 5.h,
-                  ),
-                if (i < options.length - 1)
-                  const Divider(
-                    thickness: 1,
-                    color: Colors.grey,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  return items;
 }
