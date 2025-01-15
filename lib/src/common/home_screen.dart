@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
+import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 
 /// Home Page
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // URUTAN INDEX: 0. DASHBOARD, 1. ORDER, 2. MENU, 3. RESERVATION, 4. TABLE, 5. SUPPLIER
   List<Widget> screens = [
     //const DashboardScreen(),
-    //const OrderScreen(),
+    const OrderScreen(),
     const MenuScreen(),
     //const ReservationScreen(),
     //const TableScreen(),
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        backgroundColor: Colors.white,
         body: Row(
           children: [
             SizedBox(
