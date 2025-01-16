@@ -73,8 +73,8 @@ class _PositionedDirectionalBackdropBlurWidgetState
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: ListView(
+                  shrinkWrap: true,
                   children: widget.content,
                 ),
               ),
