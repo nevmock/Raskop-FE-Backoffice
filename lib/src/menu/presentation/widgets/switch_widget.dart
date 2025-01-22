@@ -51,7 +51,7 @@ class _CustomSwitchState extends State<CustomSwitch> {
               curve: Curves.easeInOut,
               alignment: isOn ? Alignment.centerLeft : Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 7),
                 child: Text(
                   isOn ? 'ON' : 'OFF',
                   style: const TextStyle(
