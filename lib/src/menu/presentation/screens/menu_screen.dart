@@ -430,6 +430,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
             end: -MediaQuery.of(context).size.width * 0.3,
             content: [
               Container(
+                margin: EdgeInsets.only(
+                  right: MediaQuery.of(context).size.width * 0.238,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.all(Radius.circular(50)),
@@ -560,6 +563,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
             end: -MediaQuery.of(context).size.width * 1,
             content: [
               Container(
+                margin: EdgeInsets.only(
+                  right: MediaQuery.of(context).size.width * 0.8,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.all(Radius.circular(50)),
@@ -792,6 +798,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
             end: -MediaQuery.of(context).size.width * 1,
             content: [
               Container(
+                margin: EdgeInsets.only(
+                  right: MediaQuery.of(context).size.width * 0.8,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.all(Radius.circular(50)),

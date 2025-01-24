@@ -5,6 +5,7 @@ import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.d
 import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
 import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/reservation_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
+import 'package:raskop_fe_backoffice/src/table/presentation/screens/table_screen.dart';
 
 /// Home Page
 class HomeScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const OrderScreen(),
     const MenuScreen(),
     const ReservationScreen(),
-    //const TableScreen(),
+    const TableScreen(),
     const SupplierScreen(),
   ];
   int index = -1;
