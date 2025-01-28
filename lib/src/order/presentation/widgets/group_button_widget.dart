@@ -38,7 +38,7 @@ class _GroupButtonState extends State<GroupButton> {
   Widget build(BuildContext context) {
     final btn = List<Widget>.generate(widget.children.length, (int idx) {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 2.w),
+        padding: EdgeInsets.symmetric(horizontal: 6.w),
         child: ClipRRect(
           borderRadius: widget.borderRadius ?? BorderRadius.zero,
           child: TextButton(
@@ -62,10 +62,13 @@ class _GroupButtonState extends State<GroupButton> {
       );
     });
     return IntrinsicHeight(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: btn,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: btn,
+        ),
       ),
     );
   }
