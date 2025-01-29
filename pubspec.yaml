@@ -39,7 +39,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
 
   # for time and local management
-  intl: ^0.20.0
+  intl: any
 
   # for functional programming
   fpdart: ^1.1.1
@@ -64,6 +64,9 @@ dependencies:
 
   # for interactive slidable UI
   flutter_slidable: ^3.1.2
+
+  # for making sure every UI is at top notch on every device dimension
+  device_preview_plus: ^2.2.4
 
 dev_dependencies:
   flutter_test:

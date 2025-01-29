@@ -1,3 +1,6 @@
+// ignore_for_file: deprecated_member_use
+
+import 'package:device_preview_plus/device_preview_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/core/core.dart';
@@ -17,7 +20,14 @@ class RasKopBackOfficeApp extends StatelessWidget {
           Size(1194 / view.devicePixelRatio, 834 / view.devicePixelRatio),
       minTextAdapt: true,
       splitScreenMode: true,
+      ensureScreenSize: true,
+      useInheritedMediaQuery: true,
+      enableScaleWH: () => false,
+      // enableScaleText: () => false,
       builder: (context, child) => MaterialApp.router(
+        useInheritedMediaQuery: true,
+        builder: DevicePreview.appBuilder,
+        locale: DevicePreview.locale(context),
         theme: ThemeData(
           fontFamily: 'Inter',
           visualDensity: VisualDensity.adaptivePlatformDensity,
