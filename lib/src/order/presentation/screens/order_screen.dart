@@ -1,11 +1,17 @@
+// ignore_for_file: public_member_api_docs
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
+import 'package:iconify_flutter/icons/zondicons.dart';
+import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/screens/create_order_screen.dart';
+import 'package:raskop_fe_backoffice/src/order/presentation/widgets/reservasi_reguler_button_filter_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
 
 ///
@@ -23,11 +29,32 @@ class OrderScreen extends StatefulWidget {
 class _OrderScreenState extends State<OrderScreen> {
   bool isCreating = false;
   bool isDetailPanelVisible = false;
+
+  FutureVoid onReservasi() async {}
+
+  FutureVoid onReguler() async {}
+
+  List<DropdownItem<String>> orderStatus = [
+    DropdownItem(label: 'Belum Dibuat', value: 'Belum'),
+    DropdownItem(label: 'Diproses', value: 'Diproses'),
+    DropdownItem(label: 'Selesai Dibuat', value: 'Selesai'),
+    DropdownItem(label: 'Dibatalkan', value: 'Dibatalkan'),
+  ];
+
+  final statusTabletController = MultiSelectController<String>();
+  final statusPhoneController = MultiSelectController<String>();
+
   @override
   Widget build(BuildContext context) {
     void toggleDetailPanel() {
       setState(() {
         isDetailPanelVisible = !isDetailPanelVisible;
+        statusTabletController.selectWhere(
+          (item) => item.label == 'Belum Dibuat',
+        );
+        statusPhoneController.selectWhere(
+          (item) => item.label == 'Belum Dibuat',
+        );
       });
     }
 
@@ -61,8 +88,13 @@ class _OrderScreenState extends State<OrderScreen> {
                           child: Column(
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
+                                  ReservasiRegulerButtonFilterWidget(
+                                    onReservasi: onReservasi(),
+                                    onReguler: onReguler(),
+                                    isWideScreen: true,
+                                  ),
+                                  const Spacer(),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1f4940'),
@@ -76,7 +108,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                       child: const Text(
                                         AppStrings.tambahBtn,
                                         style: TextStyle(
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w500,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -114,7 +146,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                       Expanded(
                                         flex: 2,
                                         child: Text(
-                                          'ID RESERVASI',
+                                          'JENIS',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color: hexToColor('#202224'),
@@ -141,6 +173,19 @@ class _OrderScreenState extends State<OrderScreen> {
                                             fontWeight: FontWeight.w600,
                                             color: hexToColor('#202224'),
                                             fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Center(
+                                          child: Text(
+                                            'STATUS',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: hexToColor('#202224'),
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -264,7 +309,9 @@ class _OrderScreenState extends State<OrderScreen> {
                                               Expanded(
                                                 flex: 2,
                                                 child: Text(
-                                                  '00005',
+                                                  index.isEven
+                                                      ? 'Reguler'
+                                                      : 'Reservasi',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w500,
                                                     color:
@@ -294,6 +341,84 @@ class _OrderScreenState extends State<OrderScreen> {
                                                     color:
                                                         hexToColor('#202224'),
                                                     fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 2,
+                                                child: Center(
+                                                  child: Chip(
+                                                    backgroundColor:
+                                                        Colors.white,
+                                                    shape:
+                                                        const RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                        Radius.circular(
+                                                          30,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    side: BorderSide(
+                                                      width: 3,
+                                                      color: index == 0
+                                                          ? hexToColor(
+                                                              '#FFDD82',
+                                                            )
+                                                          : index == 1
+                                                              ? hexToColor(
+                                                                  '#1F4940',
+                                                                )
+                                                              : index == 2
+                                                                  ? hexToColor(
+                                                                      '#47B881',
+                                                                    )
+                                                                  : index == 3
+                                                                      ? hexToColor(
+                                                                          '#F64C4C',
+                                                                        )
+                                                                      : hexToColor(
+                                                                          '#1F4940',
+                                                                        ),
+                                                    ),
+                                                    label: Center(
+                                                      child: Text(
+                                                        index == 0
+                                                            ? 'Belum Dibuat'
+                                                            : index == 1
+                                                                ? 'Diproses'
+                                                                : index == 2
+                                                                    ? 'Selesai Dibuat'
+                                                                    : index == 3
+                                                                        ? 'Dibatalkan'
+                                                                        : 'Diproses',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: index == 0
+                                                              ? hexToColor(
+                                                                  '#FFDD82',
+                                                                )
+                                                              : index == 1
+                                                                  ? hexToColor(
+                                                                      '#1F4940',
+                                                                    )
+                                                                  : index == 2
+                                                                      ? hexToColor(
+                                                                          '#47B881',
+                                                                        )
+                                                                      : index ==
+                                                                              3
+                                                                          ? hexToColor(
+                                                                              '#F64C4C',
+                                                                            )
+                                                                          : hexToColor(
+                                                                              '#1F4940',
+                                                                            ),
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -366,6 +491,62 @@ class _OrderScreenState extends State<OrderScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                            SizedBox(
+                              height: 20.h,
+                            ),
+                            Text(
+                              'Status',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 5.h,
+                            ),
+                            MultiDropdown<String>(
+                              singleSelect: true,
+                              items: orderStatus,
+                              controller: statusTabletController,
+                              fieldDecoration: FieldDecoration(
+                                backgroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 12,
+                                ),
+                                hintText: 'Pilih Status Order terkini',
+                                hintStyle: TextStyle(
+                                  fontSize: 14.sp,
+                                  overflow: TextOverflow.ellipsis,
+                                  color: Colors.black.withOpacity(0.3),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                suffixIcon: const Padding(
+                                  padding: EdgeInsets.all(
+                                    12,
+                                  ),
+                                  child: Iconify(
+                                    Zondicons.cheveron_down,
+                                  ),
+                                ),
+                                showClearIcon: false,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    15,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              itemSeparator: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Divider(),
+                              ),
                             ),
                             SizedBox(
                               height: 20.h,
@@ -592,8 +773,13 @@ class _OrderScreenState extends State<OrderScreen> {
                           child: Column(
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
+                                  ReservasiRegulerButtonFilterWidget(
+                                    onReservasi: onReservasi(),
+                                    onReguler: onReguler(),
+                                    isWideScreen: false,
+                                  ),
+                                  const Spacer(),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1f4940'),
@@ -645,7 +831,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                       Expanded(
                                         flex: 2,
                                         child: Text(
-                                          'ID RES',
+                                          'NAMA',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color: hexToColor('#202224'),
@@ -655,12 +841,14 @@ class _OrderScreenState extends State<OrderScreen> {
                                       ),
                                       Expanded(
                                         flex: 2,
-                                        child: Text(
-                                          'NAMA',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: hexToColor('#202224'),
-                                            fontSize: 12,
+                                        child: Center(
+                                          child: Text(
+                                            'STATUS',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: hexToColor('#202224'),
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -806,7 +994,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                               Expanded(
                                                 flex: 2,
                                                 child: Text(
-                                                  '00005',
+                                                  'Christine Brooks',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
                                                     color:
@@ -817,13 +1005,82 @@ class _OrderScreenState extends State<OrderScreen> {
                                               ),
                                               Expanded(
                                                 flex: 2,
-                                                child: Text(
-                                                  'Christine Brooks',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    color:
-                                                        hexToColor('#202224'),
-                                                    fontSize: 12,
+                                                child: Center(
+                                                  child: Chip(
+                                                    backgroundColor:
+                                                        Colors.white,
+                                                    shape:
+                                                        const RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                        Radius.circular(
+                                                          30,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    side: BorderSide(
+                                                      width: 3,
+                                                      color: index == 0
+                                                          ? hexToColor(
+                                                              '#FFDD82',
+                                                            )
+                                                          : index == 1
+                                                              ? hexToColor(
+                                                                  '#1F4940',
+                                                                )
+                                                              : index == 2
+                                                                  ? hexToColor(
+                                                                      '#47B881',
+                                                                    )
+                                                                  : index == 3
+                                                                      ? hexToColor(
+                                                                          '#F64C4C',
+                                                                        )
+                                                                      : hexToColor(
+                                                                          '#1F4940',
+                                                                        ),
+                                                    ),
+                                                    label: Center(
+                                                      child: Text(
+                                                        index == 0
+                                                            ? 'Belum Dibuat'
+                                                            : index == 1
+                                                                ? 'Diproses'
+                                                                : index == 2
+                                                                    ? 'Selesai Dibuat'
+                                                                    : index == 3
+                                                                        ? 'Dibatalkan'
+                                                                        : 'Diproses',
+                                                        maxLines: 2,
+                                                        style: TextStyle(
+                                                          overflow:
+                                                              TextOverflow.fade,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: index == 0
+                                                              ? hexToColor(
+                                                                  '#FFDD82',
+                                                                )
+                                                              : index == 1
+                                                                  ? hexToColor(
+                                                                      '#1F4940',
+                                                                    )
+                                                                  : index == 2
+                                                                      ? hexToColor(
+                                                                          '#47B881',
+                                                                        )
+                                                                      : index ==
+                                                                              3
+                                                                          ? hexToColor(
+                                                                              '#F64C4C',
+                                                                            )
+                                                                          : hexToColor(
+                                                                              '#1F4940',
+                                                                            ),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -901,6 +1158,42 @@ class _OrderScreenState extends State<OrderScreen> {
                               height: 20.h,
                             ),
                             Text(
+                              'Jenis',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 5.h,
+                            ),
+                            TextFormField(
+                              readOnly: true,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w400,
+                                color: Colors.black,
+                                fontSize: 14,
+                                overflow: TextOverflow.fade,
+                              ),
+                              initialValue: 'Reguler',
+                              decoration: const InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(15)),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(15)),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 20.h,
+                            ),
+                            Text(
                               'Kontak',
                               style: TextStyle(
                                 color: Colors.white,
@@ -935,6 +1228,62 @@ class _OrderScreenState extends State<OrderScreen> {
                             ),
                             const SizedBox(
                               height: 20,
+                            ),
+                            Text(
+                              'Status',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 5.h,
+                            ),
+                            MultiDropdown<String>(
+                              singleSelect: true,
+                              items: orderStatus,
+                              controller: statusPhoneController,
+                              fieldDecoration: FieldDecoration(
+                                backgroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 12,
+                                ),
+                                hintText: 'Pilih Status Order terkini',
+                                hintStyle: TextStyle(
+                                  fontSize: 14.sp,
+                                  overflow: TextOverflow.ellipsis,
+                                  color: Colors.black.withOpacity(0.3),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                suffixIcon: const Padding(
+                                  padding: EdgeInsets.all(
+                                    12,
+                                  ),
+                                  child: Iconify(
+                                    Zondicons.cheveron_down,
+                                  ),
+                                ),
+                                showClearIcon: false,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    15,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              itemSeparator: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Divider(),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 20.h,
                             ),
                             SizedBox(
                               height: MediaQuery.of(context).size.height * 0.6,

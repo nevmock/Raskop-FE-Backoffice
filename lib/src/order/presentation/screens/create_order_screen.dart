@@ -6,6 +6,8 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/ic.dart';
 import 'package:intl/intl.dart';
+import 'package:raskop_fe_backoffice/core/core.dart';
+import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/widgets/dynamic_height_grid_view_widget.dart';
@@ -115,7 +117,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   elevation: 5,
                                   child: BackButton(
                                     color: Colors.black,
-                                    onPressed: widget.onBack,
+                                    onPressed: () async {
+                                      await showConfirmationDialog(
+                                        context: context,
+                                        title: 'Keluar halaman ini?',
+                                        onConfirm: () {
+                                          Navigator.pop(context);
+                                          widget.onBack();
+                                        },
+                                        content:
+                                            'Halaman ini akan terhapus secara permanen.',
+                                        isWideScreen: true,
+                                      );
+                                    },
                                   ),
                                 ),
                                 Expanded(
@@ -147,9 +161,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                       decoration: InputDecoration(
                                         filled: false,
                                         border: InputBorder.none,
-                                        suffixIcon: Icon(
-                                          Icons.search,
-                                          size: 20.sp,
+                                        suffixIcon: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                          child: Iconify(
+                                            IconAssets.searchIcon,
+                                            size: 20.sp,
+                                          ),
                                         ),
                                         hintText: 'Temukan Menu...',
                                         hintStyle: TextStyle(
@@ -503,13 +523,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     elevation: 5,
                                     child: BackButton(
                                       color: Colors.black,
-                                      onPressed: widget.onBack,
+                                      onPressed: () async {
+                                        await showConfirmationDialog(
+                                          context: context,
+                                          title: 'Keluar halaman ini?',
+                                          onConfirm: () {
+                                            Navigator.pop(context);
+                                            widget.onBack();
+                                          },
+                                          content:
+                                              'Halaman ini akan terhapus secara permanen.',
+                                          isWideScreen: false,
+                                        );
+                                      },
                                     ),
                                   ),
                                   Expanded(
                                     flex: 2,
                                     child: Image.asset(
-                                      'assets/img/raskop.png',
+                                      ImageAssets.raskop,
                                       width: 100.w,
                                       height: 50.h,
                                       scale: 1 / 5,
@@ -533,14 +565,20 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                         ),
                                       ),
                                       child: TextFormField(
+                                        style: const TextStyle(fontSize: 14),
                                         textAlignVertical:
                                             TextAlignVertical.center,
                                         decoration: InputDecoration(
                                           filled: false,
                                           border: InputBorder.none,
-                                          suffixIcon: Icon(
-                                            Icons.search,
-                                            size: 20.sp,
+                                          suffixIcon: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                            child: Iconify(
+                                              IconAssets.searchIcon,
+                                              size: 20.sp,
+                                            ),
                                           ),
                                           hintText: 'Temukan Menu...',
                                           hintStyle: TextStyle(
@@ -1350,5 +1388,134 @@ Widget buildExpandedMenuItem({
         ],
       ),
     ),
+  );
+}
+
+FutureVoid showConfirmationDialog({
+  required BuildContext context,
+  required String title,
+  required VoidCallback onConfirm,
+  required String content,
+  required bool isWideScreen,
+}) {
+  return showDialog(
+    barrierDismissible: false,
+    builder: (context) => Center(
+      child: Container(
+        padding:
+            isWideScreen ? null : const EdgeInsets.symmetric(horizontal: 20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(35)),
+        ),
+        margin: EdgeInsets.symmetric(
+          horizontal: isWideScreen
+              ? MediaQuery.of(context).size.width * 0.3
+              : MediaQuery.of(context).size.width * 0.05,
+          vertical: MediaQuery.of(context).size.height * 0.3,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: isWideScreen ? 35 : 24,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                top: 5,
+                bottom: 30,
+              ),
+              child: Center(
+                child: Text(
+                  content,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: TextButton.styleFrom(
+                    elevation: 5,
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: hexToColor('#CACACA')),
+                      borderRadius: const BorderRadius.all(Radius.circular(35)),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWideScreen
+                          ? 50
+                          : MediaQuery.of(context).size.width * 0.055,
+                      vertical: 8,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: isWideScreen ? 18 : 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  width: 20,
+                ),
+                TextButton(
+                  onPressed: onConfirm,
+                  style: TextButton.styleFrom(
+                    elevation: 5,
+                    backgroundColor: hexToColor('#F64C4C'),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(35)),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWideScreen
+                          ? 50
+                          : MediaQuery.of(context).size.width * 0.055,
+                      vertical: 8,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Keluar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isWideScreen ? 18 : 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+    context: context,
   );
 }
