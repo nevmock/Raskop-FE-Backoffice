@@ -67,6 +67,7 @@ dependencies:
 
   # for making sure every UI is at top notch on every device dimension
   device_preview_plus: ^2.2.4
+  multi_dropdown: ^3.0.1
 
 dev_dependencies:
   flutter_test:
