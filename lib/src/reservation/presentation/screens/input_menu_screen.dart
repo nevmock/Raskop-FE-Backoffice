@@ -6,7 +6,6 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/ic.dart';
 import 'package:intl/intl.dart';
-import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
@@ -25,37 +24,38 @@ const List<(MenuType, String)> menuTypeOptions = <(MenuType, String)>[
 ];
 
 ///
-class CreateOrderScreen extends StatefulWidget {
+class InputMenuScreen extends StatefulWidget {
   ///
-  const CreateOrderScreen({required this.onBack, super.key});
+  const InputMenuScreen({
+    required this.onBack,
+    required this.isInput,
+    required this.orderMenu,
+    super.key,
+  });
 
   final VoidCallback onBack;
 
+  final bool isInput;
+
+  final List<(String, double, int, String)> orderMenu;
+
   @override
-  State<CreateOrderScreen> createState() => _CreateOrderScreenState();
+  State<InputMenuScreen> createState() => _InputMenuScreenState();
 }
 
-class _CreateOrderScreenState extends State<CreateOrderScreen> {
+class _InputMenuScreenState extends State<InputMenuScreen> {
   TextEditingController notes = TextEditingController();
-  TextEditingController customerName = TextEditingController();
-  TextEditingController customerPhone = TextEditingController();
   int qty = 1;
   double grandTotal = 0;
   bool isLastStep = false;
   final List<bool> toggleMenuType =
       MenuType.values.map((MenuType e) => e == MenuType.food).toList();
 
-  /// Dummy List For Summary Ordered Item Widget Testing
-  List<(String, double, int, String)> dummyItemList =
-      <(String, double, int, String)>[];
+  // /// Dummy List For Summary Ordered Item Widget Testing
+  // List<(String, double, int, String)> dummyItemList =
+  //     <(String, double, int, String)>[];
 
   final isExpanded = List<bool>.generate(20, (_) => false);
-
-  void setLastStep() {
-    setState(() {
-      isLastStep = true;
-    });
-  }
 
   void toggleExpansion(int index) {
     setState(() {
@@ -70,6 +70,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       qty = 1;
       notes.value = TextEditingValue.empty;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    grandTotal = widget.orderMenu.fold(
+      0,
+      (a, b) => a + (b.$2 * b.$3),
+    );
   }
 
   bool isScrollableSheetDisplayed = false;
@@ -117,19 +126,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   elevation: 5,
                                   child: BackButton(
                                     color: Colors.black,
-                                    onPressed: () async {
-                                      await showConfirmationDialog(
-                                        context: context,
-                                        title: 'Keluar halaman ini?',
-                                        onConfirm: () {
-                                          Navigator.pop(context);
-                                          widget.onBack();
-                                        },
-                                        content:
-                                            'Halaman ini akan terhapus secara permanen.',
-                                        isWideScreen: true,
-                                      );
-                                    },
+                                    onPressed: widget.onBack,
                                   ),
                                 ),
                                 Expanded(
@@ -161,15 +158,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                       decoration: InputDecoration(
                                         filled: false,
                                         border: InputBorder.none,
-                                        suffixIcon: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 12,
-                                          ),
-                                          child: Iconify(
-                                            IconAssets.searchIcon,
-                                            size: 20.sp,
-                                          ),
+                                        suffixIcon: Icon(
+                                          Icons.search,
+                                          size: 20.sp,
                                         ),
                                         hintText: 'Temukan Menu...',
                                         hintStyle: TextStyle(
@@ -246,44 +237,53 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                         child: child,
                                       );
                                     },
-                                    child: isExpanded[idx]
-                                        ? buildExpandedMenuItem(
-                                            index: idx,
-                                            qty: qty,
-                                            onDecrement: () {
-                                              setState(() {
-                                                if (qty == 1) {
-                                                  qty = 1;
-                                                } else {
-                                                  qty--;
-                                                }
-                                              });
-                                            },
-                                            onIncrement: () {
-                                              setState(() {
-                                                qty++;
-                                              });
-                                            },
-                                            onAdd: () {
-                                              setState(() {
-                                                dummyItemList.add(
-                                                  (
-                                                    'Steak with Paprika',
-                                                    80000.00,
-                                                    qty,
-                                                    notes.text
-                                                  ),
-                                                );
-                                                grandTotal = dummyItemList.fold(
-                                                  0,
-                                                  (a, b) => a + (b.$2 * b.$3),
-                                                );
-                                              });
-                                            },
-                                            notes: notes,
-                                            context: context,
-                                            isWideScreen: true,
-                                          )
+                                    child: widget.isInput
+                                        ? isExpanded[idx]
+                                            ? buildExpandedMenuItem(
+                                                index: idx,
+                                                qty: qty,
+                                                onDecrement: () {
+                                                  setState(() {
+                                                    if (qty == 1) {
+                                                      qty = 1;
+                                                    } else {
+                                                      qty--;
+                                                    }
+                                                  });
+                                                },
+                                                onIncrement: () {
+                                                  setState(() {
+                                                    qty++;
+                                                  });
+                                                },
+                                                onAdd: () {
+                                                  setState(() {
+                                                    widget.orderMenu.add(
+                                                      (
+                                                        'Steak with Paprika',
+                                                        80000.00,
+                                                        qty,
+                                                        notes.text
+                                                      ),
+                                                    );
+
+                                                    grandTotal =
+                                                        widget.orderMenu.fold(
+                                                      0,
+                                                      (a, b) =>
+                                                          a + (b.$2 * b.$3),
+                                                    );
+                                                  });
+                                                },
+                                                notes: notes,
+                                                context: context,
+                                                isWideScreen: true,
+                                              )
+                                            : buildCollapsedMenuItem(
+                                                index: idx,
+                                                context: context,
+                                                isWideScreen: true,
+                                              )
                                         : buildCollapsedMenuItem(
                                             index: idx,
                                             context: context,
@@ -343,60 +343,38 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             SizedBox(
                               height: 30.h,
                             ),
-                            if (isLastStep)
-                              Expanded(
-                                child: ListView(
-                                  children: [
-                                    _buildTextFieldForLastStep(
-                                      'Nama Customer',
-                                      'Masukkan nama customer...',
-                                      customerName,
-                                      TextInputType.name,
-                                    ),
-                                    SizedBox(
-                                      height: 10.h,
-                                    ),
-                                    _buildTextFieldForLastStep(
-                                      'Nomor Telepon',
-                                      'Masukkan nomor telepon...',
-                                      customerPhone,
-                                      TextInputType.phone,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Expanded(
-                                child: SizedBox(
-                                  child: dummyItemList.isNotEmpty
-                                      ? ListView.builder(
-                                          itemCount: dummyItemList.isEmpty
-                                              ? 0
-                                              : dummyItemList.length,
-                                          itemBuilder: (ctx, idx) {
-                                            return itemCard(
-                                              menuName: dummyItemList[idx].$1,
-                                              price: dummyItemList[idx].$2,
-                                              qty: dummyItemList[idx].$3,
-                                              notes: dummyItemList[idx].$4,
-                                              context: context,
-                                              onRemoved: () {
-                                                setState(() {
-                                                  dummyItemList.removeAt(idx);
-                                                  grandTotal =
-                                                      dummyItemList.fold(
-                                                    0,
-                                                    (a, b) => a + (b.$2 * b.$3),
-                                                  );
-                                                });
-                                              },
-                                              isWideScreen: true,
-                                            );
-                                          },
-                                        )
-                                      : null,
-                                ),
+                            Expanded(
+                              child: SizedBox(
+                                child: widget.orderMenu.isNotEmpty
+                                    ? ListView.builder(
+                                        itemCount: widget.orderMenu.isEmpty
+                                            ? 0
+                                            : widget.orderMenu.length,
+                                        itemBuilder: (ctx, idx) {
+                                          return itemCard(
+                                            menuName: widget.orderMenu[idx].$1,
+                                            price: widget.orderMenu[idx].$2,
+                                            qty: widget.orderMenu[idx].$3,
+                                            notes: widget.orderMenu[idx].$4,
+                                            context: context,
+                                            onRemoved: () {
+                                              setState(() {
+                                                widget.orderMenu.removeAt(idx);
+                                                grandTotal =
+                                                    widget.orderMenu.fold(
+                                                  0,
+                                                  (a, b) => a + (b.$2 * b.$3),
+                                                );
+                                              });
+                                            },
+                                            isWideScreen: true,
+                                            isInput: widget.isInput,
+                                          );
+                                        },
+                                      )
+                                    : null,
                               ),
+                            ),
                             SizedBox(
                               height: 5.h,
                             ),
@@ -450,7 +428,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               child: InkWell(
                                 borderRadius:
                                     const BorderRadius.all(Radius.circular(50)),
-                                onTap: isLastStep ? () {} : setLastStep,
+                                onTap: widget.onBack,
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 15.w,
@@ -459,7 +437,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   child: Row(
                                     children: [
                                       Text(
-                                        isLastStep ? 'Tambah\t' : 'Lanjut\t ',
+                                        widget.isInput
+                                            ? 'Simpan\t'
+                                            : 'Kembali\t',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w400,
                                           color: Colors.white,
@@ -523,19 +503,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     elevation: 5,
                                     child: BackButton(
                                       color: Colors.black,
-                                      onPressed: () async {
-                                        await showConfirmationDialog(
-                                          context: context,
-                                          title: 'Keluar halaman ini?',
-                                          onConfirm: () {
-                                            Navigator.pop(context);
-                                            widget.onBack();
-                                          },
-                                          content:
-                                              'Halaman ini akan terhapus secara permanen.',
-                                          isWideScreen: false,
-                                        );
-                                      },
+                                      onPressed: widget.onBack,
                                     ),
                                   ),
                                   Expanded(
@@ -565,20 +533,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                         ),
                                       ),
                                       child: TextFormField(
-                                        style: const TextStyle(fontSize: 14),
                                         textAlignVertical:
                                             TextAlignVertical.center,
                                         decoration: InputDecoration(
                                           filled: false,
                                           border: InputBorder.none,
-                                          suffixIcon: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                            ),
-                                            child: Iconify(
-                                              IconAssets.searchIcon,
-                                              size: 20.sp,
-                                            ),
+                                          suffixIcon: Icon(
+                                            Icons.search,
+                                            size: 20.sp,
                                           ),
                                           hintText: 'Temukan Menu...',
                                           hintStyle: TextStyle(
@@ -653,44 +615,52 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                         child: child,
                                       );
                                     },
-                                    child: isExpanded[idx]
-                                        ? buildExpandedMenuItem(
-                                            index: idx,
-                                            qty: qty,
-                                            onDecrement: () {
-                                              setState(() {
-                                                if (qty == 1) {
-                                                  qty = 1;
-                                                } else {
-                                                  qty--;
-                                                }
-                                              });
-                                            },
-                                            onIncrement: () {
-                                              setState(() {
-                                                qty++;
-                                              });
-                                            },
-                                            onAdd: () {
-                                              setState(() {
-                                                dummyItemList.add(
-                                                  (
-                                                    'Steak with Paprika',
-                                                    80000.00,
-                                                    qty,
-                                                    notes.text
-                                                  ),
-                                                );
-                                                grandTotal = dummyItemList.fold(
-                                                  0,
-                                                  (a, b) => a + (b.$2 * b.$3),
-                                                );
-                                              });
-                                            },
-                                            notes: notes,
-                                            context: context,
-                                            isWideScreen: false,
-                                          )
+                                    child: widget.isInput
+                                        ? isExpanded[idx]
+                                            ? buildExpandedMenuItem(
+                                                index: idx,
+                                                qty: qty,
+                                                onDecrement: () {
+                                                  setState(() {
+                                                    if (qty == 1) {
+                                                      qty = 1;
+                                                    } else {
+                                                      qty--;
+                                                    }
+                                                  });
+                                                },
+                                                onIncrement: () {
+                                                  setState(() {
+                                                    qty++;
+                                                  });
+                                                },
+                                                onAdd: () {
+                                                  setState(() {
+                                                    widget.orderMenu.add(
+                                                      (
+                                                        'Steak with Paprika',
+                                                        80000.00,
+                                                        qty,
+                                                        notes.text
+                                                      ),
+                                                    );
+                                                    grandTotal =
+                                                        widget.orderMenu.fold(
+                                                      0,
+                                                      (a, b) =>
+                                                          a + (b.$2 * b.$3),
+                                                    );
+                                                  });
+                                                },
+                                                notes: notes,
+                                                context: context,
+                                                isWideScreen: false,
+                                              )
+                                            : buildCollapsedMenuItem(
+                                                index: idx,
+                                                context: context,
+                                                isWideScreen: false,
+                                              )
                                         : buildCollapsedMenuItem(
                                             index: idx,
                                             context: context,
@@ -780,80 +750,51 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                         SizedBox(
                                           height: 30.h,
                                         ),
-                                        if (isLastStep)
-                                          SizedBox(
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.5,
-                                            child: ListView(
-                                              children: [
-                                                _buildTextFieldForLastStep(
-                                                  'Nama Customer',
-                                                  'Masukkan nama customer...',
-                                                  customerName,
-                                                  TextInputType.name,
-                                                ),
-                                                SizedBox(
-                                                  height: 10.h,
-                                                ),
-                                                _buildTextFieldForLastStep(
-                                                  'Nomor Telepon',
-                                                  'Masukkan nomor telepon...',
-                                                  customerPhone,
-                                                  TextInputType.phone,
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        else
-                                          SizedBox(
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.5,
-                                            child: dummyItemList.isNotEmpty
-                                                ? ListView.builder(
-                                                    itemCount: dummyItemList
-                                                            .isEmpty
-                                                        ? 0
-                                                        : dummyItemList.length,
-                                                    itemBuilder: (ctx, idx) {
-                                                      return itemCard(
-                                                        menuName:
-                                                            dummyItemList[idx]
-                                                                .$1,
-                                                        price:
-                                                            dummyItemList[idx]
-                                                                .$2,
-                                                        qty: dummyItemList[idx]
-                                                            .$3,
-                                                        notes:
-                                                            dummyItemList[idx]
-                                                                .$4,
-                                                        context: context,
-                                                        onRemoved: () {
-                                                          setState(() {
-                                                            dummyItemList
-                                                                .removeAt(
-                                                              idx,
-                                                            );
-                                                            grandTotal =
-                                                                dummyItemList
-                                                                    .fold(
-                                                              0,
-                                                              (a, b) =>
-                                                                  a +
-                                                                  (b.$2 * b.$3),
-                                                            );
-                                                          });
-                                                        },
-                                                        isWideScreen: false,
-                                                      );
-                                                    },
-                                                  )
-                                                : null,
-                                          ),
+                                        SizedBox(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.5,
+                                          child: widget.orderMenu.isNotEmpty
+                                              ? ListView.builder(
+                                                  itemCount: widget
+                                                          .orderMenu.isEmpty
+                                                      ? 0
+                                                      : widget.orderMenu.length,
+                                                  itemBuilder: (ctx, idx) {
+                                                    return itemCard(
+                                                      menuName: widget
+                                                          .orderMenu[idx].$1,
+                                                      price: widget
+                                                          .orderMenu[idx].$2,
+                                                      qty: widget
+                                                          .orderMenu[idx].$3,
+                                                      notes: widget
+                                                          .orderMenu[idx].$4,
+                                                      context: context,
+                                                      onRemoved: () {
+                                                        setState(() {
+                                                          widget.orderMenu
+                                                              .removeAt(
+                                                            idx,
+                                                          );
+                                                          grandTotal = widget
+                                                              .orderMenu
+                                                              .fold(
+                                                            0,
+                                                            (a, b) =>
+                                                                a +
+                                                                (b.$2 * b.$3),
+                                                          );
+                                                        });
+                                                      },
+                                                      isWideScreen: false,
+                                                      isInput: widget.isInput,
+                                                    );
+                                                  },
+                                                )
+                                              : null,
+                                        ),
                                         SizedBox(
                                           height: 5.h,
                                         ),
@@ -914,9 +855,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                                 const BorderRadius.all(
                                               Radius.circular(50),
                                             ),
-                                            onTap: isLastStep
-                                                ? () {}
-                                                : setLastStep,
+                                            onTap: widget.onBack,
                                             child: Padding(
                                               padding: EdgeInsets.symmetric(
                                                 horizontal: 15.w,
@@ -925,9 +864,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                               child: Row(
                                                 children: [
                                                   Text(
-                                                    isLastStep
-                                                        ? 'Tambah\t'
-                                                        : 'Lanjut\t ',
+                                                    widget.isInput
+                                                        ? 'Simpan\t'
+                                                        : 'Kembali\t',
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w400,
@@ -985,63 +924,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 }
 
-Widget _buildTextFieldForLastStep(
-  String label,
-  String hint,
-  TextEditingController controller,
-  TextInputType keytype,
-) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w500,
-            fontSize: 14.sp,
-          ),
-        ),
-        SizedBox(
-          height: 10.h,
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 15.w,
-          ),
-          decoration: BoxDecoration(
-            border: Border.all(color: hexToColor('#E1E1E1')),
-            borderRadius: const BorderRadius.all(
-              Radius.circular(50),
-            ),
-          ),
-          child: TextFormField(
-            keyboardType: keytype,
-            controller: controller,
-            style: const TextStyle(
-              fontWeight: FontWeight.w400,
-              color: Colors.black,
-              fontSize: 14,
-              overflow: TextOverflow.fade,
-            ),
-            decoration: InputDecoration(
-              filled: false,
-              border: InputBorder.none,
-              hintText: hint,
-              hintStyle: TextStyle(
-                color: Colors.black.withOpacity(0.3),
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 Widget itemCard({
   required String menuName,
   required double price,
@@ -1049,6 +931,7 @@ Widget itemCard({
   required VoidCallback onRemoved,
   required BuildContext context,
   required bool isWideScreen,
+  required bool isInput,
   String? notes,
 }) {
   final currency = NumberFormat.simpleCurrency(
@@ -1122,30 +1005,32 @@ Widget itemCard({
           ),
           Flexible(
             flex: 2,
-            child: IconButton(
-              onPressed: onRemoved,
-              icon: Center(
-                child: Container(
-                  width: isWideScreen
-                      ? MediaQuery.of(context).size.width * 0.05
-                      : MediaQuery.of(context).size.width * 0.2,
-                  height: isWideScreen
-                      ? MediaQuery.of(context).size.width * 0.05
-                      : MediaQuery.of(context).size.width * 0.14,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(30),
+            child: isInput
+                ? IconButton(
+                    onPressed: onRemoved,
+                    icon: Center(
+                      child: Container(
+                        width: isWideScreen
+                            ? MediaQuery.of(context).size.width * 0.05
+                            : MediaQuery.of(context).size.width * 0.2,
+                        height: isWideScreen
+                            ? MediaQuery.of(context).size.width * 0.05
+                            : MediaQuery.of(context).size.width * 0.14,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(30),
+                          ),
+                          color: hexToColor('#F64C4C'),
+                        ),
+                        child: const Iconify(
+                          Eva.trash_fill,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    color: hexToColor('#F64C4C'),
-                  ),
-                  child: const Iconify(
-                    Eva.trash_fill,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+                  )
+                : const SizedBox(),
           ),
         ],
       ),
@@ -1388,134 +1273,5 @@ Widget buildExpandedMenuItem({
         ],
       ),
     ),
-  );
-}
-
-FutureVoid showConfirmationDialog({
-  required BuildContext context,
-  required String title,
-  required VoidCallback onConfirm,
-  required String content,
-  required bool isWideScreen,
-}) {
-  return showDialog(
-    barrierDismissible: false,
-    builder: (context) => Center(
-      child: Container(
-        padding:
-            isWideScreen ? null : const EdgeInsets.symmetric(horizontal: 20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(35)),
-        ),
-        margin: EdgeInsets.symmetric(
-          horizontal: isWideScreen
-              ? MediaQuery.of(context).size.width * 0.3
-              : MediaQuery.of(context).size.width * 0.05,
-          vertical: MediaQuery.of(context).size.height * 0.3,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Center(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: isWideScreen ? 35 : 24,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 5,
-                bottom: 30,
-              ),
-              child: Center(
-                child: Text(
-                  content,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: TextButton.styleFrom(
-                    elevation: 5,
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: hexToColor('#CACACA')),
-                      borderRadius: const BorderRadius.all(Radius.circular(35)),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWideScreen
-                          ? 50
-                          : MediaQuery.of(context).size.width * 0.055,
-                      vertical: 8,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Batal',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontSize: isWideScreen ? 18 : 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                TextButton(
-                  onPressed: onConfirm,
-                  style: TextButton.styleFrom(
-                    elevation: 5,
-                    backgroundColor: hexToColor('#F64C4C'),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(35)),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWideScreen
-                          ? 50
-                          : MediaQuery.of(context).size.width * 0.055,
-                      vertical: 8,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Keluar',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isWideScreen ? 18 : 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-    context: context,
   );
 }

@@ -4,6 +4,9 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
+import 'package:intl/intl.dart';
+import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
@@ -22,8 +25,7 @@ class SupplierScreen extends StatefulWidget {
   State<SupplierScreen> createState() => _SupplierScreenState();
 }
 
-class _SupplierScreenState extends State<SupplierScreen>
-    with SingleTickerProviderStateMixin {
+class _SupplierScreenState extends State<SupplierScreen> {
   bool isDetailPanelVisible = false;
   bool isCreatePanelVisible = false;
   bool isEditPanelVisible = false;
@@ -34,7 +36,35 @@ class _SupplierScreenState extends State<SupplierScreen>
   TextEditingController biaya = TextEditingController();
   TextEditingController alamat = TextEditingController();
   TextEditingController produk = TextEditingController();
-  String? tipe;
+  List<DropdownItem<String>> advSearchOptions = [
+    DropdownItem(label: 'Nama', value: 'reserveBy'),
+    DropdownItem(label: 'Kontak', value: 'phoneNumber'),
+    DropdownItem(label: 'Nama Produk', value: 'productName'),
+    DropdownItem(label: 'Alamat', value: 'address'),
+    DropdownItem(label: 'Unit', value: 'unit'),
+  ];
+
+  List<DropdownItem<String>> productType = [
+    DropdownItem(label: 'Syrup', value: 'Syrup'),
+    DropdownItem(label: 'Beans', value: 'Beans'),
+  ];
+
+  List<DropdownItem<String>> productUnit = [
+    DropdownItem(label: 'KG', value: 'KG'),
+    DropdownItem(label: 'Pcs', value: 'pcs'),
+    DropdownItem(label: 'Liter', value: 'liter'),
+  ];
+
+  final typeTabletCreateController = MultiSelectController<String>();
+  final typePhoneCreateController = MultiSelectController<String>();
+  final unitTabletCreateController = MultiSelectController<String>();
+  final unitPhoneCreateController = MultiSelectController<String>();
+
+  final typeTabletEditController = MultiSelectController<String>();
+  final typePhoneEditController = MultiSelectController<String>();
+  final unitTabletEditController = MultiSelectController<String>();
+  final unitPhoneEditController = MultiSelectController<String>();
+
   @override
   Widget build(BuildContext context) {
     void toggleDetailPanel() {
@@ -61,7 +91,10 @@ class _SupplierScreenState extends State<SupplierScreen>
           text: 'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
         );
         produk.value = const TextEditingValue(text: 'Buah Naga');
-        tipe = 'Buah';
+        typeTabletEditController.selectWhere((item) => item.label == 'Syrup');
+        typePhoneEditController.selectWhere((item) => item.label == 'Syrup');
+        unitTabletEditController.selectWhere((item) => item.label == 'Liter');
+        unitPhoneEditController.selectWhere((item) => item.label == 'Liter');
       });
     }
 
@@ -75,7 +108,10 @@ class _SupplierScreenState extends State<SupplierScreen>
         biaya.clear();
         alamat.clear();
         produk.clear();
-        tipe = null;
+        typeTabletEditController.clearAll();
+        unitTabletEditController.clearAll();
+        typePhoneEditController.clearAll();
+        unitPhoneEditController.clearAll();
       });
     }
 
@@ -97,6 +133,152 @@ class _SupplierScreenState extends State<SupplierScreen>
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
+                        AnimatedContainer(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: hexToColor('#E1E1E1'),
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 15,
+                          ),
+                          duration: const Duration(milliseconds: 100),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                  ),
+                                  child: Image.asset(ImageAssets.raskop),
+                                ),
+                              ),
+                              const Spacer(),
+                              Expanded(
+                                flex: 5,
+                                child: AnimatedContainer(
+                                  duration: const Duration(
+                                    milliseconds: 100,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 15.w,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: hexToColor('#E1E1E1'),
+                                    ),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(30),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        flex: 3,
+                                        child: TextFormField(
+                                          decoration: InputDecoration(
+                                            filled: false,
+                                            border: InputBorder.none,
+                                            hintText:
+                                                'Temukan nama, kontak, unit...',
+                                            hintStyle: TextStyle(
+                                              color:
+                                                  Colors.black.withOpacity(0.3),
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        flex: 2,
+                                        child: MultiDropdown<String>(
+                                          items: advSearchOptions,
+                                          fieldDecoration:
+                                              const FieldDecoration(
+                                            border: OutlineInputBorder(
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            hintText: '',
+                                            suffixIcon: Icon(
+                                              Icons.filter_list_alt,
+                                            ),
+                                            animateSuffixIcon: false,
+                                            backgroundColor: Colors.transparent,
+                                            borderRadius: 30,
+                                          ),
+                                          dropdownItemDecoration:
+                                              DropdownItemDecoration(
+                                            selectedIcon: Icon(
+                                              Icons.check_box,
+                                              color: hexToColor(
+                                                '#0C9D61',
+                                              ),
+                                            ),
+                                          ),
+                                          dropdownDecoration:
+                                              const DropdownDecoration(
+                                            elevation: 3,
+                                          ),
+                                          chipDecoration: ChipDecoration(
+                                            wrap: false,
+                                            backgroundColor: hexToColor(
+                                              '#E1E1E1',
+                                            ),
+                                            labelStyle: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 20,
+                              ),
+                              Flexible(
+                                flex: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: 20,
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () {},
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: hexToColor('#1F4940'),
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Pencarian Lanjutan',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -428,7 +610,11 @@ class _SupplierScreenState extends State<SupplierScreen>
                                           flex: 3,
                                           child: Center(
                                             child: Text(
-                                              'Rp80.000,00',
+                                              NumberFormat.simpleCurrency(
+                                                locale: 'id-ID',
+                                                name: 'Rp',
+                                                decimalDigits: 2,
+                                              ).format(80000),
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w500,
                                                 color: hexToColor('#202224'),
@@ -562,7 +748,11 @@ class _SupplierScreenState extends State<SupplierScreen>
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Rp15.000,00',
+                        initialValue: NumberFormat.simpleCurrency(
+                          locale: 'id-ID',
+                          name: 'Rp',
+                          decimalDigits: 2,
+                        ).format(15000),
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -709,11 +899,82 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                     SizedBox(
                                       width: itemWidth.w,
-                                      child: _buildDropdownField(
-                                        'Tipe',
-                                        'Pilih tipe yang diinginkan',
-                                        null,
-                                        14.sp,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Tipe',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5.h,
+                                            ),
+                                            MultiDropdown(
+                                              controller:
+                                                  typeTabletCreateController,
+                                              singleSelect: true,
+                                              items: productType,
+                                              chipDecoration: ChipDecoration(
+                                                backgroundColor: hexToColor(
+                                                  '#E1E1E1',
+                                                ),
+                                                runSpacing: 2,
+                                                spacing: 10,
+                                              ),
+                                              fieldDecoration: FieldDecoration(
+                                                backgroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 16,
+                                                  horizontal: 12,
+                                                ),
+                                                hintText:
+                                                    'Pilih tipe yang diinginkan',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  color: Colors.black
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                suffixIcon: const Padding(
+                                                  padding: EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: Iconify(
+                                                    Zondicons.cheveron_down,
+                                                  ),
+                                                ),
+                                                showClearIcon: false,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ),
+                                              itemSeparator: const Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                ),
+                                                child: Divider(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
@@ -728,12 +989,82 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                     SizedBox(
                                       width: itemWidth.w,
-                                      child: _buildTextField(
-                                        'Unit',
-                                        'Masukkan jenis unit',
-                                        unit,
-                                        TextInputType.text,
-                                        14.sp,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Unit',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5.h,
+                                            ),
+                                            MultiDropdown(
+                                              controller:
+                                                  unitTabletCreateController,
+                                              singleSelect: true,
+                                              items: productUnit,
+                                              chipDecoration: ChipDecoration(
+                                                backgroundColor: hexToColor(
+                                                  '#E1E1E1',
+                                                ),
+                                                runSpacing: 2,
+                                                spacing: 10,
+                                              ),
+                                              fieldDecoration: FieldDecoration(
+                                                backgroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 16,
+                                                  horizontal: 12,
+                                                ),
+                                                hintText:
+                                                    'Pilih unit satuan barang',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  color: Colors.black
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                suffixIcon: const Padding(
+                                                  padding: EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: Iconify(
+                                                    Zondicons.cheveron_down,
+                                                  ),
+                                                ),
+                                                showClearIcon: false,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ),
+                                              itemSeparator: const Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                ),
+                                                child: Divider(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
@@ -865,11 +1196,82 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                     SizedBox(
                                       width: itemWidth.w,
-                                      child: _buildDropdownField(
-                                        'Tipe',
-                                        'Pilih tipe yang diinginkan',
-                                        tipe,
-                                        14.sp,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Tipe',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5.h,
+                                            ),
+                                            MultiDropdown(
+                                              controller:
+                                                  typeTabletEditController,
+                                              singleSelect: true,
+                                              items: productType,
+                                              chipDecoration: ChipDecoration(
+                                                backgroundColor: hexToColor(
+                                                  '#E1E1E1',
+                                                ),
+                                                runSpacing: 2,
+                                                spacing: 10,
+                                              ),
+                                              fieldDecoration: FieldDecoration(
+                                                backgroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 16,
+                                                  horizontal: 12,
+                                                ),
+                                                hintText:
+                                                    'Pilih tipe yang diinginkan',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  color: Colors.black
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                suffixIcon: const Padding(
+                                                  padding: EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: Iconify(
+                                                    Zondicons.cheveron_down,
+                                                  ),
+                                                ),
+                                                showClearIcon: false,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ),
+                                              itemSeparator: const Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                ),
+                                                child: Divider(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
@@ -884,12 +1286,82 @@ class _SupplierScreenState extends State<SupplierScreen>
                                     ),
                                     SizedBox(
                                       width: itemWidth.w,
-                                      child: _buildTextField(
-                                        'Unit',
-                                        'Masukkan jenis unit',
-                                        unit,
-                                        TextInputType.text,
-                                        14.sp,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Unit',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 5.h,
+                                            ),
+                                            MultiDropdown(
+                                              controller:
+                                                  unitTabletEditController,
+                                              singleSelect: true,
+                                              items: productUnit,
+                                              chipDecoration: ChipDecoration(
+                                                backgroundColor: hexToColor(
+                                                  '#E1E1E1',
+                                                ),
+                                                runSpacing: 2,
+                                                spacing: 10,
+                                              ),
+                                              fieldDecoration: FieldDecoration(
+                                                backgroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 16,
+                                                  horizontal: 12,
+                                                ),
+                                                hintText:
+                                                    'Pilih unit satuan barang',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  color: Colors.black
+                                                      .withOpacity(0.3),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                suffixIcon: const Padding(
+                                                  padding: EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: Iconify(
+                                                    Zondicons.cheveron_down,
+                                                  ),
+                                                ),
+                                                showClearIcon: false,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ),
+                                              itemSeparator: const Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                ),
+                                                child: Divider(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
@@ -970,6 +1442,133 @@ class _SupplierScreenState extends State<SupplierScreen>
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
+                        AnimatedContainer(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: hexToColor('#E1E1E1'),
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                          ),
+                          duration: const Duration(milliseconds: 100),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 5,
+                                  ),
+                                  child: Image.asset(
+                                    ImageAssets.raskop,
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 5,
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: AnimatedContainer(
+                                  duration: const Duration(
+                                    milliseconds: 100,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: hexToColor('#E1E1E1'),
+                                    ),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(30),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        flex: 2,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
+                                          child: TextFormField(
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                            decoration: InputDecoration(
+                                              filled: false,
+                                              border: InputBorder.none,
+                                              hintText: 'Temukan...',
+                                              hintStyle: TextStyle(
+                                                color: Colors.black
+                                                    .withOpacity(0.3),
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        flex: 3,
+                                        child: MultiDropdown<String>(
+                                          items: advSearchOptions,
+                                          fieldDecoration:
+                                              const FieldDecoration(
+                                            border: OutlineInputBorder(
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            hintText: '',
+                                            suffixIcon: Icon(
+                                              Icons.filter_list_alt,
+                                            ),
+                                            animateSuffixIcon: false,
+                                            backgroundColor: Colors.transparent,
+                                            borderRadius: 30,
+                                          ),
+                                          dropdownItemDecoration:
+                                              DropdownItemDecoration(
+                                            selectedIcon: Icon(
+                                              Icons.check_box,
+                                              color: hexToColor(
+                                                '#0C9D61',
+                                              ),
+                                            ),
+                                          ),
+                                          dropdownDecoration:
+                                              const DropdownDecoration(
+                                            elevation: 3,
+                                          ),
+                                          chipDecoration: ChipDecoration(
+                                            wrap: false,
+                                            backgroundColor: hexToColor(
+                                              '#E1E1E1',
+                                            ),
+                                            labelStyle: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -1422,6 +2021,78 @@ class _SupplierScreenState extends State<SupplierScreen>
                         height: 10.h,
                       ),
                       Text(
+                        'Tipe',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        initialValue: 'Buah',
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
+                      ),
+                      Text(
+                        'Harga',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        initialValue: NumberFormat.simpleCurrency(
+                          locale: 'id-ID',
+                          name: 'Rp',
+                          decimalDigits: 2,
+                        ).format(80000),
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
+                      ),
+                      Text(
                         'Unit',
                         style: TextStyle(
                           color: Colors.white,
@@ -1474,7 +2145,11 @@ class _SupplierScreenState extends State<SupplierScreen>
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Rp15.000,00',
+                        initialValue: NumberFormat.simpleCurrency(
+                          locale: 'id-ID',
+                          name: 'Rp',
+                          decimalDigits: 2,
+                        ).format(15000),
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -1606,11 +2281,75 @@ class _SupplierScreenState extends State<SupplierScreen>
                                 TextInputType.phone,
                                 12.sp,
                               ),
-                              _buildDropdownField(
-                                'Tipe',
-                                'Pilih tipe yang diinginkan',
-                                null,
-                                12.sp,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tipe',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 5.h,
+                                    ),
+                                    MultiDropdown(
+                                      controller: typePhoneCreateController,
+                                      singleSelect: true,
+                                      items: productType,
+                                      chipDecoration: ChipDecoration(
+                                        backgroundColor: hexToColor(
+                                          '#E1E1E1',
+                                        ),
+                                        runSpacing: 2,
+                                        spacing: 10,
+                                      ),
+                                      fieldDecoration: FieldDecoration(
+                                        backgroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 12,
+                                        ),
+                                        hintText: 'Pilih tipe yang diinginkan',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14.sp,
+                                          overflow: TextOverflow.ellipsis,
+                                          color: Colors.black.withOpacity(0.3),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        suffixIcon: const Padding(
+                                          padding: EdgeInsets.all(
+                                            12,
+                                          ),
+                                          child: Iconify(
+                                            Zondicons.cheveron_down,
+                                          ),
+                                        ),
+                                        showClearIcon: false,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      itemSeparator: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Divider(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               _buildTextField(
                                 'Harga',
@@ -1619,12 +2358,75 @@ class _SupplierScreenState extends State<SupplierScreen>
                                 TextInputType.number,
                                 12.sp,
                               ),
-                              _buildTextField(
-                                'Unit',
-                                'Masukkan jenis unit',
-                                unit,
-                                TextInputType.text,
-                                12.sp,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Unit',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 5.h,
+                                    ),
+                                    MultiDropdown(
+                                      controller: unitPhoneCreateController,
+                                      singleSelect: true,
+                                      items: productUnit,
+                                      chipDecoration: ChipDecoration(
+                                        backgroundColor: hexToColor(
+                                          '#E1E1E1',
+                                        ),
+                                        runSpacing: 2,
+                                        spacing: 10,
+                                      ),
+                                      fieldDecoration: FieldDecoration(
+                                        backgroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 12,
+                                        ),
+                                        hintText: 'Pilih unit satuan barang',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14.sp,
+                                          overflow: TextOverflow.ellipsis,
+                                          color: Colors.black.withOpacity(0.3),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        suffixIcon: const Padding(
+                                          padding: EdgeInsets.all(
+                                            12,
+                                          ),
+                                          child: Iconify(
+                                            Zondicons.cheveron_down,
+                                          ),
+                                        ),
+                                        showClearIcon: false,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      itemSeparator: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Divider(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               _buildTextField(
                                 'Biaya Pengiriman',
@@ -1727,11 +2529,75 @@ class _SupplierScreenState extends State<SupplierScreen>
                                 TextInputType.phone,
                                 12.sp,
                               ),
-                              _buildDropdownField(
-                                'Tipe',
-                                'Pilih tipe yang diinginkan',
-                                tipe,
-                                12.sp,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tipe',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 5.h,
+                                    ),
+                                    MultiDropdown(
+                                      controller: typePhoneEditController,
+                                      singleSelect: true,
+                                      items: productType,
+                                      chipDecoration: ChipDecoration(
+                                        backgroundColor: hexToColor(
+                                          '#E1E1E1',
+                                        ),
+                                        runSpacing: 2,
+                                        spacing: 10,
+                                      ),
+                                      fieldDecoration: FieldDecoration(
+                                        backgroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 12,
+                                        ),
+                                        hintText: 'Pilih tipe yang diinginkan',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14.sp,
+                                          overflow: TextOverflow.ellipsis,
+                                          color: Colors.black.withOpacity(0.3),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        suffixIcon: const Padding(
+                                          padding: EdgeInsets.all(
+                                            12,
+                                          ),
+                                          child: Iconify(
+                                            Zondicons.cheveron_down,
+                                          ),
+                                        ),
+                                        showClearIcon: false,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      itemSeparator: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Divider(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               _buildTextField(
                                 'Harga',
@@ -1740,12 +2606,75 @@ class _SupplierScreenState extends State<SupplierScreen>
                                 TextInputType.number,
                                 12.sp,
                               ),
-                              _buildTextField(
-                                'Unit',
-                                'Masukkan jenis unit',
-                                unit,
-                                TextInputType.text,
-                                12.sp,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Unit',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 5.h,
+                                    ),
+                                    MultiDropdown(
+                                      controller: unitPhoneEditController,
+                                      singleSelect: true,
+                                      items: productUnit,
+                                      chipDecoration: ChipDecoration(
+                                        backgroundColor: hexToColor(
+                                          '#E1E1E1',
+                                        ),
+                                        runSpacing: 2,
+                                        spacing: 10,
+                                      ),
+                                      fieldDecoration: FieldDecoration(
+                                        backgroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                          horizontal: 12,
+                                        ),
+                                        hintText: 'Pilih unit satuan barang',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14.sp,
+                                          overflow: TextOverflow.ellipsis,
+                                          color: Colors.black.withOpacity(0.3),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        suffixIcon: const Padding(
+                                          padding: EdgeInsets.all(
+                                            12,
+                                          ),
+                                          child: Iconify(
+                                            Zondicons.cheveron_down,
+                                          ),
+                                        ),
+                                        showClearIcon: false,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      itemSeparator: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Divider(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               _buildTextField(
                                 'Biaya Pengiriman',
@@ -1865,99 +2794,4 @@ Widget _buildTextField(
       ],
     ),
   );
-}
-
-Widget _buildDropdownField(
-  String label,
-  String hint,
-  String? value,
-  double labelSize,
-) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: labelSize,
-          ),
-        ),
-        SizedBox(
-          height: 5.h,
-        ),
-        DropdownButtonFormField<String>(
-          value: value,
-          menuMaxHeight: 300.h,
-          icon: const Iconify(Zondicons.cheveron_down),
-          hint: Center(
-            child: Text(
-              hint,
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.3),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          decoration: const InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-          ),
-          items: _buildDropdownItemsWithDividers(),
-          onChanged: (value) {
-            // Tambahkan logika dropdown di sini
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-List<DropdownMenuItem<String>> _buildDropdownItemsWithDividers() {
-  final options = <String>['Syrup', 'Beans', 'Buah'];
-  final items = <DropdownMenuItem<String>>[];
-
-  for (var i = 0; i < options.length; i++) {
-    items.add(
-      DropdownMenuItem(
-        value: options[i],
-        child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  options[i],
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
-                ),
-                if (i < options.length - 1)
-                  SizedBox(
-                    height: 5.h,
-                  ),
-                if (i < options.length - 1)
-                  const Divider(
-                    thickness: 1,
-                    color: Colors.grey,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  return items;
 }
