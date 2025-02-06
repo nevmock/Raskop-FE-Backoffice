@@ -1,5 +1,8 @@
+// UNUSED-CODE
+// SAFE TO DELETE?
+
 /// Failure Class for returning error in development
-class Failure {
+class Failure implements Exception {
   /// Failure Constructor
   Failure({required this.message, this.stackTrace = StackTrace.empty});
 
