@@ -4,5 +4,5 @@ class BasePaths {
   static const baseImagePath = 'assets/img';
 
   /// Base API Url
-  static const baseAPIURL = '';
+  static const baseAPIURL = 'raskop-be-production.up.railway.app';
 }
