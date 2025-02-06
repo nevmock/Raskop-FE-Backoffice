@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
@@ -10,11 +11,13 @@ import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
+import 'package:raskop_fe_backoffice/src/supplier/application/supplier_controller.dart';
+import 'package:raskop_fe_backoffice/src/supplier/domain/entities/supplier_entity.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
 
 ///
-class SupplierScreen extends StatefulWidget {
+class SupplierScreen extends ConsumerStatefulWidget {
   ///
   const SupplierScreen({super.key});
 
@@ -22,10 +25,26 @@ class SupplierScreen extends StatefulWidget {
   static const String route = 'supplier';
 
   @override
-  State<SupplierScreen> createState() => _SupplierScreenState();
+  ConsumerState<SupplierScreen> createState() => _SupplierScreenState();
 }
 
-class _SupplierScreenState extends State<SupplierScreen> {
+class _SupplierScreenState extends ConsumerState<SupplierScreen> {
+  AsyncValue<List<SupplierEntity>> get supplier =>
+      ref.watch(supplierControllerProvider);
+
+  SupplierEntity detailSupplier = const SupplierEntity(
+    id: '',
+    name: '',
+    contact: '',
+    type: '',
+    price: 0,
+    unit: '',
+    shippingFee: 0,
+    address: '',
+    productName: '',
+    isActive: false,
+  );
+
   bool isDetailPanelVisible = false;
   bool isCreatePanelVisible = false;
   bool isEditPanelVisible = false;
@@ -36,6 +55,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
   TextEditingController biaya = TextEditingController();
   TextEditingController alamat = TextEditingController();
   TextEditingController produk = TextEditingController();
+  double price = 0;
+  double fee = 0;
   List<DropdownItem<String>> advSearchOptions = [
     DropdownItem(label: 'Nama', value: 'reserveBy'),
     DropdownItem(label: 'Kontak', value: 'phoneNumber'),
@@ -67,9 +88,41 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
-    void toggleDetailPanel() {
+    void openDetailPanel({required SupplierEntity detailSupplier}) {
       setState(() {
-        isDetailPanelVisible = !isDetailPanelVisible;
+        nama.value = TextEditingValue(text: detailSupplier.name);
+        kontak.value = TextEditingValue(text: detailSupplier.contact);
+        harga.value = TextEditingValue(
+          text: NumberFormat.simpleCurrency(
+            locale: 'id-ID',
+            name: 'Rp',
+            decimalDigits: 2,
+          ).format(detailSupplier.price),
+        );
+        unit.value = TextEditingValue(text: detailSupplier.unit);
+        biaya.value = TextEditingValue(
+          text: NumberFormat.simpleCurrency(
+            locale: 'id-ID',
+            name: 'Rp',
+            decimalDigits: 2,
+          ).format(detailSupplier.shippingFee),
+        );
+        alamat.value = TextEditingValue(text: detailSupplier.address);
+        produk.value = TextEditingValue(text: detailSupplier.productName);
+        isDetailPanelVisible = true;
+      });
+    }
+
+    void closeDetailPanel() {
+      setState(() {
+        nama.clear();
+        kontak.clear();
+        harga.clear();
+        unit.clear();
+        biaya.clear();
+        alamat.clear();
+        produk.clear();
+        isDetailPanelVisible = false;
       });
     }
 
@@ -426,245 +479,301 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 7.h),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: hexToColor('#E1E1E1'),
-                                ),
-                                child: Slidable(
-                                  startActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: openEditPanel,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topLeft: Radius.circular(18),
-                                                  bottomLeft:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
+                          child: supplier.when(
+                            data: (data) => ListView(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              children: data
+                                  .map(
+                                    (e) => Container(
+                                      margin: EdgeInsets.only(bottom: 7.h),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(18),
+                                        color: hexToColor('#E1E1E1'),
+                                      ),
+                                      child: Slidable(
+                                        startActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: openEditPanel,
                                                   child: Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    height:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                      12,
-                                                    ),
                                                     decoration: BoxDecoration(
                                                       borderRadius:
                                                           const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(18),
+                                                        bottomLeft:
+                                                            Radius.circular(18),
                                                       ),
                                                       color:
-                                                          hexToColor('#FFAD0D'),
+                                                          hexToColor('#E1E1E1'),
                                                     ),
-                                                    child: const Iconify(
-                                                      Zondicons.edit_pencil,
-                                                      color: Colors.white,
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          width: MediaQuery.of(
+                                                                context,
+                                                              ).size.width *
+                                                              0.05,
+                                                          height: MediaQuery.of(
+                                                                context,
+                                                              ).size.width *
+                                                              0.05,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(
+                                                            12,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
+                                                              ),
+                                                            ),
+                                                            color: hexToColor(
+                                                              '#FFAD0D',
+                                                            ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Zondicons
+                                                                .edit_pencil,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  endActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topRight: Radius.circular(18),
-                                                  bottomRight:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: Center(
-                                                child: Container(
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  height: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  padding:
-                                                      const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        const BorderRadius.all(
-                                                      Radius.circular(30),
+                                        endActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {},
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(18),
+                                                        bottomRight:
+                                                            Radius.circular(18),
+                                                      ),
+                                                      color:
+                                                          hexToColor('#E1E1E1'),
                                                     ),
-                                                    color:
-                                                        hexToColor('#F64C4C'),
-                                                  ),
-                                                  child: const Iconify(
-                                                    Eva.trash_fill,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(18),
-                                      color: Colors.white,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: Text(
-                                            '00001',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Christine Brooks',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            '+621234567890',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Center(
-                                            child: Text(
-                                              'BUAH',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: hexToColor('#202224'),
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Center(
-                                            child: Text(
-                                              NumberFormat.simpleCurrency(
-                                                locale: 'id-ID',
-                                                name: 'Rp',
-                                                decimalDigits: 2,
-                                              ).format(80000),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: hexToColor('#202224'),
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 10.h,
-                                              ),
-                                              child: TextButton(
-                                                onPressed: toggleDetailPanel,
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      hexToColor('#f6e9e0'),
-                                                  minimumSize: const Size(
-                                                    double.infinity,
-                                                    40,
+                                                    child: Center(
+                                                      child: Container(
+                                                        width: MediaQuery.of(
+                                                              context,
+                                                            ).size.width *
+                                                            0.05,
+                                                        height: MediaQuery.of(
+                                                              context,
+                                                            ).size.width *
+                                                            0.05,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              const BorderRadius
+                                                                  .all(
+                                                            Radius.circular(30),
+                                                          ),
+                                                          color: hexToColor(
+                                                            '#F64C4C',
+                                                          ),
+                                                        ),
+                                                        child: const Iconify(
+                                                          Eva.trash_fill,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border:
+                                                Border.all(color: Colors.grey),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: Colors.white,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 8.h,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                flex: 2,
                                                 child: Text(
-                                                  'Lihat',
+                                                  e.id,
                                                   style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w500,
                                                     color:
-                                                        hexToColor('#E38D5D'),
+                                                        hexToColor('#202224'),
                                                     fontSize: 14,
                                                   ),
                                                 ),
                                               ),
-                                            ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.name,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.contact,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Center(
+                                                  child: Text(
+                                                    e.type,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Center(
+                                                  child: Text(
+                                                    NumberFormat.simpleCurrency(
+                                                      locale: 'id-ID',
+                                                      name: 'Rp',
+                                                      decimalDigits: 2,
+                                                    ).format(e.price),
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 10.h,
+                                                    ),
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        openDetailPanel(
+                                                          detailSupplier:
+                                                              SupplierEntity(
+                                                            id: e.id,
+                                                            name: e.name,
+                                                            contact: e.contact,
+                                                            type: e.type,
+                                                            price: e.price,
+                                                            unit: e.unit,
+                                                            shippingFee:
+                                                                e.shippingFee,
+                                                            address: e.address,
+                                                            productName:
+                                                                e.productName,
+                                                            isActive:
+                                                                e.isActive,
+                                                          ),
+                                                        );
+                                                      },
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                          '#f6e9e0',
+                                                        ),
+                                                        minimumSize: const Size(
+                                                          double.infinity,
+                                                          40,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Lihat',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: hexToColor(
+                                                            '#E38D5D',
+                                                          ),
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const Expanded(
+                                                flex: 2,
+                                                child: Center(
+                                                  child: CustomSwitch(),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const Expanded(
-                                          flex: 2,
-                                          child: Center(
-                                            child: CustomSwitch(),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              );
-                            },
+                                  )
+                                  .toList(),
+                            ),
+                            loading: () =>
+                                const CircularProgressIndicator.adaptive(),
+                            error: (error, stackTrace) => Center(
+                              child: Text(error.toString()),
+                            ),
                           ),
                         ),
                       ],
@@ -687,7 +796,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
@@ -714,7 +823,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Liter',
+                        controller: unit,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -748,11 +857,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: NumberFormat.simpleCurrency(
-                          locale: 'id-ID',
-                          name: 'Rp',
-                          decimalDigits: 2,
-                        ).format(15000),
+                        controller: biaya,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -787,8 +892,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           overflow: TextOverflow.fade,
                         ),
                         maxLines: 3,
-                        initialValue:
-                            'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
+                        controller: alamat,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -822,7 +926,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Buah Naga',
+                        controller: produk,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -1888,7 +1992,23 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                                 horizontal: 5.h,
                                               ),
                                               child: TextButton(
-                                                onPressed: toggleDetailPanel,
+                                                onPressed: () {
+                                                  openDetailPanel(
+                                                    detailSupplier:
+                                                        const SupplierEntity(
+                                                      id: '',
+                                                      name: '',
+                                                      contact: '',
+                                                      type: '',
+                                                      price: 0,
+                                                      unit: '',
+                                                      shippingFee: 0,
+                                                      address: '',
+                                                      productName: '',
+                                                      isActive: false,
+                                                    ),
+                                                  );
+                                                },
                                                 style: TextButton.styleFrom(
                                                   backgroundColor:
                                                       hexToColor('#f6e9e0'),
@@ -1944,7 +2064,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
