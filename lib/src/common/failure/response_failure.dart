@@ -22,6 +22,9 @@ class ResponseFailure implements Exception {
   const factory ResponseFailure.internalServerError() =
       _InternalServerErrorResponseFailure;
 
+  /// 404 Error Response Code
+  const factory ResponseFailure.notFound() = _NotFoundResponseFailure;
+
   /// Get the error message for specified failure
   String get error => this is _UnprocessableEntityResponseFailure
       ? (this as _UnprocessableEntityResponseFailure).message
