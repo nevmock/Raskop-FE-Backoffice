@@ -76,14 +76,21 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   ];
 
   List<DropdownItem<String>> productType = [
-    DropdownItem(label: 'SYRUPE', value: 'SYRUPE'),
-    DropdownItem(label: 'Beans', value: 'Beans'),
+    DropdownItem(label: 'Sirup', value: 'SYRUPE'),
+    DropdownItem(label: 'Kacang/Biji Kopi', value: 'BEANS'),
+    DropdownItem(label: 'Bubuk/Powder', value: 'POWDER'),
+    DropdownItem(label: 'Cup', value: 'CUP'),
+    DropdownItem(label: 'Kudapan/Snack', value: 'SNACK'),
+    DropdownItem(label: 'Lainnya', value: 'OTHER_INGREDIENT'),
   ];
 
   List<DropdownItem<String>> productUnit = [
-    DropdownItem(label: 'KG', value: 'KG'),
-    DropdownItem(label: 'Pcs', value: 'pcs'),
-    DropdownItem(label: 'Liter', value: 'liter'),
+    DropdownItem(label: 'Kilogram', value: 'KG'),
+    DropdownItem(label: 'Piece', value: 'PIECE'),
+    DropdownItem(label: 'Liter', value: 'LITER'),
+    DropdownItem(label: 'Gram', value: 'GRAM'),
+    DropdownItem(label: 'Pack/Box', value: 'BOX'),
+    DropdownItem(label: 'Ball', value: 'BALL'),
   ];
 
   final typeTabletCreateController = MultiSelectController<String>();
@@ -181,13 +188,13 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         alamat.value = TextEditingValue(text: request.address);
         produk.value = TextEditingValue(text: request.productName);
         typeTabletEditController
-            .selectWhere((item) => item.label == request.type);
+            .selectWhere((item) => item.value == request.type);
         typePhoneEditController
-            .selectWhere((item) => item.label == request.type);
+            .selectWhere((item) => item.value == request.type);
         unitTabletEditController
-            .selectWhere((item) => item.label == request.unit);
+            .selectWhere((item) => item.value == request.unit);
         unitPhoneEditController
-            .selectWhere((item) => item.label == request.unit);
+            .selectWhere((item) => item.value == request.unit);
         id = request.id;
         switchStatusForEdit = request.isActive;
       });
