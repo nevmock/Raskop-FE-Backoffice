@@ -769,6 +769,10 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                         .pop(
                                                                       context,
                                                                     );
+                                                                    FocusScope
+                                                                        .of(
+                                                                      context,
+                                                                    ).unfocus();
                                                                   });
                                                                 }
                                                               },
@@ -805,6 +809,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                             .pop(
                                                                           context,
                                                                         );
+                                                                        FocusScope.of(context)
+                                                                            .unfocus();
                                                                       });
                                                                     }
                                                                   },
