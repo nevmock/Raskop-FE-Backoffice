@@ -10,11 +10,24 @@ abstract class SupplierRepositoryInterface {
   FutureEither<SupplierEntity> getSupplierDataByID({required String id});
 
   ///
-  FutureEitherVoid createNewSupplier();
+  FutureEitherVoid createNewSupplier({required SupplierEntity request});
 
   ///
-  FutureEitherVoid updateCurrentSupplier();
+  FutureEitherVoid updateCurrentSupplier({
+    required SupplierEntity request,
+    required String id,
+  });
 
   ///
-  FutureEitherVoid deleteSupplier();
+  FutureEitherVoid updateSupplierStatus({
+    required SupplierEntity request,
+    required String id,
+    required bool status,
+  });
+
+  ///
+  FutureEitherVoid deleteSupplier({
+    required String id,
+    required bool deletePermanent,
+  });
 }

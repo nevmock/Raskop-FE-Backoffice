@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'supplier_entity.freezed.dart';
@@ -11,7 +13,6 @@ class SupplierEntity with _$SupplierEntity {
 
   /// fields
   const factory SupplierEntity({
-    required String id,
     required String name,
     required String contact,
     required String type,
@@ -20,7 +21,9 @@ class SupplierEntity with _$SupplierEntity {
     required double shippingFee,
     required String address,
     required String productName,
-    required bool isActive,
+    bool? isActive,
+    @JsonKey(includeIfNull: false) String? id,
+    @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _SupplierEntity;
 
   /// from json mapper
