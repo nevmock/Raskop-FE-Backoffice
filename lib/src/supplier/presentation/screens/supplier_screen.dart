@@ -88,6 +88,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     DropdownItem(label: 'Kilogram', value: 'KG'),
     DropdownItem(label: 'Piece', value: 'PIECE'),
     DropdownItem(label: 'Liter', value: 'LITER'),
+    DropdownItem(label: 'MiliLiter/ML', value: 'ML'),
     DropdownItem(label: 'Gram', value: 'GRAM'),
     DropdownItem(label: 'Pack/Box', value: 'BOX'),
     DropdownItem(label: 'Ball', value: 'BALL'),
