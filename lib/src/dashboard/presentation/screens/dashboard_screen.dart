@@ -31,27 +31,150 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 470) {
-              return Column(
+        body: SingleChildScrollView(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 470) {
+                return Column(
+                  children: [
+                    _buildDashboardFilter(constraints.maxWidth),
+                    _buildDashboardMenu(constraints, context)
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    _buildDashboardFilter(constraints.maxWidth),
+                    _buildDashboardMenu(constraints, context),
+                  ],
+                );
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Container _buildDashboardMenu(
+    BoxConstraints constraints,
+    BuildContext context,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        gradient: LinearGradient(
+          colors: [
+            hexToColor('#1F4940').withOpacity(.7),
+            hexToColor('#1F4940').withOpacity(.4),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Menu Favorit',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.star_rounded,
+                color: Colors.amberAccent,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (final int i in [1, 2, 3]) ...[
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(16),
+                ),
+              ),
+              child: Stack(
                 children: [
-                  _buildDashboardFilter(constraints.maxWidth),
-                  Row(),
-                ],
-              );
-            } else {
-              return Column(
-                children: [
-                  _buildDashboardFilter(constraints.maxWidth),
-                  const Row(
-                    children: [],
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 16,
+                      children: [
+                        SizedBox(
+                          width: constraints.maxWidth > 470
+                              ? MediaQuery.of(context).size.width * 0.2
+                              : MediaQuery.of(context).size.width * 0.3,
+                          height: MediaQuery.of(context).size.height * 0.14,
+                          child: const Placeholder(
+                            child: Center(
+                              child: Text(
+                                'INI FOTO MAKANAN',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Steak With Paprica',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                'Food',
+                                style: TextStyle(
+                                  color: hexToColor('#CACACA'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    right: 10,
+                    bottom: 10,
+                    child: Text(
+                      'Terjual ${i}5 pcs',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -5,
+                    bottom: -10,
+                    child: Text(
+                      i.toString(),
+                      style: TextStyle(
+                        fontSize: 120,
+                        height: 1,
+                        color: hexToColor('#1F4940').withOpacity(.25),
+                      ),
+                    ),
                   ),
                 ],
-              );
-            }
-          },
-        ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ],
       ),
     );
   }
@@ -197,8 +320,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const Duration(days: 30),
                         ),
                       );
-                      print('start: ${date?.start.toIso8601String()}');
-                      print('end: ${date?.end.toIso8601String()}');
                       if (date?.start != null || date?.end != null) {
                         setState(() {
                           filter = 'Tanggal';
