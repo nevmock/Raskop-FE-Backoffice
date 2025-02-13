@@ -13,6 +13,7 @@ import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/application/supplier_controller.dart';
 import 'package:raskop_fe_backoffice/src/supplier/domain/entities/supplier_entity.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
@@ -1078,10 +1079,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                               );
                             },
                             loading: () => const Center(
-                              child: CircularProgressIndicator.adaptive(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.black),
-                              ),
+                              child: CustomLoadingIndicator(),
                             ),
                             error: (error, stackTrace) => Center(
                               child: Text(
@@ -2694,10 +2692,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                               ),
                             ),
                             loading: () => const Center(
-                              child: CircularProgressIndicator.adaptive(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.black),
-                              ),
+                              child: CustomLoadingIndicator(),
                             ),
                           ),
                         ),
