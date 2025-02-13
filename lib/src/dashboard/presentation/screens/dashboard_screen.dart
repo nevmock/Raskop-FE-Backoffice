@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
@@ -23,6 +24,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String filter = 'Hari ini';
 
+  List<Color> gradientColors = [
+    Colors.red,
+    Colors.blue,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -34,18 +40,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
         body: SingleChildScrollView(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth > 470) {
+              if (constraints.maxWidth > 700) {
                 return Column(
                   children: [
                     _buildDashboardFilter(constraints.maxWidth),
-                    _buildDashboardMenu(constraints, context)
+                    Row(
+                      spacing: 24,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          flex: 3,
+                          child: Column(
+                            spacing: 24,
+                            children: [
+                              _buildDashboardChart(),
+                              _buildDashboardChart(),
+                              _buildDashboardChart(),
+                            ],
+                          ),
+                        ),
+                        Flexible(
+                          flex: 2,
+                          child: _buildDashboardMenu(constraints, context),
+                        ),
+                      ],
+                    ),
                   ],
                 );
               } else {
                 return Column(
+                  spacing: 24,
                   children: [
                     _buildDashboardFilter(constraints.maxWidth),
                     _buildDashboardMenu(constraints, context),
+                    _buildDashboardChart(),
+                    _buildDashboardChart(),
+                    _buildDashboardChart(),
+                    const SizedBox(height: 24)
                   ],
                 );
               }
@@ -54,6 +85,161 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  Container _buildDashboardChart() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(
+          Radius.circular(16),
+        ),
+        gradient: LinearGradient(
+          colors: [
+            hexToColor('#1F4940').withOpacity(.7),
+            hexToColor('#1F4940').withOpacity(.4),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Penjualan',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          AspectRatio(
+            aspectRatio: 1.70,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  horizontalInterval: 1,
+                  verticalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    return const FlLine(
+                      color: Colors.black,
+                      strokeWidth: .5,
+                      dashArray: [8],
+                    );
+                  },
+                  getDrawingVerticalLine: (value) {
+                    return const FlLine(
+                      color: Colors.transparent,
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(),
+                  topTitles: const AxisTitles(),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: 1,
+                      getTitlesWidget: bottomTitleWidgets,
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      getTitlesWidget: leftTitleWidgets,
+                      reservedSize: 42,
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: 11,
+                minY: 0,
+                maxY: 6,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: const [
+                      FlSpot(0, 3),
+                      FlSpot(2.6, 2),
+                      FlSpot(4.9, 5),
+                      FlSpot(6.8, 3.1),
+                      FlSpot(8, 4),
+                      FlSpot(9.5, 3),
+                      FlSpot(11, 4),
+                    ],
+                    isCurved: true,
+                    color: Colors.white,
+                    barWidth: 5,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(
+                      show: false,
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          hexToColor('#FAFAFA'),
+                          hexToColor('#CACACA'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget bottomTitleWidgets(double value, TitleMeta meta) {
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 14,
+      color: Colors.white,
+    );
+    Widget text;
+    switch (value.toInt()) {
+      case 2:
+        text = const Text('MAR', style: style);
+      case 5:
+        text = const Text('JUN', style: style);
+      case 8:
+        text = const Text('SEP', style: style);
+      default:
+        text = const Text('', style: style);
+    }
+
+    return SideTitleWidget(
+      meta: meta,
+      child: text,
+    );
+  }
+
+  Widget leftTitleWidgets(double value, TitleMeta meta) {
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 14,
+      color: Colors.white,
+    );
+    String text;
+    switch (value.toInt()) {
+      case 1:
+        text = '10K';
+      case 3:
+        text = '30k';
+      case 5:
+        text = '50k';
+      default:
+        return Container();
+    }
+
+    return Text(text, style: style, textAlign: TextAlign.left);
   }
 
   Container _buildDashboardMenu(
@@ -109,12 +295,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 16,
                       children: [
-                        SizedBox(
-                          width: constraints.maxWidth > 470
-                              ? MediaQuery.of(context).size.width * 0.2
-                              : MediaQuery.of(context).size.width * 0.3,
-                          height: MediaQuery.of(context).size.height * 0.14,
-                          child: const Placeholder(
+                        const SizedBox(
+                          width: 125,
+                          height: 125,
+                          child: Placeholder(
                             child: Center(
                               child: Text(
                                 'INI FOTO MAKANAN',
@@ -203,7 +387,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Wrap(
         alignment:
-            maxWidth > 470 ? WrapAlignment.spaceBetween : WrapAlignment.center,
+            maxWidth > 500 ? WrapAlignment.spaceBetween : WrapAlignment.center,
         children: [
           const Row(), // Stretching Widget to max width
           Image.asset(
