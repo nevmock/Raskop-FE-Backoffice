@@ -7,6 +7,8 @@ import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/menu/application/menu_controller.dart';
+import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
@@ -22,6 +24,22 @@ class MenuScreen extends ConsumerStatefulWidget {
 
 class _MenuScreenState extends ConsumerState<MenuScreen>
     with SingleTickerProviderStateMixin {
+  AsyncValue<List<MenuEntity>> get menu => ref.watch(menuControllerProvider);
+
+  MenuEntity detailMenu = const MenuEntity(
+    id: '',
+    name: '',
+    category: '',
+    description: '',
+    imageUri: '',
+    price: 0,
+    qty: 0,
+    isActive: false,
+  );
+
+  final createKey = GlobalKey<FormState>();
+  final editKey = GlobalKey<FormState>();
+
   bool isDetailPanelVisible = false;
   bool isCreatePanelVisible = false;
   bool isEditPanelVisible = false;
