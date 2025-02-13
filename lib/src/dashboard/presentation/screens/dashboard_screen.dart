@@ -190,9 +190,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onPressed: () async {
-                      setState(() {
-                        filter = 'Tanggal';
-                      });
+                      final date = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2025),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 30),
+                        ),
+                      );
+                      print('start: ${date?.start.toIso8601String()}');
+                      print('end: ${date?.end.toIso8601String()}');
+                      if (date?.start != null || date?.end != null) {
+                        setState(() {
+                          filter = 'Tanggal';
+                        });
+                      }
                     },
                     child: Center(
                       child: Row(
