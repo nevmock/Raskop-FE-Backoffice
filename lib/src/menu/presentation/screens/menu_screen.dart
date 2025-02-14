@@ -2515,6 +2515,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                       Padding(
                         padding: const EdgeInsets.all(0),
                         child: Form(
+                          key: createKey,
                           child: Column(
                             children: [
                               _buildTextField(
@@ -2568,39 +2569,34 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         child: ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(16),
-                                          child: Image.network(
-                                            'https://via.placeholder.com/600x400',
-                                            fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (BuildContext context,
-                                                    Widget child,
-                                                    ImageChunkEvent?
-                                                        loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  value: loadingProgress
-                                                              .expectedTotalBytes !=
-                                                          null
-                                                      ? loadingProgress
-                                                              .cumulativeBytesLoaded /
-                                                          (loadingProgress
-                                                                  .expectedTotalBytes ??
-                                                              1)
-                                                      : null,
-                                                ),
-                                              );
-                                            },
-                                            errorBuilder: (BuildContext context,
-                                                Object error,
-                                                StackTrace? stackTrace) {
-                                              return Center(
+                                          child: imageFile == null
+                                              ? Center(
                                                   child: Text(
-                                                      'Failed to load image'));
-                                            },
-                                          ),
+                                                      'Gambar Belum Diunggah'))
+                                              : FutureBuilder<File>(
+                                                  future: Future.value(
+                                                      File(imageFile!)),
+                                                  builder: (context, snapshot) {
+                                                    if (snapshot
+                                                            .connectionState ==
+                                                        ConnectionState
+                                                            .waiting) {
+                                                      return Center(
+                                                          child:
+                                                              CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                    } else if (snapshot
+                                                        .hasError) {
+                                                      return Center(
+                                                          child: Text(
+                                                              'Failed to load image')); // Tampilkan pesan kesalahan
+                                                    } else {
+                                                      return Image.file(
+                                                        snapshot.data!,
+                                                        fit: BoxFit.cover,
+                                                      );
+                                                    }
+                                                  },
+                                                ),
                                         ),
                                       ),
                                       SizedBox(
@@ -2611,7 +2607,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Mocktail.jpg',
+                                            imageFile != null
+                                                ? getFileName(imageFile)
+                                                : 'Unknown.jpg',
                                             style: TextStyle(
                                               fontFamily: 'Inter',
                                               fontWeight: FontWeight.w500,
@@ -2622,7 +2620,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             width: 32,
                                             height: 32,
                                             child: IconButton(
-                                              onPressed: () {},
+                                              onPressed: pickImage,
                                               icon: Icon(
                                                 Icons.file_upload_outlined,
                                                 color: hexToColor('#1F4940'),
@@ -2669,17 +2667,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                         qty: double.parse(
                                                           jumlah.text,
                                                         ),
-                                                        imageUri: "",
                                                         category: kategori.text,
                                                         description:
                                                             deskripsi.text,
                                                         isActive: false,
                                                       ),
+                                                      imageFile: imageFile,
                                                     );
                                                 closeCreatePanel();
                                               }
                                             } catch (e) {
                                               //show snackbar or anything else
+                                              print("Error occurred: $e");
                                             } finally {
                                               setState(() {
                                                 isLoading = false;

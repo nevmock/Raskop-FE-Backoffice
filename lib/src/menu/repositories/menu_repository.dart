@@ -136,7 +136,6 @@ class MenuRepository implements MenuRepositoryInterface {
           await client.send(formData).timeout(Duration(seconds: 60));
       final jsonResponse = await http.Response.fromStream(response);
       final json = jsonDecode(jsonResponse.body) as Map<String, dynamic>;
-      print("Server response: $json");
 
       if (json['code'] == 201 ||
           json['status'] == 'CREATED' ||
@@ -224,6 +223,7 @@ class MenuRepository implements MenuRepositoryInterface {
       );
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       print(jsonEncode(request.copyWith(id: id, isActive: status).toJson()));
+      print(json);
       if (json['code'] == 201 ||
           json['status'] == 'CREATED' ||
           json['code'] == 200 ||
