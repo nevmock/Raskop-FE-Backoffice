@@ -216,18 +216,24 @@ class MenuRepository implements MenuRepositoryInterface {
     required bool status,
   }) async {
     try {
-      final response = await client.post(
-        Uri.https(url, endpoints),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(request.copyWith(id: id, isActive: status).toJson()),
-      );
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      print(jsonEncode(request.copyWith(id: id, isActive: status).toJson()));
-      print(json);
-      if (json['code'] == 201 ||
-          json['status'] == 'CREATED' ||
-          json['code'] == 200 ||
-          json['status'] == 'OK') {
+      final uri = Uri.https(url, endpoints);
+
+      final requestMultipart = http.MultipartRequest('POST', uri);
+
+      requestMultipart.fields['id'] = id;
+      requestMultipart.fields['name'] = request.name;
+      requestMultipart.fields['price'] = request.price.toString();
+      requestMultipart.fields['description'] = request.description;
+      requestMultipart.fields['category'] = request.category;
+      requestMultipart.fields['qty'] = request.qty.toString();
+      requestMultipart.fields['isActive'] = status.toString();
+
+      final response = await requestMultipart.send();
+
+      final responseBody = await http.Response.fromStream(response);
+      final json = jsonDecode(responseBody.body) as Map<String, dynamic>;
+
+      if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
       return left(const ResponseFailure.internalServerError());

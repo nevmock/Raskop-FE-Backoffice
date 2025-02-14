@@ -17,9 +17,9 @@ class MenuEntity with _$MenuEntity {
     required double price,
     required String description,
     required String category,
-    String? imageUri,
     required double qty,
     bool? isActive,
+    @JsonKey(includeIfNull: false) String? imageUri,
     @JsonKey(includeIfNull: false) String? id,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _MenuEntity;
