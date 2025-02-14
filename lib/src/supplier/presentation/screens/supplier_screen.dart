@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
@@ -64,10 +65,11 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   TextEditingController alamat = TextEditingController();
   TextEditingController produk = TextEditingController();
   TextEditingController search = TextEditingController();
+  TextEditingController idDetail = TextEditingController();
   double price = 0;
   double fee = 0;
-  String? id;
   bool? switchStatusForEdit;
+  String? id;
   List<DropdownItem<String>> advSearchOptions = [
     DropdownItem(label: 'Nama', value: 'name'),
     DropdownItem(label: 'Kontak', value: 'contact'),
@@ -82,7 +84,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     DropdownItem(label: 'Bubuk/Powder', value: 'POWDER'),
     DropdownItem(label: 'Cup', value: 'CUP'),
     DropdownItem(label: 'Kudapan/Snack', value: 'SNACK'),
-    DropdownItem(label: 'Lainnya', value: 'OTHER_INGREDIENT'),
+    DropdownItem(label: 'Lainnya', value: 'OTHER INGREDIENT'),
   ];
 
   List<DropdownItem<String>> productUnit = [
@@ -127,7 +129,11 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
             decimalDigits: 2,
           ).format(detailSupplier.price),
         );
-        unit.value = TextEditingValue(text: detailSupplier.unit);
+        unit.value = TextEditingValue(
+          text: productUnit
+              .firstWhere((e) => detailSupplier.unit == e.value)
+              .label,
+        );
         biaya.value = TextEditingValue(
           text: NumberFormat.simpleCurrency(
             locale: 'id-ID',
@@ -137,7 +143,12 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         );
         alamat.value = TextEditingValue(text: detailSupplier.address);
         produk.value = TextEditingValue(text: detailSupplier.productName);
-        tipe.value = TextEditingValue(text: detailSupplier.type);
+        tipe.value = TextEditingValue(
+          text: productType
+              .firstWhere((e) => detailSupplier.type == e.value)
+              .label,
+        );
+        idDetail.value = TextEditingValue(text: detailSupplier.id!);
         isDetailPanelVisible = true;
       });
     }
@@ -152,6 +163,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         alamat.clear();
         produk.clear();
         tipe.clear();
+        idDetail.clear();
         isDetailPanelVisible = false;
       });
     }
@@ -176,7 +188,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         typePhoneEditController.clearAll();
         unitPhoneEditController.clearAll();
         isCreatePanelVisible = false;
-        FocusScope.of(context).unfocus();
+        // FocusScope.of(context).unfocus();
       });
     }
 
@@ -217,26 +229,38 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         unitPhoneEditController.clearAll();
         id = null;
         switchStatusForEdit = null;
-        FocusScope.of(context).unfocus();
+        // FocusScope.of(context).unfocus();
       });
     }
 
     void onSearchPhone() {
       ref.read(supplierControllerProvider.notifier).fetchSuppliers(
-        search: search.text,
         advSearch: {
+          'withDeleted': false,
           for (final item in advSearchPhoneController.selectedItems)
-            item.value: search.text,
+            if (item.value == 'unit') ...{
+              for (final i in productUnit)
+                if (search.text.toLowerCase() == i.label.toLowerCase() ||
+                    search.text.toLowerCase() == i.value.toLowerCase())
+                  item.value: i.value,
+            } else
+              item.value: search.text,
         },
       );
     }
 
     void onSearchTablet() {
       ref.read(supplierControllerProvider.notifier).fetchSuppliers(
-        search: search.text,
         advSearch: {
+          'withDeleted': false,
           for (final item in advSearchTabletController.selectedItems)
-            item.value: search.text,
+            if (item.value == 'unit') ...{
+              for (final i in productUnit)
+                if (search.text.toLowerCase() == i.label.toLowerCase() ||
+                    search.text.toLowerCase() == i.value.toLowerCase())
+                  item.value: i.value,
+            } else
+              item.value: search.text,
         },
       );
     }
@@ -397,39 +421,6 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 20,
-                              ),
-                              Flexible(
-                                flex: 2,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: 20,
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {},
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: hexToColor('#1F4940'),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        'Pencarian Lanjutan',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                 ),
                               ),
@@ -767,10 +758,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   setState(() {
                                                                     isLoading =
                                                                         false;
-                                                                    Navigator
-                                                                        .pop(
-                                                                      context,
-                                                                    );
+                                                                    context
+                                                                        .pop();
                                                                     FocusScope
                                                                         .of(
                                                                       context,
@@ -778,47 +767,10 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   });
                                                                 }
                                                               },
-                                                        onDeletePermanent:
-                                                            isLoading
-                                                                ? () {}
-                                                                : () async {
-                                                                    setState(
-                                                                        () {
-                                                                      isLoading =
-                                                                          true;
-                                                                    });
-                                                                    try {
-                                                                      await ref
-                                                                          .read(
-                                                                            supplierControllerProvider.notifier,
-                                                                          )
-                                                                          .deleteData(
-                                                                            id: e.id!,
-                                                                            deletePermanent:
-                                                                                true,
-                                                                          );
-                                                                    } catch (e) {
-                                                                      // show snackbar or anything else
-                                                                      print(
-                                                                        'delete permanent failed: $e',
-                                                                      );
-                                                                    } finally {
-                                                                      setState(
-                                                                          () {
-                                                                        isLoading =
-                                                                            false;
-                                                                        Navigator
-                                                                            .pop(
-                                                                          context,
-                                                                        );
-                                                                        FocusScope.of(context)
-                                                                            .unfocus();
-                                                                      });
-                                                                    }
-                                                                  },
                                                         content:
                                                             'Supplier ini akan terhapus dari halaman ini.',
                                                         isWideScreen: true,
+                                                        isLoading: isLoading,
                                                       );
                                                     },
                                                     child: Container(
@@ -947,7 +899,13 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   flex: 3,
                                                   child: Center(
                                                     child: Text(
-                                                      e.type,
+                                                      productType
+                                                          .firstWhere(
+                                                            (el) =>
+                                                                e.type ==
+                                                                el.value,
+                                                          )
+                                                          .label,
                                                       maxLines: 2,
                                                       textAlign:
                                                           TextAlign.center,
@@ -1115,6 +1073,40 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                       ),
                       SizedBox(
                         height: 20.h,
+                      ),
+                      Text(
+                        'ID',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        controller: idDetail,
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
                       ),
                       Text(
                         'Unit',
@@ -1617,10 +1609,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                           horizontal: 8.w,
                                         ),
                                         child: isLoading
-                                            ? const LinearProgressIndicator(
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(Colors.white),
+                                            ? const CustomLoadingIndicator(
+                                                color: Colors.white,
                                               )
                                             : const Text(
                                                 AppStrings.tambahBtn,
@@ -1987,10 +1977,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                           horizontal: 8.w,
                                         ),
                                         child: isLoading
-                                            ? const LinearProgressIndicator(
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(Colors.white),
+                                            ? const CustomLoadingIndicator(
+                                                color: Colors.white,
                                               )
                                             : const Text(
                                                 'Edit',
@@ -2429,10 +2417,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   setState(() {
                                                                     isLoading =
                                                                         false;
-                                                                    Navigator
-                                                                        .pop(
-                                                                      context,
-                                                                    );
+                                                                    context
+                                                                        .pop();
                                                                     FocusScope
                                                                         .of(
                                                                       context,
@@ -2440,47 +2426,10 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   });
                                                                 }
                                                               },
-                                                        onDeletePermanent:
-                                                            isLoading
-                                                                ? () {}
-                                                                : () async {
-                                                                    setState(
-                                                                        () {
-                                                                      isLoading =
-                                                                          true;
-                                                                    });
-                                                                    try {
-                                                                      await ref
-                                                                          .read(
-                                                                            supplierControllerProvider.notifier,
-                                                                          )
-                                                                          .deleteData(
-                                                                            id: e.id!,
-                                                                            deletePermanent:
-                                                                                true,
-                                                                          );
-                                                                    } catch (e) {
-                                                                      // show snackbar or anything else
-                                                                      print(
-                                                                        'delete permanent failed: $e',
-                                                                      );
-                                                                    } finally {
-                                                                      setState(
-                                                                          () {
-                                                                        isLoading =
-                                                                            false;
-                                                                        Navigator
-                                                                            .pop(
-                                                                          context,
-                                                                        );
-                                                                        FocusScope.of(context)
-                                                                            .unfocus();
-                                                                      });
-                                                                    }
-                                                                  },
                                                         content:
                                                             'Supplier ini akan terhapus dari halaman ini.',
                                                         isWideScreen: false,
+                                                        isLoading: isLoading,
                                                       );
                                                     },
                                                     child: Container(
@@ -2723,6 +2672,40 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                       ),
                       SizedBox(
                         height: 20.h,
+                      ),
+                      Text(
+                        'ID',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        controller: idDetail,
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
                       ),
                       Text(
                         'Nama',
@@ -3214,7 +3197,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                               ),
                               _buildTextField(
                                 'Alamat',
-                                'Masukkan alamat lengkap',
+                                'Masukkan alamat supplier',
                                 alamat,
                                 TextInputType.streetAddress,
                                 12.sp,
@@ -3236,7 +3219,6 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                             setState(() {
                                               isLoading = true;
                                             });
-
                                             try {
                                               if (createKey.currentState!
                                                   .validate()) {
@@ -3296,11 +3278,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         horizontal: 8.w,
                                       ),
                                       child: isLoading
-                                          ? const LinearProgressIndicator(
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                          ? const CustomLoadingIndicator(
+                                              color: Colors.white,
                                             )
                                           : const Text(
                                               AppStrings.tambahBtn,
@@ -3534,7 +3513,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                               ),
                               _buildTextField(
                                 'Alamat',
-                                'Masukkan alamat lengkap',
+                                'Masukkan alamat supplier',
                                 alamat,
                                 TextInputType.streetAddress,
                                 12.sp,
@@ -3617,11 +3596,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         horizontal: 8.w,
                                       ),
                                       child: isLoading
-                                          ? const LinearProgressIndicator(
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                          ? const CustomLoadingIndicator(
+                                              color: Colors.white,
                                             )
                                           : const Text(
                                               'Edit',
@@ -3715,9 +3691,9 @@ FutureVoid showConfirmationDialog({
   required BuildContext context,
   required String title,
   required VoidCallback onDelete,
-  required VoidCallback onDeletePermanent,
   required String content,
   required bool isWideScreen,
+  required bool isLoading,
 }) {
   return showDialog(
     barrierDismissible: false,
@@ -3733,9 +3709,7 @@ FutureVoid showConfirmationDialog({
           horizontal: isWideScreen
               ? MediaQuery.of(context).size.width * 0.3
               : MediaQuery.of(context).size.width * 0.05,
-          vertical: isWideScreen
-              ? MediaQuery.of(context).size.height * 0.25
-              : MediaQuery.of(context).size.height * 0.2,
+          vertical: MediaQuery.of(context).size.height * 0.3,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -3768,127 +3742,80 @@ FutureVoid showConfirmationDialog({
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    FocusScope.of(context).unfocus();
-                  },
-                  style: TextButton.styleFrom(
-                    elevation: 5,
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: hexToColor('#CACACA')),
-                      borderRadius: const BorderRadius.all(Radius.circular(35)),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWideScreen
-                          ? 50
-                          : MediaQuery.of(context).size.width * 0.055,
-                      vertical: 8,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Batal',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontSize: isWideScreen ? 18 : 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                TextButton(
-                  onPressed: onDelete,
-                  style: TextButton.styleFrom(
-                    elevation: 5,
-                    backgroundColor: hexToColor('#F64C4C'),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(35)),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWideScreen
-                          ? 50
-                          : MediaQuery.of(context).size.width * 0.055,
-                      vertical: 8,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Hapus',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isWideScreen ? 18 : 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            Material(
-              child: ExpansionTile(
-                showTrailingIcon: false,
-                collapsedBackgroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(35)),
-                ),
-                collapsedShape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(35)),
-                ),
-                backgroundColor: Colors.white,
-                childrenPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.1,
-                  vertical: 15,
-                ),
-                expandedAlignment: Alignment.center,
-                title: Center(
-                  child: Text(
-                    'Hapus Permanen?',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w500,
-                      fontSize: isWideScreen ? 14 : 12,
-                    ),
-                  ),
-                ),
+            if (isLoading)
+              const Center(
+                child: CustomLoadingIndicator(),
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
-                    onPressed: onDeletePermanent,
+                    onPressed: () {
+                      context.pop();
+                      FocusScope.of(context).unfocus();
+                    },
                     style: TextButton.styleFrom(
                       elevation: 5,
-                      backgroundColor: hexToColor('#A33333'),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: hexToColor('#CACACA')),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(35)),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWideScreen
+                            ? 50
+                            : MediaQuery.of(context).size.width * 0.055,
+                        vertical: 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: isWideScreen ? 18 : 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  TextButton(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(
+                      elevation: 5,
+                      backgroundColor: hexToColor('#F64C4C'),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(35)),
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        'Hapus Permanen',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isWideScreen ? 18 : 14,
-                          fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWideScreen
+                            ? 50
+                            : MediaQuery.of(context).size.width * 0.055,
+                        vertical: 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Hapus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isWideScreen ? 18 : 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
           ],
         ),
       ),
