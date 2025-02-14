@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
@@ -666,9 +667,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                 setState(() {
                                                                   isLoading =
                                                                       false;
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  );
+                                                                  context.pop();
                                                                   FocusScope.of(
                                                                     context,
                                                                   ).unfocus();
@@ -2104,10 +2103,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                   setState(() {
                                                                     isLoading =
                                                                         false;
-                                                                    Navigator
-                                                                        .pop(
-                                                                      context,
-                                                                    );
+                                                                    context
+                                                                        .pop();
                                                                     FocusScope
                                                                         .of(
                                                                       context,
