@@ -16,16 +16,17 @@ import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
 ///
 class MenuRepository implements MenuRepositoryInterface {
   /// Menu Repository Constructor
-  MenuRepository({required this.client});
+  MenuRepository({required this.client, required this.baseClient});
 
   ///
   final http.Client client;
+  final ApiClient baseClient;
 
   /// Base API URL
   final url = BasePaths.baseAPIURL;
 
   /// Menu Endpoint
-  final endpoints = Endpoints.menu;
+  final endpoint = Endpoints.menu;
 
   @override
   FutureEither<List<MenuEntity>> getAllMenuData({
@@ -34,71 +35,38 @@ class MenuRepository implements MenuRepositoryInterface {
     Map<String, dynamic>? advSearch,
     List<Map<String, dynamic>>? order,
   }) async {
-    try {
-      final response = await http.get(
-        Uri.https(
-          url,
-          endpoints,
-          {
-            if (length != null) 'length': length.toString(),
-            if (search != null) 'search': search,
-            if (advSearch != null) 'advSearch': jsonEncode(advSearch),
-            if (order != null) 'order': jsonEncode(order),
-          },
-        ),
-      );
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (json['code'] == 200 || json['status'] == 'OK') {
-        return right(
-          (json['data'] as List<dynamic>)
-              .map((e) => MenuEntity.fromJson(e as Map<String, dynamic>))
-              .where(
-                (el) => el.deletedAt == null,
-              )
-              .toList(),
-        );
-      }
-      print(json);
-      return left(const ResponseFailure.internalServerError());
-    } catch (e) {
-      return left(ResponseFailure.unprocessableEntity(message: e.toString()));
-    } finally {
-      client.close();
-    }
+    return baseClient.request<List<MenuEntity>>(
+      action: 'fetch',
+      endpoint: endpoint,
+      fromJson: (json) => (json['data'] as List<dynamic>)
+          .map((e) => MenuEntity.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      queryParameters: {
+        if (length != null) 'length': length.toString(),
+        if (search != null) 'search': search,
+        if (advSearch != null)
+          'advSearch': jsonEncode(advSearch)
+        else
+          'advSearch': jsonEncode({'withDeleted': false}),
+        if (order != null) 'order': jsonEncode(order),
+      },
+    );
   }
 
   @override
   FutureEither<MenuEntity> getMenuDataByID({required String id}) async {
-    try {
-      final response = await client.get(
-        Uri.https(
-          url,
-          '$endpoints/$id',
-        ),
-      );
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (json['code'] == 200 || json['status'] == 'OK') {
-        return right(
-          MenuEntity.fromJson(json['data'] as Map<String, dynamic>),
-        );
-      }
-      return left(const ResponseFailure.internalServerError());
-    } catch (e) {
-      return left(ResponseFailure.unprocessableEntity(message: e.toString()));
-    } finally {
-      client.close();
-    }
+    return baseClient.request<MenuEntity>(
+      action: 'fetch',
+      endpoint: '$endpoint/$id',
+      fromJson: MenuEntity.fromJson,
+    );
   }
 
   @override
   FutureEitherVoid createNewMenu(
       {required MenuEntity request, String? imageFile}) async {
     try {
-      final formData = http.MultipartRequest('POST', Uri.https(url, endpoints))
+      final formData = http.MultipartRequest('POST', Uri.https(url, endpoint))
         ..headers.addAll({'Content-Type': 'multipart/form-data'});
 
       formData.fields.addAll({
@@ -159,7 +127,7 @@ class MenuRepository implements MenuRepositoryInterface {
       required String id,
       String? imageFile}) async {
     try {
-      final formData = http.MultipartRequest('POST', Uri.https(url, endpoints))
+      final formData = http.MultipartRequest('POST', Uri.https(url, endpoint))
         ..headers.addAll({'Content-Type': 'multipart/form-data'});
 
       formData.fields.addAll({
@@ -217,29 +185,15 @@ class MenuRepository implements MenuRepositoryInterface {
     required String id,
     required bool deletePermanent,
   }) async {
-    try {
-      final response = await client.delete(
-        Uri.https(
-          url,
-          endpoints,
-          {
-            'id': id,
-            'permanent': deletePermanent.toString(),
-          },
-        ),
-      );
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['code'] == 200 || json['status'] == 'OK') {
-        return right(const ResponseSuccess.created());
-      } else if (json['code'] == 404) {
-        return left(const ResponseFailure.notFound());
-      }
-      return left(const ResponseFailure.internalServerError());
-    } catch (e) {
-      return left(ResponseFailure.unprocessableEntity(message: e.toString()));
-    } finally {
-      client.close();
-    }
+    return baseClient.request<ResponseSuccess>(
+      endpoint: endpoint,
+      action: 'delete',
+      method: 'DELETE',
+      queryParameters: {
+        'id': id,
+        'permanent': deletePermanent.toString(),
+      },
+    );
   }
 
   @override
@@ -249,7 +203,7 @@ class MenuRepository implements MenuRepositoryInterface {
     required bool status,
   }) async {
     try {
-      final uri = Uri.https(url, endpoints);
+      final uri = Uri.https(url, endpoint);
 
       final requestMultipart = http.MultipartRequest('POST', uri);
 
