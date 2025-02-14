@@ -70,6 +70,8 @@ dependencies:
 
   # for making fast and clear dropdown UI
   multi_dropdown: ^3.0.1
+
+  # for creating flutter charts
   fl_chart: ^0.70.2
 
   # for fetching API responses

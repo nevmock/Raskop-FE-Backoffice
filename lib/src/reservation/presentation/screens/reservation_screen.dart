@@ -13,7 +13,7 @@ import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/input_menu_screen.dart';
-import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
+// import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
 
 ///
@@ -2186,13 +2186,18 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                                       ),
                                                     ),
                                                   ),
-                                                  // const Expanded(
-                                                  //   flex: 5,
-                                                  //   child: Center(
-                                                  //     child:
-                                                  //         PhoneSwitchWidget(),
-                                                  //   ),
-                                                  // ),
+                                                  Expanded(
+                                                    flex: 5,
+                                                    child: Center(
+                                                        // child: PhoneSwitchWidget(
+                                                        //   isON: false,
+                                                        //   onSwitch:
+                                                        //       (bool isActive) {
+                                                        //     return ;
+                                                        //   },
+                                                        // ),
+                                                        ),
+                                                  ),
                                                 ],
                                               ),
                                             ),
