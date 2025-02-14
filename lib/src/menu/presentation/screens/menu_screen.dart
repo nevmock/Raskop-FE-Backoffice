@@ -675,49 +675,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                 });
                                                               }
                                                             },
-                                                      onDeletePermanent:
-                                                          isLoading
-                                                              ? () {}
-                                                              : () async {
-                                                                  setState(() {
-                                                                    isLoading =
-                                                                        true;
-                                                                  });
-                                                                  try {
-                                                                    await ref
-                                                                        .read(
-                                                                          menuControllerProvider
-                                                                              .notifier,
-                                                                        )
-                                                                        .deleteData(
-                                                                          id: e
-                                                                              .id!,
-                                                                          deletePermanent:
-                                                                              true,
-                                                                        );
-                                                                  } catch (e) {
-                                                                    // show snackbar or anything else
-                                                                    print(
-                                                                      'delete permanent failed: $e',
-                                                                    );
-                                                                  } finally {
-                                                                    setState(
-                                                                        () {
-                                                                      isLoading =
-                                                                          false;
-                                                                      Navigator
-                                                                          .pop(
-                                                                        context,
-                                                                      );
-                                                                      FocusScope.of(
-                                                                              context)
-                                                                          .unfocus();
-                                                                    });
-                                                                  }
-                                                                },
                                                       content:
                                                           'Menu ini akan terhapus dari halaman ini.',
                                                       isWideScreen: true,
+                                                      isLoading: isLoading,
                                                     );
                                                   },
                                                   child: Container(
@@ -2154,47 +2115,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                   });
                                                                 }
                                                               },
-                                                        onDeletePermanent:
-                                                            isLoading
-                                                                ? () {}
-                                                                : () async {
-                                                                    setState(
-                                                                        () {
-                                                                      isLoading =
-                                                                          true;
-                                                                    });
-                                                                    try {
-                                                                      await ref
-                                                                          .read(
-                                                                            menuControllerProvider.notifier,
-                                                                          )
-                                                                          .deleteData(
-                                                                            id: e.id!,
-                                                                            deletePermanent:
-                                                                                true,
-                                                                          );
-                                                                    } catch (e) {
-                                                                      // show snackbar or anything else
-                                                                      print(
-                                                                        'delete permanent failed: $e',
-                                                                      );
-                                                                    } finally {
-                                                                      setState(
-                                                                          () {
-                                                                        isLoading =
-                                                                            false;
-                                                                        Navigator
-                                                                            .pop(
-                                                                          context,
-                                                                        );
-                                                                        FocusScope.of(context)
-                                                                            .unfocus();
-                                                                      });
-                                                                    }
-                                                                  },
                                                         content:
                                                             'Menu ini akan terhapus dari halaman ini.',
                                                         isWideScreen: false,
+                                                        isLoading: isLoading,
                                                       );
                                                     },
                                                     child: Container(
