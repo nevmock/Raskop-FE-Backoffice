@@ -3,20 +3,84 @@ import 'package:go_router/go_router.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/src/common/error_screen.dart';
 import 'package:raskop_fe_backoffice/src/common/home_screen.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
+import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
+import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/reservation_screen.dart';
+import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
+import 'package:raskop_fe_backoffice/src/table/presentation/screens/table_screen.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 /// MAIN ROUTER
 final router = GoRouter(
+  navigatorKey: _rootNavigatorKey,
+  initialLocation: '/${DashboardScreen.route}',
   routes: [
-    GoRoute(
-      path: '/${HomeScreen.route}',
-      name: HomeScreen.route,
-      builder: (context, state) => const HomeScreen(title: AppStrings.appName),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) => HomeScreen(
+        navigationShell: navigationShell,
+      ),
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/${DashboardScreen.route}',
+              name: DashboardScreen.route,
+              builder: (context, state) => const DashboardScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/${OrderScreen.route}',
+              name: OrderScreen.route,
+              builder: (context, state) => const OrderScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/${MenuScreen.route}',
+              name: MenuScreen.route,
+              builder: (context, state) => const MenuScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/${ReservationScreen.route}',
+              name: ReservationScreen.route,
+              builder: (context, state) => const ReservationScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              // path: '/${TableScreen.route}',
+              // name: TableScreen.route,
+              path: '/table',
+              name: 'table',
+              builder: (context, state) => const TableScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/${SupplierScreen.route}',
+              name: SupplierScreen.route,
+              builder: (context, state) => const SupplierScreen(),
+            ),
+          ],
+        ),
+      ],
     ),
   ],
-  initialLocation: '/${HomeScreen.route}',
-  redirect: (context, state) {
-    return '/${HomeScreen.route}';
-  },
   observers: [
     routeObserver,
   ],
