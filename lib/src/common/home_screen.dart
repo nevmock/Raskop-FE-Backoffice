@@ -1,41 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/sidebar_widget.dart';
-import 'package:raskop_fe_backoffice/src/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
-import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
-import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/reservation_screen.dart';
-import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
-import 'package:raskop_fe_backoffice/src/table/presentation/screens/table_screen.dart';
 
 /// Home Page
 class HomeScreen extends StatefulWidget {
   /// Home Page constructor
-  const HomeScreen({required this.title, super.key});
+  const HomeScreen({
+    required this.navigationShell,
+    super.key,
+  });
 
   /// HomeScreen route name
   static const String route = 'home';
 
-  /// HomeScreen title
-  final String title;
+  /// Navigation Shell
+  final StatefulNavigationShell navigationShell;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // URUTAN INDEX: 0. DASHBOARD, 1. ORDER, 2. MENU, 3. RESERVATION, 4. TABLE, 5. SUPPLIER
-  List<Widget> screens = [
-    const DashboardScreen(),
-    const OrderScreen(),
-    const MenuScreen(),
-    const ReservationScreen(),
-    const TableScreen(),
-    const SupplierScreen(),
-  ];
-  int index = -1;
-
   bool isExpanded = false;
 
   @override
@@ -59,16 +46,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: SidebarWidget(
                       changeIndex: (idx) {
                         setState(() {
-                          index = idx;
+                          widget.navigationShell.goBranch(idx);
                         });
                       },
                       isWideScreen: constraints.maxWidth > 500,
                     ),
                   ),
                   Expanded(
-                    child: (screens.isNotEmpty && index != -1)
-                        ? screens[index]
-                        : Center(child: Text(widget.title)),
+                    child: widget.navigationShell,
                   ),
                 ],
               ),
@@ -82,10 +67,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 10.w),
                 child: Stack(
                   children: [
-                    if (screens.isNotEmpty && index != -1)
-                      Positioned.fill(child: Center(child: screens[index]))
-                    else
-                      Positioned.fill(child: Center(child: Text(widget.title))),
+                    Positioned.fill(
+                      child: Center(child: widget.navigationShell),
+                    ),
                     AnimatedPositionedDirectional(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.fastEaseInToSlowEaseOut,
@@ -98,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: SidebarWidget(
                         changeIndex: (idx) {
                           setState(() {
-                            index = idx;
+                            widget.navigationShell.goBranch(idx);
                           });
                         },
                         isWideScreen: constraints.maxWidth > 500,

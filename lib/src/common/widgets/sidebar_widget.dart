@@ -1,15 +1,9 @@
-//import 'package:collapsible_sidebar/collapsible_sidebar.dart';
 // ignore_for_file: inference_failure_on_function_return_type
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
-import 'package:iconify_flutter/icons/bxs.dart';
-import 'package:iconify_flutter/icons/carbon.dart';
-import 'package:iconify_flutter/icons/majesticons.dart';
-import 'package:iconify_flutter/icons/mdi.dart';
-import 'package:iconify_flutter/icons/radix_icons.dart';
-import 'package:iconify_flutter/icons/ri.dart';
+import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 
 /// Sidebar Widget for Home Screen
@@ -38,7 +32,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   }
 
   List<Color> iconColor = [
-    Colors.white,
+    hexToColor('#1f4940'),
     Colors.white,
     Colors.white,
     Colors.white,
@@ -46,7 +40,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     Colors.white,
   ];
 
-  List<bool> isSelected = [false, false, false, false, false, false];
+  List<bool> isSelected = [true, false, false, false, false, false];
 
   /// HARDCODED SIDEBAR
   Widget designedSidebar() {
@@ -75,7 +69,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  RadixIcons.dashboard,
+                  IconAssets.dashboardIcon,
                   color: iconColor[0],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
@@ -111,7 +105,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  Majesticons.receipt_text,
+                  IconAssets.orderIcon,
                   color: iconColor[1],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
@@ -148,7 +142,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  Bxs.dish,
+                  IconAssets.menuIcon,
                   color: iconColor[2],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
@@ -185,7 +179,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  Ri.calendar_fill,
+                  IconAssets.reservasiIcon,
                   color: iconColor[3],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
@@ -222,7 +216,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  Mdi.table_chair,
+                  IconAssets.tableIcon,
                   color: iconColor[4],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
@@ -259,7 +253,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                 selectedTileColor: Colors.white,
                 contentPadding: EdgeInsets.all(3.h),
                 title: Iconify(
-                  Carbon.scis_transparent_supply,
+                  IconAssets.supplierIcon,
                   color: iconColor[5],
                   size: widget.isWideScreen ? 25 : 20,
                 ),
