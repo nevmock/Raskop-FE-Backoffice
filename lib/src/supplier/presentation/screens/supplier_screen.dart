@@ -84,7 +84,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     DropdownItem(label: 'Bubuk/Powder', value: 'POWDER'),
     DropdownItem(label: 'Cup', value: 'CUP'),
     DropdownItem(label: 'Kudapan/Snack', value: 'SNACK'),
-    DropdownItem(label: 'Lainnya', value: 'OTHER INGREDIENT'),
+    DropdownItem(label: 'Lainnya', value: 'OTHER_INGREDIENT'),
   ];
 
   List<DropdownItem<String>> productUnit = [
