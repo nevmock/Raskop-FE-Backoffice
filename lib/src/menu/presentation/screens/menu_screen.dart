@@ -1003,35 +1003,41 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     ),
                                   ),
                                   clipBehavior: Clip.hardEdge,
-                                  child: Image.network(
-                                    'https://${BasePaths.baseAPIURL}/${imageUri}' ??
-                                        'https://via.placeholder.com/600x400',
-                                    fit: BoxFit
-                                        .cover, // Menggunakan BoxFit.cover
-                                    loadingBuilder: (BuildContext context,
-                                        Widget child,
-                                        ImageChunkEvent? loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  (loadingProgress
-                                                          .expectedTotalBytes ??
-                                                      1)
-                                              : null,
+                                  child: imageUri == null
+                                      ? Center(
+                                          child: Text('Gambar Belum Diunggah'))
+                                      : Image.network(
+                                          'https://${BasePaths.baseAPIURL}/${imageUri}',
+                                          fit: BoxFit
+                                              .cover, // Menggunakan BoxFit.cover
+                                          loadingBuilder: (BuildContext context,
+                                              Widget child,
+                                              ImageChunkEvent?
+                                                  loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        (loadingProgress
+                                                                .expectedTotalBytes ??
+                                                            1)
+                                                    : null,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (BuildContext context,
+                                              Object error,
+                                              StackTrace? stackTrace) {
+                                            return Center(
+                                                child: Text(
+                                                    'Failed to load image'));
+                                          },
                                         ),
-                                      );
-                                    },
-                                    errorBuilder: (BuildContext context,
-                                        Object error, StackTrace? stackTrace) {
-                                      return Center(
-                                          child: Text('Failed to load image'));
-                                    },
-                                  ),
                                 ),
                               ),
                               SizedBox(height: 8.h),
@@ -2392,35 +2398,41 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     ),
                                   ),
                                   clipBehavior: Clip.hardEdge,
-                                  child: Image.network(
-                                    'https://${BasePaths.baseAPIURL}/${imageUri}' ??
-                                        'https://via.placeholder.com/600x400',
-                                    fit: BoxFit
-                                        .cover, // Menggunakan BoxFit.cover
-                                    loadingBuilder: (BuildContext context,
-                                        Widget child,
-                                        ImageChunkEvent? loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  (loadingProgress
-                                                          .expectedTotalBytes ??
-                                                      1)
-                                              : null,
+                                  child: imageUri == null
+                                      ? Center(
+                                          child: Text('Gambar Belum Diunggah'))
+                                      : Image.network(
+                                          'https://${BasePaths.baseAPIURL}/${imageUri}',
+                                          fit: BoxFit
+                                              .cover, // Menggunakan BoxFit.cover
+                                          loadingBuilder: (BuildContext context,
+                                              Widget child,
+                                              ImageChunkEvent?
+                                                  loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        (loadingProgress
+                                                                .expectedTotalBytes ??
+                                                            1)
+                                                    : null,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (BuildContext context,
+                                              Object error,
+                                              StackTrace? stackTrace) {
+                                            return Center(
+                                                child: Text(
+                                                    'Failed to load image'));
+                                          },
                                         ),
-                                      );
-                                    },
-                                    errorBuilder: (BuildContext context,
-                                        Object error, StackTrace? stackTrace) {
-                                      return Center(
-                                          child: Text('Failed to load image'));
-                                    },
-                                  ),
                                 ),
                               ),
                               SizedBox(height: 8.h),
@@ -2850,10 +2862,11 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           Text(
                                             getFileName(imageUri),
                                             style: TextStyle(
-                                              fontFamily: 'Inter',
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 14,
-                                            ),
+                                                fontFamily: 'Inter',
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 14,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
                                           ),
                                           SizedBox(
                                             width: 32,
