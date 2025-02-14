@@ -1453,8 +1453,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         const Expanded(
                                           flex: 5,
                                           child: Center(
-                                            child: PhoneSwitchWidget(),
-                                          ),
+                                              // child: PhoneSwitchWidget(),
+                                              ),
                                         ),
                                       ],
                                     ),
