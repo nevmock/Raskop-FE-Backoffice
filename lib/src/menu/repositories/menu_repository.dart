@@ -154,17 +154,50 @@ class MenuRepository implements MenuRepositoryInterface {
   }
 
   @override
-  FutureEitherVoid updateCurrentMenu({
-    required MenuEntity request,
-    required String id,
-  }) async {
+  FutureEitherVoid updateCurrentMenu(
+      {required MenuEntity request,
+      required String id,
+      String? imageFile}) async {
     try {
-      final response = await client.post(
-        Uri.https(url, endpoints),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(request.copyWith(id: id).toJson()),
-      );
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final formData = http.MultipartRequest('POST', Uri.https(url, endpoints))
+        ..headers.addAll({'Content-Type': 'multipart/form-data'});
+
+      formData.fields.addAll({
+        'name': request.name,
+        'price': request.price.toString(),
+        'description': request.description,
+        'category': request.category,
+        'qty': request.qty.toString(),
+        'isActive': request.isActive?.toString() ?? 'false',
+        'id': id,
+      });
+
+      if (imageFile != null) {
+        final mimeType = lookupMimeType(imageFile!);
+        final file = File(imageFile);
+        if (!await file.exists()) {
+          return left(ResponseFailure.unprocessableEntity(
+              message: 'File does not exist!'));
+        } else {
+          final stream = http.ByteStream(file.openRead());
+          final length = await file.length();
+
+          final imageFilePart = http.MultipartFile(
+            'image',
+            stream,
+            length,
+            filename: file.uri.pathSegments.last,
+            contentType: MediaType.parse(mimeType!),
+          );
+
+          formData.files.add(imageFilePart);
+        }
+      }
+
+      final response =
+          await client.send(formData).timeout(Duration(seconds: 60));
+      final jsonResponse = await http.Response.fromStream(response);
+      final json = jsonDecode(jsonResponse.body) as Map<String, dynamic>;
       if (json['code'] == 201 ||
           json['status'] == 'CREATED' ||
           json['code'] == 200 ||

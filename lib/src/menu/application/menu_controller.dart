@@ -69,13 +69,13 @@ class MenuController extends _$MenuController {
   }
 
   ///
-  FutureVoid updateData({
-    required MenuEntity request,
-    required String id,
-  }) async {
+  FutureVoid updateData(
+      {required MenuEntity request,
+      required String id,
+      String? imageFile}) async {
     final res = await ref
         .read(menuRepositoryProvider)
-        .updateCurrentMenu(request: request, id: id);
+        .updateCurrentMenu(request: request, id: id, imageFile: imageFile);
     res.fold(
       (l) => state = AsyncError(l, StackTrace.current),
       (r) => r,
