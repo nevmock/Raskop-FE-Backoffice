@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,13 +9,20 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
+import 'package:intl/intl.dart';
+import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:raskop_fe_backoffice/res/assets.dart';
+import 'package:raskop_fe_backoffice/res/paths.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/menu/application/menu_controller.dart';
 import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
-import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
+import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
+import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/switch_widget.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
@@ -48,11 +59,54 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
   TextEditingController harga = TextEditingController();
   TextEditingController jumlah = TextEditingController();
   TextEditingController deskripsi = TextEditingController();
+  TextEditingController search = TextEditingController();
+
+  String? imageUri;
+  String? imageFile;
+  double price = 0;
+  String? id;
+  bool? switchStatusForEdit;
+
+  List<DropdownItem<String>> advSearchOptions = [
+    DropdownItem(label: 'Nama', value: 'name'),
+    DropdownItem(label: 'Kategori', value: 'category'),
+    DropdownItem(label: 'Harga', value: 'price'),
+  ];
+
+  final advSearchTabletController = MultiSelectController<String>();
+  final advSearchPhoneController = MultiSelectController<String>();
+
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
-    void toggleDetailPanel() {
+    void openDetailPanel({required MenuEntity detailMenu}) {
       setState(() {
-        isDetailPanelVisible = !isDetailPanelVisible;
+        nama.value = TextEditingValue(text: detailMenu.name);
+        kategori.value = TextEditingValue(text: detailMenu.category);
+        deskripsi.value = TextEditingValue(text: detailMenu.description);
+        harga.value = TextEditingValue(
+          text: NumberFormat.simpleCurrency(
+            locale: 'id-ID',
+            name: 'Rp',
+            decimalDigits: 2,
+          ).format(detailMenu.price),
+        );
+        jumlah.value = TextEditingValue(text: detailMenu.qty.toString());
+        isDetailPanelVisible = true;
+        imageUri = detailMenu.imageUri;
+      });
+    }
+
+    void closeDetailPanel() {
+      setState(() {
+        nama.clear();
+        harga.clear();
+        kategori.clear();
+        jumlah.clear();
+        deskripsi.clear();
+        isDetailPanelVisible = false;
+        imageUri = null;
       });
     }
 
@@ -62,16 +116,40 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
       });
     }
 
-    void openEditPanel() {
+    void closeCreatePanel() {
+      setState(() {
+        nama.clear();
+        harga.clear();
+        kategori.clear();
+        jumlah.clear();
+        deskripsi.clear();
+        isCreatePanelVisible = false;
+        FocusScope.of(context).unfocus();
+      });
+
+      if (imageFile != null) {
+        final file = File(imageFile!);
+        if (file.existsSync()) {
+          try {
+            file.deleteSync();
+          } catch (e) {
+            print('Error deleting file: $e');
+          }
+        }
+        imageFile = null;
+      }
+    }
+
+    void openEditPanel({required MenuEntity request}) {
       setState(() {
         isEditPanelVisible = !isEditPanelVisible;
-        nama.value = const TextEditingValue(text: 'Peach Mojito');
-        harga.value = const TextEditingValue(text: '80000');
-        kategori.value = const TextEditingValue(text: 'Mocktail');
-        jumlah.value = const TextEditingValue(text: '4');
-        deskripsi.value = const TextEditingValue(
-            text:
-                'Dibuat dengan buah persik, daun mint, simple sirup, air soda, dan es batu');
+        nama.value = TextEditingValue(text: request.name);
+        harga.value = TextEditingValue(text: request.price.toString());
+        kategori.value = TextEditingValue(text: request.category);
+        jumlah.value = TextEditingValue(text: request.qty.toString());
+        deskripsi.value = TextEditingValue(text: request.description);
+        id = request.id;
+        switchStatusForEdit = request.isActive;
       });
     }
 
@@ -83,7 +161,60 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
         kategori.clear();
         jumlah.clear();
         deskripsi.clear();
+        id = null;
+        switchStatusForEdit = null;
+        FocusScope.of(context).unfocus();
       });
+    }
+
+    void onSearchPhone() {
+      ref.read(menuControllerProvider.notifier).fetchMenus(
+        search: search.text,
+        advSearch: {
+          for (final item in advSearchPhoneController.selectedItems)
+            item.value: search.text,
+        },
+      );
+    }
+
+    void onSearchTablet() {
+      ref.read(menuControllerProvider.notifier).fetchMenus(
+        search: search.text,
+        advSearch: {
+          for (final item in advSearchTabletController.selectedItems)
+            item.value: search.text,
+        },
+      );
+    }
+
+    Timer? debounceTimer;
+
+    void debounceOnPhone() {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), onSearchPhone);
+    }
+
+    void debounceOnTablet() {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), onSearchTablet);
+    }
+
+    String getFileName(String? uri) {
+      if (uri == null) return 'Unknown.jpg';
+      return uri.split('/').last;
+    }
+
+    Future<void> pickImage() async {
+      final ImagePicker _picker = ImagePicker();
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+      if (image != null) {
+        setState(() {
+          imageFile = image.path;
+        });
+      }
     }
 
     return GestureDetector(
@@ -104,6 +235,163 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
+                        AnimatedContainer(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: hexToColor('#E1E1E1'),
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 15,
+                          ),
+                          duration: const Duration(milliseconds: 100),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                  ),
+                                  child: Image.asset(ImageAssets.raskop),
+                                ),
+                              ),
+                              const Spacer(),
+                              Expanded(
+                                flex: 5,
+                                child: AnimatedContainer(
+                                  duration: const Duration(
+                                    milliseconds: 100,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 15.w,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: hexToColor('#E1E1E1'),
+                                    ),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(30),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        flex: 3,
+                                        child: TextFormField(
+                                          controller: search,
+                                          onChanged: (value) {
+                                            debounceOnTablet();
+                                          },
+                                          onFieldSubmitted: (value) {
+                                            onSearchTablet();
+                                          },
+                                          decoration: InputDecoration(
+                                            filled: false,
+                                            border: InputBorder.none,
+                                            hintText:
+                                                'Temukan nama, menu, kontak...',
+                                            hintStyle: TextStyle(
+                                              color:
+                                                  Colors.black.withOpacity(0.3),
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        flex: 2,
+                                        child: MultiDropdown<String>(
+                                          items: advSearchOptions,
+                                          controller: advSearchTabletController,
+                                          onSelectionChange: (selectedItems) {
+                                            onSearchTablet();
+                                          },
+                                          fieldDecoration:
+                                              const FieldDecoration(
+                                            border: OutlineInputBorder(
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            hintText: '',
+                                            suffixIcon: Icon(
+                                              Icons.filter_list_alt,
+                                            ),
+                                            animateSuffixIcon: false,
+                                            backgroundColor: Colors.transparent,
+                                            borderRadius: 30,
+                                          ),
+                                          dropdownItemDecoration:
+                                              DropdownItemDecoration(
+                                            selectedIcon: Icon(
+                                              Icons.check_box,
+                                              color: hexToColor(
+                                                '#0C9D61',
+                                              ),
+                                            ),
+                                          ),
+                                          dropdownDecoration:
+                                              const DropdownDecoration(
+                                            elevation: 3,
+                                          ),
+                                          chipDecoration: ChipDecoration(
+                                            wrap: false,
+                                            backgroundColor: hexToColor(
+                                              '#E1E1E1',
+                                            ),
+                                            labelStyle: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 20,
+                              ),
+                              Flexible(
+                                flex: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: 20,
+                                  ),
+                                  child: TextButton(
+                                    onPressed: () {},
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: hexToColor('#1F4940'),
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Pencarian Lanjutan',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -246,241 +534,418 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 7.h),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: hexToColor('#E1E1E1'),
-                                ),
-                                child: Slidable(
-                                  startActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: openEditPanel,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topLeft: Radius.circular(18),
-                                                  bottomLeft:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
+                            child: menu.when(
+                          data: (data) {
+                            return ListView(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              children: data
+                                  .map(
+                                    (e) => Container(
+                                      margin: EdgeInsets.only(bottom: 7.h),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(18),
+                                        color: hexToColor('#E1E1E1'),
+                                      ),
+                                      child: Slidable(
+                                        startActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    openEditPanel(request: e);
+                                                  },
                                                   child: Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    height:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                      12,
-                                                    ),
                                                     decoration: BoxDecoration(
                                                       borderRadius:
                                                           const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(18),
+                                                        bottomLeft:
+                                                            Radius.circular(18),
                                                       ),
                                                       color:
-                                                          hexToColor('#FFAD0D'),
+                                                          hexToColor('#E1E1E1'),
                                                     ),
-                                                    child: const Iconify(
-                                                      Zondicons.edit_pencil,
-                                                      color: Colors.white,
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          width: MediaQuery.of(
+                                                                      context)
+                                                                  .size
+                                                                  .width *
+                                                              0.05,
+                                                          height: MediaQuery.of(
+                                                                      context)
+                                                                  .size
+                                                                  .width *
+                                                              0.05,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(
+                                                            12,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                  30),
+                                                            ),
+                                                            color: hexToColor(
+                                                                '#FFAD0D'),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Zondicons
+                                                                .edit_pencil,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  endActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topRight: Radius.circular(18),
-                                                  bottomRight:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: Center(
-                                                child: Container(
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  height: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  padding:
-                                                      const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        const BorderRadius.all(
-                                                      Radius.circular(30),
+                                        endActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    showConfirmationDialog(
+                                                      context: context,
+                                                      title: 'Hapus Menu?',
+                                                      onDelete: isLoading
+                                                          ? () {}
+                                                          : () async {
+                                                              setState(() {
+                                                                isLoading =
+                                                                    true;
+                                                              });
+                                                              try {
+                                                                await ref
+                                                                    .read(
+                                                                      menuControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                    .deleteData(
+                                                                      id: e.id!,
+                                                                      deletePermanent:
+                                                                          false,
+                                                                    );
+                                                              } catch (e) {
+                                                                // show snackbar or anything else
+                                                                print(
+                                                                  'delete failed : $e',
+                                                                );
+                                                              } finally {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  );
+                                                                  FocusScope.of(
+                                                                    context,
+                                                                  ).unfocus();
+                                                                });
+                                                              }
+                                                            },
+                                                      onDeletePermanent:
+                                                          isLoading
+                                                              ? () {}
+                                                              : () async {
+                                                                  setState(() {
+                                                                    isLoading =
+                                                                        true;
+                                                                  });
+                                                                  try {
+                                                                    await ref
+                                                                        .read(
+                                                                          menuControllerProvider
+                                                                              .notifier,
+                                                                        )
+                                                                        .deleteData(
+                                                                          id: e
+                                                                              .id!,
+                                                                          deletePermanent:
+                                                                              true,
+                                                                        );
+                                                                  } catch (e) {
+                                                                    // show snackbar or anything else
+                                                                    print(
+                                                                      'delete permanent failed: $e',
+                                                                    );
+                                                                  } finally {
+                                                                    setState(
+                                                                        () {
+                                                                      isLoading =
+                                                                          false;
+                                                                      Navigator
+                                                                          .pop(
+                                                                        context,
+                                                                      );
+                                                                      FocusScope.of(
+                                                                              context)
+                                                                          .unfocus();
+                                                                    });
+                                                                  }
+                                                                },
+                                                      content:
+                                                          'Menu ini akan terhapus dari halaman ini.',
+                                                      isWideScreen: true,
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(18),
+                                                        bottomRight:
+                                                            Radius.circular(18),
+                                                      ),
+                                                      color:
+                                                          hexToColor('#E1E1E1'),
                                                     ),
-                                                    color:
-                                                        hexToColor('#F64C4C'),
-                                                  ),
-                                                  child: const Iconify(
-                                                    Eva.trash_fill,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(18),
-                                      color: Colors.white,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: Text(
-                                            '00001',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 4,
-                                          child: Text(
-                                            'Christine Brooks',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Mocktail',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Rp80.000,00',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Center(
-                                            child: Text(
-                                              '4',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: hexToColor('#202224'),
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 10.h,
-                                              ),
-                                              child: TextButton(
-                                                onPressed: toggleDetailPanel,
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      hexToColor('#f6e9e0'),
-                                                  minimumSize: const Size(
-                                                    double.infinity,
-                                                    40,
+                                                    child: Center(
+                                                      child: Container(
+                                                        width: MediaQuery.of(
+                                                                    context)
+                                                                .size
+                                                                .width *
+                                                            0.05,
+                                                        height: MediaQuery.of(
+                                                                    context)
+                                                                .size
+                                                                .width *
+                                                            0.05,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              const BorderRadius
+                                                                  .all(
+                                                            Radius.circular(30),
+                                                          ),
+                                                          color: hexToColor(
+                                                              '#F64C4C'),
+                                                        ),
+                                                        child: const Iconify(
+                                                          Eva.trash_fill,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border:
+                                                Border.all(color: Colors.grey),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: Colors.white,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 8.h,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                flex: 2,
                                                 child: Text(
-                                                  'Lihat',
+                                                  e.id!,
+                                                  maxLines: 1,
                                                   style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w500,
                                                     color:
-                                                        hexToColor('#E38D5D'),
+                                                        hexToColor('#202224'),
                                                     fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ),
-                                            ),
+                                              Expanded(
+                                                flex: 4,
+                                                child: Text(
+                                                  e.name,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.category,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  NumberFormat.simpleCurrency(
+                                                    locale: 'id-ID',
+                                                    name: 'Rp',
+                                                    decimalDigits: 2,
+                                                  ).format(e.price),
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 2,
+                                                child: Center(
+                                                  child: Text(
+                                                    e.qty.toString(),
+                                                    maxLines: 2,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 10.h,
+                                                    ),
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        openDetailPanel(
+                                                          detailMenu:
+                                                              MenuEntity(
+                                                            id: e.id,
+                                                            name: e.name,
+                                                            price: e.price,
+                                                            category:
+                                                                e.category,
+                                                            qty: e.qty,
+                                                            description:
+                                                                e.description,
+                                                            imageUri:
+                                                                e.imageUri,
+                                                            isActive:
+                                                                e.isActive,
+                                                          ),
+                                                        );
+                                                      },
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                                '#f6e9e0'),
+                                                        minimumSize: const Size(
+                                                          double.infinity,
+                                                          40,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Lihat',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: hexToColor(
+                                                              '#E38D5D'),
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Center(
+                                                  child: CustomSwitch(
+                                                    isON: e.isActive!,
+                                                    onSwitch: (val) {
+                                                      return ref
+                                                          .read(
+                                                            menuControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .toggleMenuStatus(
+                                                            request: e,
+                                                            id: e.id!,
+                                                            currentStatus:
+                                                                e.isActive!,
+                                                          );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const Expanded(
-                                          flex: 3,
-                                          child: Center(
-                                            child: CustomSwitch(),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              );
-                            },
+                                  )
+                                  .toList(),
+                            );
+                          },
+                          loading: () => const Center(
+                            child: CustomLoadingIndicator(),
                           ),
-                        ),
+                          error: (error, stackTrace) => Center(
+                            child: Text(
+                              error.toString() + stackTrace.toString(),
+                            ),
+                          ),
+                        )),
                       ],
                     ),
                   ),
@@ -501,7 +966,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
@@ -539,7 +1004,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: Image.network(
-                                    'https://via.placeholder.com/600x400',
+                                    'https://${BasePaths.baseAPIURL}/${imageUri}' ??
+                                        'https://via.placeholder.com/600x400',
                                     fit: BoxFit
                                         .cover, // Menggunakan BoxFit.cover
                                     loadingBuilder: (BuildContext context,
@@ -574,11 +1040,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Mocktail.jpg',
+                                    getFileName(imageUri),
+                                    maxLines: 1,
                                     style: TextStyle(
                                       fontFamily: 'Inter',
                                       fontWeight: FontWeight.w500,
                                       fontSize: 14,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -595,7 +1063,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          fontSize: 14.sp,
                         ),
                       ),
                       SizedBox(
@@ -610,8 +1078,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           overflow: TextOverflow.fade,
                         ),
                         maxLines: 3,
-                        initialValue:
-                            'Dibuat dengan buah persik, daun mint, simple sirup, air soda, dan es batu',
+                        controller: deskripsi,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -668,6 +1135,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   Expanded(
                                     flex: 3,
                                     child: Form(
+                                      key: createKey,
                                       child: SingleChildScrollView(
                                         child: Wrap(
                                           spacing: 10,
@@ -760,41 +1228,35 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 ),
                                               ),
                                               clipBehavior: Clip.hardEdge,
-                                              child: Image.network(
-                                                'https://via.placeholder.com/600x400',
-                                                fit: BoxFit
-                                                    .cover, // Menggunakan BoxFit.cover
-                                                loadingBuilder:
-                                                    (BuildContext context,
-                                                        Widget child,
-                                                        ImageChunkEvent?
-                                                            loadingProgress) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      value: loadingProgress
-                                                                  .expectedTotalBytes !=
-                                                              null
-                                                          ? loadingProgress
-                                                                  .cumulativeBytesLoaded /
-                                                              (loadingProgress
-                                                                      .expectedTotalBytes ??
-                                                                  1)
-                                                          : null,
-                                                    ),
-                                                  );
-                                                },
-                                                errorBuilder: (BuildContext
-                                                        context,
-                                                    Object error,
-                                                    StackTrace? stackTrace) {
-                                                  return Center(
+                                              child: imageFile == null
+                                                  ? Center(
                                                       child: Text(
-                                                          'Failed to load image'));
-                                                },
-                                              ),
+                                                          'Gambar Belum Diunggah'))
+                                                  : FutureBuilder<File>(
+                                                      future: Future.value(
+                                                          File(imageFile!)),
+                                                      builder:
+                                                          (context, snapshot) {
+                                                        if (snapshot
+                                                                .connectionState ==
+                                                            ConnectionState
+                                                                .waiting) {
+                                                          return Center(
+                                                              child:
+                                                                  CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                        } else if (snapshot
+                                                            .hasError) {
+                                                          return Center(
+                                                              child: Text(
+                                                                  'Failed to load image')); // Tampilkan pesan kesalahan
+                                                        } else {
+                                                          return Image.file(
+                                                            snapshot.data!,
+                                                            fit: BoxFit.cover,
+                                                          );
+                                                        }
+                                                      },
+                                                    ),
                                             ),
                                           ),
                                           SizedBox(height: 4.h),
@@ -803,7 +1265,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
-                                                'Mocktail.jpg',
+                                                imageFile != null
+                                                    ? getFileName(imageFile)
+                                                    : 'Unknown.jpg',
                                                 style: TextStyle(
                                                   fontFamily: 'Inter',
                                                   fontWeight: FontWeight.w500,
@@ -814,7 +1278,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 width: 32,
                                                 height: 32,
                                                 child: IconButton(
-                                                  onPressed: () {},
+                                                  onPressed: pickImage,
                                                   icon: Icon(
                                                     Icons.file_upload_outlined,
                                                     color:
@@ -842,7 +1306,45 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         child: Padding(
                           padding: const EdgeInsets.only(top: 0, right: 16.0),
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isLoading
+                                ? () {}
+                                : () async {
+                                    setState(() {
+                                      isLoading = true;
+                                    });
+
+                                    try {
+                                      if (createKey.currentState!.validate()) {
+                                        await ref
+                                            .read(
+                                              menuControllerProvider.notifier,
+                                            )
+                                            .createNew(
+                                              request: MenuEntity(
+                                                name: nama.text,
+                                                price: double.parse(
+                                                  harga.text,
+                                                ),
+                                                qty: double.parse(
+                                                  jumlah.text,
+                                                ),
+                                                category: kategori.text,
+                                                description: deskripsi.text,
+                                                isActive: false,
+                                              ),
+                                              imageFile: imageFile,
+                                            );
+                                        closeCreatePanel();
+                                      }
+                                    } catch (e) {
+                                      //show snackbar or anything else
+                                      print("Error occurred: $e");
+                                    } finally {
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: hexToColor('#1F4940'),
                               shape: const RoundedRectangleBorder(
@@ -856,13 +1358,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 vertical: 6.4.h,
                                 horizontal: 8.w,
                               ),
-                              child: const Text(
-                                AppStrings.tambahBtn,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              child: isLoading
+                                  ? const LinearProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    )
+                                  : const Text(
+                                      AppStrings.tambahBtn,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -1086,9 +1593,44 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         child: Padding(
                           padding: const EdgeInsets.only(top: 0, right: 16.0),
                           child: ElevatedButton(
-                            onPressed: () {
-                              // Aksi tombol edit
-                            },
+                            onPressed: isLoading
+                                ? () {}
+                                : () async {
+                                    setState(() {
+                                      isLoading = true;
+                                    });
+                                    try {
+                                      if (editKey.currentState!.validate()) {
+                                        await ref
+                                            .read(
+                                              menuControllerProvider.notifier,
+                                            )
+                                            .updateData(
+                                              request: MenuEntity(
+                                                name: nama.text,
+                                                price: double.parse(
+                                                  harga.text,
+                                                ),
+                                                qty: double.parse(
+                                                  jumlah.text,
+                                                ),
+                                                category: kategori.text,
+                                                description: deskripsi.text,
+                                                imageUri: "",
+                                                isActive: switchStatusForEdit,
+                                              ),
+                                              id: id!,
+                                            );
+                                        closeEditPanel();
+                                      }
+                                    } catch (e) {
+                                      // show snackbar or anything else
+                                    } finally {
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: hexToColor('#1F4940'),
                               shape: const RoundedRectangleBorder(
@@ -1102,13 +1644,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 vertical: 6.4.h,
                                 horizontal: 8.w,
                               ),
-                              child: const Text(
-                                'Edit',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              child: isLoading
+                                  ? const LinearProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    )
+                                  : const Text(
+                                      'Edit',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -1127,6 +1674,144 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
+                        AnimatedContainer(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: hexToColor('#E1E1E1'),
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                          ),
+                          duration: const Duration(milliseconds: 100),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 5,
+                                  ),
+                                  child: Image.asset(
+                                    ImageAssets.raskop,
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 5,
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: AnimatedContainer(
+                                  duration: const Duration(
+                                    milliseconds: 100,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: hexToColor('#E1E1E1'),
+                                    ),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(30),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        flex: 2,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
+                                          child: TextFormField(
+                                            controller: search,
+                                            onChanged: (value) {
+                                              debounceOnPhone(); // Debounce biar nggak spam API
+                                            },
+                                            onFieldSubmitted: (value) {
+                                              onSearchPhone();
+                                            },
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                            decoration: InputDecoration(
+                                              filled: false,
+                                              border: InputBorder.none,
+                                              hintText: 'Temukan...',
+                                              hintStyle: TextStyle(
+                                                color: Colors.black
+                                                    .withOpacity(0.3),
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        flex: 3,
+                                        child: MultiDropdown<String>(
+                                          controller: advSearchPhoneController,
+                                          items: advSearchOptions,
+                                          onSelectionChange: (selectedItems) {
+                                            onSearchPhone();
+                                          },
+                                          fieldDecoration:
+                                              const FieldDecoration(
+                                            border: OutlineInputBorder(
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            hintText: '',
+                                            suffixIcon: Icon(
+                                              Icons.filter_list_alt,
+                                            ),
+                                            animateSuffixIcon: false,
+                                            backgroundColor: Colors.transparent,
+                                            borderRadius: 30,
+                                          ),
+                                          dropdownItemDecoration:
+                                              DropdownItemDecoration(
+                                            selectedIcon: Icon(
+                                              Icons.check_box,
+                                              color: hexToColor(
+                                                '#0C9D61',
+                                              ),
+                                            ),
+                                          ),
+                                          dropdownDecoration:
+                                              const DropdownDecoration(
+                                            elevation: 3,
+                                          ),
+                                          chipDecoration: ChipDecoration(
+                                            wrap: false,
+                                            backgroundColor: hexToColor(
+                                              '#E1E1E1',
+                                            ),
+                                            labelStyle: const TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -1269,219 +1954,387 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 7.h),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: hexToColor('#E1E1E1'),
-                                ),
-                                child: Slidable(
-                                  startActionPane: ActionPane(
-                                    extentRatio: 0.2,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: openEditPanel,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topLeft: Radius.circular(18),
-                                                  bottomLeft:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
-                                                  child: Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 8.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    margin:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 10.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                            child: menu.when(
+                          data: (data) {
+                            return ListView(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              children: data
+                                  .map((e) => Container(
+                                        margin: EdgeInsets.only(bottom: 7.h),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                          color: hexToColor('#E1E1E1'),
+                                        ),
+                                        child: Slidable(
+                                          startActionPane: ActionPane(
+                                            extentRatio: 0.2,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      openEditPanel(request: e);
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topLeft:
+                                                              Radius.circular(
+                                                                  18),
+                                                          bottomLeft:
+                                                              Radius.circular(
+                                                                  18),
+                                                        ),
+                                                        color: hexToColor(
+                                                            '#E1E1E1'),
                                                       ),
-                                                      color:
-                                                          hexToColor('#FFAD0D'),
-                                                    ),
-                                                    child: const Iconify(
-                                                      Zondicons.edit_pencil,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  endActionPane: ActionPane(
-                                    extentRatio: 0.2,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topRight: Radius.circular(18),
-                                                  bottomRight:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
-                                                  child: Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 8.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    margin:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 10.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                                                      child: ClipOval(
+                                                        child: Center(
+                                                          child: Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 10.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                Radius.circular(
+                                                                    30),
+                                                              ),
+                                                              color: hexToColor(
+                                                                  '#FFAD0D'),
+                                                            ),
+                                                            child:
+                                                                const Iconify(
+                                                              Zondicons
+                                                                  .edit_pencil,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
                                                       ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          endActionPane: ActionPane(
+                                            extentRatio: 0.2,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      showConfirmationDialog(
+                                                        context: context,
+                                                        title: 'Hapus Menu?',
+                                                        onDelete: isLoading
+                                                            ? () {}
+                                                            : () async {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      true;
+                                                                });
+                                                                try {
+                                                                  await ref
+                                                                      .read(
+                                                                        menuControllerProvider
+                                                                            .notifier,
+                                                                      )
+                                                                      .deleteData(
+                                                                        id: e
+                                                                            .id!,
+                                                                        deletePermanent:
+                                                                            false,
+                                                                      );
+                                                                } catch (e) {
+                                                                  // show snackbar or anything else
+                                                                  print(
+                                                                    'delete failed : $e',
+                                                                  );
+                                                                } finally {
+                                                                  setState(() {
+                                                                    isLoading =
+                                                                        false;
+                                                                    Navigator
+                                                                        .pop(
+                                                                      context,
+                                                                    );
+                                                                    FocusScope
+                                                                        .of(
+                                                                      context,
+                                                                    ).unfocus();
+                                                                  });
+                                                                }
+                                                              },
+                                                        onDeletePermanent:
+                                                            isLoading
+                                                                ? () {}
+                                                                : () async {
+                                                                    setState(
+                                                                        () {
+                                                                      isLoading =
+                                                                          true;
+                                                                    });
+                                                                    try {
+                                                                      await ref
+                                                                          .read(
+                                                                            menuControllerProvider.notifier,
+                                                                          )
+                                                                          .deleteData(
+                                                                            id: e.id!,
+                                                                            deletePermanent:
+                                                                                true,
+                                                                          );
+                                                                    } catch (e) {
+                                                                      // show snackbar or anything else
+                                                                      print(
+                                                                        'delete permanent failed: $e',
+                                                                      );
+                                                                    } finally {
+                                                                      setState(
+                                                                          () {
+                                                                        isLoading =
+                                                                            false;
+                                                                        Navigator
+                                                                            .pop(
+                                                                          context,
+                                                                        );
+                                                                        FocusScope.of(context)
+                                                                            .unfocus();
+                                                                      });
+                                                                    }
+                                                                  },
+                                                        content:
+                                                            'Menu ini akan terhapus dari halaman ini.',
+                                                        isWideScreen: false,
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topRight:
+                                                              Radius.circular(
+                                                                  18),
+                                                          bottomRight:
+                                                              Radius.circular(
+                                                                  18),
+                                                        ),
+                                                        color: hexToColor(
+                                                            '#E1E1E1'),
+                                                      ),
+                                                      child: ClipOval(
+                                                        child: Center(
+                                                          child: Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 10.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                Radius.circular(
+                                                                    30),
+                                                              ),
+                                                              color: hexToColor(
+                                                                  '#F64C4C'),
+                                                            ),
+                                                            child:
+                                                                const Iconify(
+                                                              Eva.trash_fill,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color: Colors.grey),
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              color: Colors.white,
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 10.w,
+                                              vertical: 8.h,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                    e.id!,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       color:
-                                                          hexToColor('#F64C4C'),
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
-                                                    child: const Iconify(
-                                                      Eva.trash_fill,
-                                                      color: Colors.white,
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Text(
+                                                    e.name,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(18),
-                                      color: Colors.white,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            '00001',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 4,
-                                          child: Text(
-                                            'Christine Brooks',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 4,
-                                          child: Text(
-                                            'Mocktail',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 5.h,
-                                              ),
-                                              child: TextButton(
-                                                onPressed: toggleDetailPanel,
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      hexToColor('#f6e9e0'),
-                                                  minimumSize: const Size(
-                                                    double.infinity,
-                                                    40,
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Text(
+                                                    e.category,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
                                                   ),
                                                 ),
-                                                child: Text(
-                                                  'Lihat',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        hexToColor('#E38D5D'),
-                                                    fontSize: 12,
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Center(
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        horizontal: 5.h,
+                                                      ),
+                                                      child: TextButton(
+                                                        onPressed: () {
+                                                          openDetailPanel(
+                                                            detailMenu:
+                                                                MenuEntity(
+                                                              id: e.id,
+                                                              name: e.name,
+                                                              price: e.price,
+                                                              category:
+                                                                  e.category,
+                                                              qty: e.qty,
+                                                              description:
+                                                                  e.description,
+                                                              isActive:
+                                                                  e.isActive,
+                                                              imageUri:
+                                                                  e.imageUri,
+                                                            ),
+                                                          );
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              hexToColor(
+                                                                  '#f6e9e0'),
+                                                          minimumSize:
+                                                              const Size(
+                                                            double.infinity,
+                                                            40,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Lihat',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: hexToColor(
+                                                                '#E38D5D'),
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Center(
+                                                    child: PhoneSwitchWidget(
+                                                      isON: e.isActive!,
+                                                      onSwitch: (val) async {
+                                                        return ref
+                                                            .read(
+                                                              menuControllerProvider
+                                                                  .notifier,
+                                                            )
+                                                            .toggleMenuStatus(
+                                                              request: e,
+                                                              id: e.id!,
+                                                              currentStatus:
+                                                                  e.isActive!,
+                                                            );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
-                                        const Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: PhoneSwitchWidget(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                                      ))
+                                  .toList(),
+                            );
+                          },
+                          loading: () => const Center(
+                            child: CustomLoadingIndicator(),
                           ),
-                        ),
+                          error: (error, stackTrace) => Center(
+                            child: Text(
+                              error.toString() + stackTrace.toString(),
+                            ),
+                          ),
+                        )),
                       ],
                     ),
                   ),
@@ -1502,7 +2355,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
@@ -1540,7 +2393,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: Image.network(
-                                    'https://via.placeholder.com/600x400',
+                                    'https://${BasePaths.baseAPIURL}/${imageUri}' ??
+                                        'https://via.placeholder.com/600x400',
                                     fit: BoxFit
                                         .cover, // Menggunakan BoxFit.cover
                                     loadingBuilder: (BuildContext context,
@@ -1574,12 +2428,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'Mocktail.jpg',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
+                                  Expanded(
+                                    child: Text(
+                                      getFileName(imageUri),
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1596,7 +2454,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                         ),
                       ),
                       SizedBox(
@@ -1611,8 +2469,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           overflow: TextOverflow.fade,
                         ),
                         maxLines: 3,
-                        initialValue:
-                            'Dibuat dengan buah persik, daun mint, simple sirup, air soda, dan es batu',
+                        controller: deskripsi,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -1788,7 +2645,47 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 children: [
                                   const Spacer(),
                                   ElevatedButton(
-                                    onPressed: () {},
+                                    onPressed: isLoading
+                                        ? () {}
+                                        : () async {
+                                            setState(() {
+                                              isLoading = true;
+                                            });
+
+                                            try {
+                                              if (createKey.currentState!
+                                                  .validate()) {
+                                                await ref
+                                                    .read(
+                                                      menuControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .createNew(
+                                                      request: MenuEntity(
+                                                        name: nama.text,
+                                                        price: double.parse(
+                                                          harga.text,
+                                                        ),
+                                                        qty: double.parse(
+                                                          jumlah.text,
+                                                        ),
+                                                        imageUri: "",
+                                                        category: kategori.text,
+                                                        description:
+                                                            deskripsi.text,
+                                                        isActive: false,
+                                                      ),
+                                                    );
+                                                closeCreatePanel();
+                                              }
+                                            } catch (e) {
+                                              //show snackbar or anything else
+                                            } finally {
+                                              setState(() {
+                                                isLoading = false;
+                                              });
+                                            }
+                                          },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1F4940'),
                                       shape: const RoundedRectangleBorder(
@@ -1802,13 +2699,20 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         vertical: 6.4.h,
                                         horizontal: 8.w,
                                       ),
-                                      child: const Text(
-                                        AppStrings.tambahBtn,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                      child: isLoading
+                                          ? const LinearProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              AppStrings.tambahBtn,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],
@@ -1902,7 +2806,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           borderRadius:
                                               BorderRadius.circular(16),
                                           child: Image.network(
-                                            'https://via.placeholder.com/600x400',
+                                            imageUri ??
+                                                'https://via.placeholder.com/600x400',
                                             fit: BoxFit.cover,
                                             loadingBuilder:
                                                 (BuildContext context,
@@ -1944,7 +2849,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Mocktail.jpg',
+                                            getFileName(imageUri),
                                             style: TextStyle(
                                               fontFamily: 'Inter',
                                               fontWeight: FontWeight.w500,
@@ -1978,7 +2883,48 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 children: [
                                   const Spacer(),
                                   ElevatedButton(
-                                    onPressed: () {},
+                                    onPressed: isLoading
+                                        ? () {}
+                                        : () async {
+                                            setState(() {
+                                              isLoading = true;
+                                            });
+                                            try {
+                                              if (editKey.currentState!
+                                                  .validate()) {
+                                                await ref
+                                                    .read(
+                                                      menuControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .updateData(
+                                                      request: MenuEntity(
+                                                        name: nama.text,
+                                                        price: double.parse(
+                                                          harga.text,
+                                                        ),
+                                                        qty: double.parse(
+                                                          jumlah.text,
+                                                        ),
+                                                        category: kategori.text,
+                                                        description:
+                                                            deskripsi.text,
+                                                        imageUri: "",
+                                                        isActive:
+                                                            switchStatusForEdit,
+                                                      ),
+                                                      id: id!,
+                                                    );
+                                                closeEditPanel();
+                                              }
+                                            } catch (e) {
+                                              // show snackbar or anything else
+                                            } finally {
+                                              setState(() {
+                                                isLoading = false;
+                                              });
+                                            }
+                                          },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1F4940'),
                                       shape: const RoundedRectangleBorder(
@@ -1992,13 +2938,20 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         vertical: 6.4.h,
                                         horizontal: 8.w,
                                       ),
-                                      child: const Text(
-                                        'Edit',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                      child: isLoading
+                                          ? const LinearProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Edit',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],

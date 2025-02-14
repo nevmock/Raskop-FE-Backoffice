@@ -57,9 +57,10 @@ class MenuController extends _$MenuController {
   }
 
   /// can be called using riverpod notifier
-  FutureVoid createNew({required MenuEntity request}) async {
-    final res =
-        await ref.read(menuRepositoryProvider).createNewMenu(request: request);
+  FutureVoid createNew({required MenuEntity request, String? imageFile}) async {
+    final res = await ref
+        .read(menuRepositoryProvider)
+        .createNewMenu(request: request, imageFile: imageFile);
     res.fold(
       (l) => state = AsyncError(l, StackTrace.current),
       (r) => r,

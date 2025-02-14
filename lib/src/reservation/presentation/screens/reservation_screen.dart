@@ -2186,13 +2186,13 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                                       ),
                                                     ),
                                                   ),
-                                                  const Expanded(
-                                                    flex: 5,
-                                                    child: Center(
-                                                      child:
-                                                          PhoneSwitchWidget(),
-                                                    ),
-                                                  ),
+                                                  // const Expanded(
+                                                  //   flex: 5,
+                                                  //   child: Center(
+                                                  //     child:
+                                                  //         PhoneSwitchWidget(),
+                                                  //   ),
+                                                  // ),
                                                 ],
                                               ),
                                             ),
