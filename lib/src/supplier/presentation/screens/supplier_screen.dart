@@ -1,20 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
 import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
-import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
+import 'package:raskop_fe_backoffice/src/supplier/application/supplier_controller.dart';
+import 'package:raskop_fe_backoffice/src/supplier/domain/entities/supplier_entity.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
+import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/switch_widget.dart';
 
 ///
-class SupplierScreen extends StatefulWidget {
+class SupplierScreen extends ConsumerStatefulWidget {
   ///
   const SupplierScreen({super.key});
 
@@ -22,37 +30,71 @@ class SupplierScreen extends StatefulWidget {
   static const String route = 'supplier';
 
   @override
-  State<SupplierScreen> createState() => _SupplierScreenState();
+  ConsumerState<SupplierScreen> createState() => _SupplierScreenState();
 }
 
-class _SupplierScreenState extends State<SupplierScreen> {
+class _SupplierScreenState extends ConsumerState<SupplierScreen> {
+  AsyncValue<List<SupplierEntity>> get supplier =>
+      ref.watch(supplierControllerProvider);
+
+  SupplierEntity detailSupplier = const SupplierEntity(
+    id: '',
+    name: '',
+    contact: '',
+    type: '',
+    price: 0,
+    unit: '',
+    shippingFee: 0,
+    address: '',
+    productName: '',
+    isActive: false,
+  );
+
+  final createKey = GlobalKey<FormState>();
+  final editKey = GlobalKey<FormState>();
+
   bool isDetailPanelVisible = false;
   bool isCreatePanelVisible = false;
   bool isEditPanelVisible = false;
   TextEditingController nama = TextEditingController();
   TextEditingController kontak = TextEditingController();
   TextEditingController harga = TextEditingController();
+  TextEditingController tipe = TextEditingController();
   TextEditingController unit = TextEditingController();
   TextEditingController biaya = TextEditingController();
   TextEditingController alamat = TextEditingController();
   TextEditingController produk = TextEditingController();
+  TextEditingController search = TextEditingController();
+  TextEditingController idDetail = TextEditingController();
+  double price = 0;
+  double fee = 0;
+  bool? switchStatusForEdit;
+  String? id;
   List<DropdownItem<String>> advSearchOptions = [
-    DropdownItem(label: 'Nama', value: 'reserveBy'),
-    DropdownItem(label: 'Kontak', value: 'phoneNumber'),
+    DropdownItem(label: 'Nama', value: 'name'),
+    DropdownItem(label: 'Kontak', value: 'contact'),
     DropdownItem(label: 'Nama Produk', value: 'productName'),
     DropdownItem(label: 'Alamat', value: 'address'),
     DropdownItem(label: 'Unit', value: 'unit'),
   ];
 
   List<DropdownItem<String>> productType = [
-    DropdownItem(label: 'Syrup', value: 'Syrup'),
-    DropdownItem(label: 'Beans', value: 'Beans'),
+    DropdownItem(label: 'Sirup', value: 'SYRUPE'),
+    DropdownItem(label: 'Kacang/Biji Kopi', value: 'BEANS'),
+    DropdownItem(label: 'Bubuk/Powder', value: 'POWDER'),
+    DropdownItem(label: 'Cup', value: 'CUP'),
+    DropdownItem(label: 'Kudapan/Snack', value: 'SNACK'),
+    DropdownItem(label: 'Lainnya', value: 'OTHER_INGREDIENT'),
   ];
 
   List<DropdownItem<String>> productUnit = [
-    DropdownItem(label: 'KG', value: 'KG'),
-    DropdownItem(label: 'Pcs', value: 'pcs'),
-    DropdownItem(label: 'Liter', value: 'liter'),
+    DropdownItem(label: 'Kilogram', value: 'KG'),
+    DropdownItem(label: 'Piece', value: 'PIECE'),
+    DropdownItem(label: 'Liter', value: 'LITER'),
+    DropdownItem(label: 'MiliLiter/ML', value: 'ML'),
+    DropdownItem(label: 'Gram', value: 'GRAM'),
+    DropdownItem(label: 'Pack/Box', value: 'BOX'),
+    DropdownItem(label: 'Ball', value: 'BALL'),
   ];
 
   final typeTabletCreateController = MultiSelectController<String>();
@@ -65,11 +107,64 @@ class _SupplierScreenState extends State<SupplierScreen> {
   final unitTabletEditController = MultiSelectController<String>();
   final unitPhoneEditController = MultiSelectController<String>();
 
+  final advSearchTabletController = MultiSelectController<String>();
+  final advSearchPhoneController = MultiSelectController<String>();
+
+  bool isLoading = false;
+
+  bool isNameAscending = true;
+
+  bool isContactAscending = true;
+
   @override
   Widget build(BuildContext context) {
-    void toggleDetailPanel() {
+    void openDetailPanel({required SupplierEntity detailSupplier}) {
       setState(() {
-        isDetailPanelVisible = !isDetailPanelVisible;
+        nama.value = TextEditingValue(text: detailSupplier.name);
+        kontak.value = TextEditingValue(text: detailSupplier.contact);
+        harga.value = TextEditingValue(
+          text: NumberFormat.simpleCurrency(
+            locale: 'id-ID',
+            name: 'Rp',
+            decimalDigits: 2,
+          ).format(detailSupplier.price),
+        );
+        unit.value = TextEditingValue(
+          text: productUnit
+              .firstWhere((e) => detailSupplier.unit == e.value)
+              .label,
+        );
+        biaya.value = TextEditingValue(
+          text: NumberFormat.simpleCurrency(
+            locale: 'id-ID',
+            name: 'Rp',
+            decimalDigits: 2,
+          ).format(detailSupplier.shippingFee),
+        );
+        alamat.value = TextEditingValue(text: detailSupplier.address);
+        produk.value = TextEditingValue(text: detailSupplier.productName);
+        tipe.value = TextEditingValue(
+          text: productType
+              .firstWhere((e) => detailSupplier.type == e.value)
+              .label,
+        );
+        idDetail.value = TextEditingValue(text: detailSupplier.id!);
+        isDetailPanelVisible = true;
+      });
+    }
+
+    void closeDetailPanel() {
+      setState(() {
+        nama.clear();
+        kontak.clear();
+        harga.clear();
+        unit.clear();
+        biaya.clear();
+        alamat.clear();
+        produk.clear();
+        tipe.clear();
+        idDetail.clear();
+        isDetailPanelVisible = false;
       });
     }
 
@@ -79,28 +174,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
       });
     }
 
-    void openEditPanel() {
+    void closeCreatePanel() {
       setState(() {
-        isEditPanelVisible = !isEditPanelVisible;
-        nama.value = const TextEditingValue(text: 'Christine Brooks');
-        kontak.value = const TextEditingValue(text: '+621234567890');
-        harga.value = const TextEditingValue(text: '80000');
-        unit.value = const TextEditingValue(text: 'Liter');
-        biaya.value = const TextEditingValue(text: '15000');
-        alamat.value = const TextEditingValue(
-          text: 'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
-        );
-        produk.value = const TextEditingValue(text: 'Buah Naga');
-        typeTabletEditController.selectWhere((item) => item.label == 'Syrup');
-        typePhoneEditController.selectWhere((item) => item.label == 'Syrup');
-        unitTabletEditController.selectWhere((item) => item.label == 'Liter');
-        unitPhoneEditController.selectWhere((item) => item.label == 'Liter');
-      });
-    }
-
-    void closeEditPanel() {
-      setState(() {
-        isEditPanelVisible = !isEditPanelVisible;
         nama.clear();
         kontak.clear();
         harga.clear();
@@ -112,7 +187,105 @@ class _SupplierScreenState extends State<SupplierScreen> {
         unitTabletEditController.clearAll();
         typePhoneEditController.clearAll();
         unitPhoneEditController.clearAll();
+        isCreatePanelVisible = false;
+        // FocusScope.of(context).unfocus();
       });
+    }
+
+    void openEditPanel({required SupplierEntity request}) {
+      setState(() {
+        isEditPanelVisible = !isEditPanelVisible;
+        nama.value = TextEditingValue(text: request.name);
+        kontak.value = TextEditingValue(text: request.contact);
+        harga.value = TextEditingValue(text: request.price.toString());
+        biaya.value = TextEditingValue(text: request.shippingFee.toString());
+        alamat.value = TextEditingValue(text: request.address);
+        produk.value = TextEditingValue(text: request.productName);
+        typeTabletEditController
+            .selectWhere((item) => item.value == request.type);
+        typePhoneEditController
+            .selectWhere((item) => item.value == request.type);
+        unitTabletEditController
+            .selectWhere((item) => item.value == request.unit);
+        unitPhoneEditController
+            .selectWhere((item) => item.value == request.unit);
+        id = request.id;
+        switchStatusForEdit = request.isActive;
+      });
+    }
+
+    void closeEditPanel() {
+      setState(() {
+        isEditPanelVisible = !isEditPanelVisible;
+        nama.clear();
+        kontak.clear();
+        harga.clear();
+        biaya.clear();
+        alamat.clear();
+        produk.clear();
+        typeTabletEditController.clearAll();
+        unitTabletEditController.clearAll();
+        typePhoneEditController.clearAll();
+        unitPhoneEditController.clearAll();
+        id = null;
+        switchStatusForEdit = null;
+        // FocusScope.of(context).unfocus();
+      });
+    }
+
+    void onSearchPhone() {
+      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
+        advSearch: {
+          'withDeleted': false,
+          for (final item in advSearchPhoneController.selectedItems)
+            if (item.value == 'unit') ...{
+              for (final i in productUnit)
+                if (search.text.toLowerCase() == i.label.toLowerCase() ||
+                    search.text.toLowerCase() == i.value.toLowerCase())
+                  item.value: i.value,
+            } else
+              item.value: search.text,
+        },
+      );
+    }
+
+    void onSearchTablet() {
+      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
+        advSearch: {
+          'withDeleted': false,
+          for (final item in advSearchTabletController.selectedItems)
+            if (item.value == 'unit') ...{
+              for (final i in productUnit)
+                if (search.text.toLowerCase() == i.label.toLowerCase() ||
+                    search.text.toLowerCase() == i.value.toLowerCase())
+                  item.value: i.value,
+            } else
+              item.value: search.text,
+        },
+      );
+    }
+
+    Timer? debounceTimer;
+
+    void debounceOnPhone() {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), onSearchPhone);
+    }
+
+    void debounceOnTablet() {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), onSearchTablet);
+    }
+
+    void onSort({required String column, required String direction}) {
+      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
+        order: [
+          <String, dynamic>{
+            'column': column,
+            'direction': direction,
+          },
+        ],
+      );
     }
 
     return GestureDetector(
@@ -181,6 +354,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                       Flexible(
                                         flex: 3,
                                         child: TextFormField(
+                                          controller: search,
+                                          onChanged: (value) {
+                                            debounceOnTablet();
+                                          },
+                                          onFieldSubmitted: (value) {
+                                            onSearchTablet();
+                                          },
                                           decoration: InputDecoration(
                                             filled: false,
                                             border: InputBorder.none,
@@ -198,6 +378,10 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                         flex: 2,
                                         child: MultiDropdown<String>(
                                           items: advSearchOptions,
+                                          controller: advSearchTabletController,
+                                          onSelectionChange: (selectedItems) {
+                                            onSearchTablet();
+                                          },
                                           fieldDecoration:
                                               const FieldDecoration(
                                             border: OutlineInputBorder(
@@ -237,39 +421,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 20,
-                              ),
-                              Flexible(
-                                flex: 2,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: 20,
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {},
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: hexToColor('#1F4940'),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        'Pencarian Lanjutan',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                 ),
                               ),
@@ -331,24 +482,69 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 ),
                                 Expanded(
                                   flex: 3,
-                                  child: Text(
-                                    'NAMA',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: hexToColor('#202224'),
-                                      fontSize: 14,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'NAMA',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: hexToColor('#202224'),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          onSort(
+                                            column: 'name',
+                                            direction: isNameAscending
+                                                ? 'DESC'
+                                                : 'ASC',
+                                          );
+                                          setState(() {
+                                            isNameAscending = !isNameAscending;
+                                          });
+                                        },
+                                        child: Iconify(
+                                          isNameAscending
+                                              ? IconAssets.ascendingIcon
+                                              : IconAssets.descendingIcon,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Expanded(
                                   flex: 3,
-                                  child: Text(
-                                    'KONTAK',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: hexToColor('#202224'),
-                                      fontSize: 14,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'KONTAK',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: hexToColor('#202224'),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          onSort(
+                                            column: 'contact',
+                                            direction: isContactAscending
+                                                ? 'DESC'
+                                                : 'ASC',
+                                          );
+                                          setState(() {
+                                            isContactAscending =
+                                                !isContactAscending;
+                                          });
+                                        },
+                                        child: Iconify(
+                                          isContactAscending
+                                              ? IconAssets.ascendingIcon
+                                              : IconAssets.descendingIcon,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Expanded(
@@ -426,245 +622,428 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 7.h),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: hexToColor('#E1E1E1'),
-                                ),
-                                child: Slidable(
-                                  startActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: openEditPanel,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topLeft: Radius.circular(18),
-                                                  bottomLeft:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
-                                                  child: Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    height:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.05,
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                      12,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                          child: supplier.when(
+                            data: (data) {
+                              return ListView(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: data
+                                    .map(
+                                      (e) => Container(
+                                        margin: EdgeInsets.only(bottom: 7.h),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                          color: hexToColor('#E1E1E1'),
+                                        ),
+                                        child: Slidable(
+                                          startActionPane: ActionPane(
+                                            extentRatio: 0.08,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      openEditPanel(request: e);
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topLeft:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                          bottomLeft:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                        ),
+                                                        color: hexToColor(
+                                                          '#E1E1E1',
+                                                        ),
                                                       ),
+                                                      child: ClipOval(
+                                                        child: Center(
+                                                          child: Container(
+                                                            width:
+                                                                MediaQuery.of(
+                                                                      context,
+                                                                    )
+                                                                        .size
+                                                                        .width *
+                                                                    0.05,
+                                                            height:
+                                                                MediaQuery.of(
+                                                                      context,
+                                                                    )
+                                                                        .size
+                                                                        .width *
+                                                                    0.05,
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(
+                                                              12,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                Radius.circular(
+                                                                  30,
+                                                                ),
+                                                              ),
+                                                              color: hexToColor(
+                                                                '#FFAD0D',
+                                                              ),
+                                                            ),
+                                                            child:
+                                                                const Iconify(
+                                                              Zondicons
+                                                                  .edit_pencil,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          endActionPane: ActionPane(
+                                            extentRatio: 0.08,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      showConfirmationDialog(
+                                                        context: context,
+                                                        title:
+                                                            'Hapus Supplier?',
+                                                        onDelete: isLoading
+                                                            ? () {}
+                                                            : () async {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      true;
+                                                                });
+                                                                try {
+                                                                  await ref
+                                                                      .read(
+                                                                        supplierControllerProvider
+                                                                            .notifier,
+                                                                      )
+                                                                      .deleteData(
+                                                                        id: e
+                                                                            .id!,
+                                                                        deletePermanent:
+                                                                            false,
+                                                                      );
+                                                                } catch (e) {
+                                                                  // show snackbar or anything else
+                                                                  print(
+                                                                    'delete failed : $e',
+                                                                  );
+                                                                } finally {
+                                                                  setState(() {
+                                                                    isLoading =
+                                                                        false;
+                                                                    context
+                                                                        .pop();
+                                                                    FocusScope
+                                                                        .of(
+                                                                      context,
+                                                                    ).unfocus();
+                                                                  });
+                                                                }
+                                                              },
+                                                        content:
+                                                            'Supplier ini akan terhapus dari halaman ini.',
+                                                        isWideScreen: true,
+                                                        isLoading: isLoading,
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topRight:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                          bottomRight:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                        ),
+                                                        color: hexToColor(
+                                                          '#E1E1E1',
+                                                        ),
+                                                      ),
+                                                      child: Center(
+                                                        child: Container(
+                                                          width: MediaQuery.of(
+                                                                context,
+                                                              ).size.width *
+                                                              0.05,
+                                                          height: MediaQuery.of(
+                                                                context,
+                                                              ).size.width *
+                                                              0.05,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(12),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
+                                                              ),
+                                                            ),
+                                                            color: hexToColor(
+                                                              '#F64C4C',
+                                                            ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Eva.trash_fill,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: Colors.grey,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              color: Colors.white,
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 10.w,
+                                              vertical: 8.h,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    e.id!,
+                                                    maxLines: 1,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       color:
-                                                          hexToColor('#FFAD0D'),
-                                                    ),
-                                                    child: const Iconify(
-                                                      Zondicons.edit_pencil,
-                                                      color: Colors.white,
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
-                                              ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                    e.name,
+                                                    maxLines: 2,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                    e.contact,
+                                                    maxLines: 2,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 14,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Center(
+                                                    child: Text(
+                                                      productType
+                                                          .firstWhere(
+                                                            (el) =>
+                                                                e.type ==
+                                                                el.value,
+                                                          )
+                                                          .label,
+                                                      maxLines: 2,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: hexToColor(
+                                                          '#202224',
+                                                        ),
+                                                        fontSize: 14,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Center(
+                                                    child: Text(
+                                                      NumberFormat
+                                                          .simpleCurrency(
+                                                        locale: 'id-ID',
+                                                        name: 'Rp',
+                                                        decimalDigits: 2,
+                                                      ).format(e.price),
+                                                      maxLines: 2,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: hexToColor(
+                                                          '#202224',
+                                                        ),
+                                                        fontSize: 14,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Center(
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        horizontal: 10.h,
+                                                      ),
+                                                      child: TextButton(
+                                                        onPressed: () {
+                                                          openDetailPanel(
+                                                            detailSupplier:
+                                                                SupplierEntity(
+                                                              id: e.id,
+                                                              name: e.name,
+                                                              contact:
+                                                                  e.contact,
+                                                              type: e.type,
+                                                              price: e.price,
+                                                              unit: e.unit,
+                                                              shippingFee:
+                                                                  e.shippingFee,
+                                                              address:
+                                                                  e.address,
+                                                              productName:
+                                                                  e.productName,
+                                                              isActive:
+                                                                  e.isActive,
+                                                            ),
+                                                          );
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              hexToColor(
+                                                            '#f6e9e0',
+                                                          ),
+                                                          minimumSize:
+                                                              const Size(
+                                                            double.infinity,
+                                                            40,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Lihat',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: hexToColor(
+                                                              '#E38D5D',
+                                                            ),
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Center(
+                                                    child: CustomSwitch(
+                                                      isON: e.isActive!,
+                                                      onSwitch: (val) {
+                                                        return ref
+                                                            .read(
+                                                              supplierControllerProvider
+                                                                  .notifier,
+                                                            )
+                                                            .toggleSupplierStatus(
+                                                              request: e,
+                                                              id: e.id!,
+                                                              currentStatus:
+                                                                  e.isActive!,
+                                                            );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  endActionPane: ActionPane(
-                                    extentRatio: 0.08,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topRight: Radius.circular(18),
-                                                  bottomRight:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: Center(
-                                                child: Container(
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  height: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.05,
-                                                  padding:
-                                                      const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        const BorderRadius.all(
-                                                      Radius.circular(30),
-                                                    ),
-                                                    color:
-                                                        hexToColor('#F64C4C'),
-                                                  ),
-                                                  child: const Iconify(
-                                                    Eva.trash_fill,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(18),
-                                      color: Colors.white,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: Text(
-                                            '00001',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Christine Brooks',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            '+621234567890',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Center(
-                                            child: Text(
-                                              'BUAH',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: hexToColor('#202224'),
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Center(
-                                            child: Text(
-                                              NumberFormat.simpleCurrency(
-                                                locale: 'id-ID',
-                                                name: 'Rp',
-                                                decimalDigits: 2,
-                                              ).format(80000),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: hexToColor('#202224'),
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 10.h,
-                                              ),
-                                              child: TextButton(
-                                                onPressed: toggleDetailPanel,
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      hexToColor('#f6e9e0'),
-                                                  minimumSize: const Size(
-                                                    double.infinity,
-                                                    40,
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  'Lihat',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        hexToColor('#E38D5D'),
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const Expanded(
-                                          flex: 2,
-                                          child: Center(
-                                            child: CustomSwitch(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                    )
+                                    .toList(),
                               );
                             },
+                            loading: () => const Center(
+                              child: CustomLoadingIndicator(),
+                            ),
+                            error: (error, stackTrace) => Center(
+                              child: Text(
+                                error.toString() + stackTrace.toString(),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -687,13 +1066,47 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
                       ),
                       SizedBox(
                         height: 20.h,
+                      ),
+                      Text(
+                        'ID',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        controller: idDetail,
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
                       ),
                       Text(
                         'Unit',
@@ -714,7 +1127,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Liter',
+                        controller: unit,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -748,11 +1161,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: NumberFormat.simpleCurrency(
-                          locale: 'id-ID',
-                          name: 'Rp',
-                          decimalDigits: 2,
-                        ).format(15000),
+                        controller: biaya,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -787,8 +1196,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           overflow: TextOverflow.fade,
                         ),
                         maxLines: 3,
-                        initialValue:
-                            'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
+                        controller: alamat,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -822,7 +1230,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Buah Naga',
+                        controller: produk,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -872,6 +1280,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     (100 * (crossAxisCount - 2))) /
                                 crossAxisCount;
                             return Form(
+                              key: createKey,
+                              autovalidateMode: AutovalidateMode.onUnfocus,
                               child: SingleChildScrollView(
                                 child: Wrap(
                                   alignment: WrapAlignment.center,
@@ -919,6 +1329,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                               height: 5.h,
                                             ),
                                             MultiDropdown(
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required Field';
+                                                }
+                                                return null;
+                                              },
                                               controller:
                                                   typeTabletCreateController,
                                               singleSelect: true,
@@ -931,6 +1348,15 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                                 spacing: 10,
                                               ),
                                               fieldDecoration: FieldDecoration(
+                                                errorBorder: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
                                                 backgroundColor: Colors.white,
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -1009,6 +1435,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                               height: 5.h,
                                             ),
                                             MultiDropdown(
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required Field';
+                                                }
+                                                return null;
+                                              },
                                               controller:
                                                   unitTabletCreateController,
                                               singleSelect: true,
@@ -1021,6 +1454,15 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                                 spacing: 10,
                                               ),
                                               fieldDecoration: FieldDecoration(
+                                                errorBorder: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    15,
+                                                  ),
+                                                  borderSide: const BorderSide(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
                                                 backgroundColor: Colors.white,
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -1101,7 +1543,58 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                       width: (itemWidth * 3 - 60).w,
                                     ),
                                     ElevatedButton(
-                                      onPressed: () {},
+                                      onPressed: isLoading
+                                          ? () {}
+                                          : () async {
+                                              setState(() {
+                                                isLoading = true;
+                                              });
+
+                                              try {
+                                                if (createKey.currentState!
+                                                    .validate()) {
+                                                  await ref
+                                                      .read(
+                                                        supplierControllerProvider
+                                                            .notifier,
+                                                      )
+                                                      .createNew(
+                                                        request: SupplierEntity(
+                                                          name: nama.text,
+                                                          contact: kontak.text,
+                                                          type:
+                                                              typeTabletCreateController
+                                                                  .selectedItems
+                                                                  .first
+                                                                  .value,
+                                                          price: double.parse(
+                                                            harga.text,
+                                                          ),
+                                                          unit:
+                                                              unitTabletCreateController
+                                                                  .selectedItems
+                                                                  .first
+                                                                  .value,
+                                                          shippingFee:
+                                                              double.parse(
+                                                            biaya.text,
+                                                          ),
+                                                          address: alamat.text,
+                                                          productName:
+                                                              produk.text,
+                                                          isActive: false,
+                                                        ),
+                                                      );
+                                                  closeCreatePanel();
+                                                }
+                                              } catch (e) {
+                                                //show snackbar or anything else
+                                              } finally {
+                                                setState(() {
+                                                  isLoading = false;
+                                                });
+                                              }
+                                            },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: hexToColor('#1F4940'),
                                         shape: const RoundedRectangleBorder(
@@ -1115,13 +1608,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                           vertical: 6.4.h,
                                           horizontal: 8.w,
                                         ),
-                                        child: const Text(
-                                          AppStrings.tambahBtn,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                        child: isLoading
+                                            ? const CustomLoadingIndicator(
+                                                color: Colors.white,
+                                              )
+                                            : const Text(
+                                                AppStrings.tambahBtn,
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ],
@@ -1169,6 +1666,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     (100.w * (crossAxisCount - 2))) /
                                 crossAxisCount;
                             return Form(
+                              key: editKey,
                               child: SingleChildScrollView(
                                 child: Wrap(
                                   spacing: 10,
@@ -1216,6 +1714,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                               height: 5.h,
                                             ),
                                             MultiDropdown(
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required Field';
+                                                }
+                                                return null;
+                                              },
                                               controller:
                                                   typeTabletEditController,
                                               singleSelect: true,
@@ -1306,6 +1811,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                               height: 5.h,
                                             ),
                                             MultiDropdown(
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required Field';
+                                                }
+                                                return null;
+                                              },
                                               controller:
                                                   unitTabletEditController,
                                               singleSelect: true,
@@ -1398,7 +1910,59 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                       width: (itemWidth * 3 - 60).w,
                                     ),
                                     ElevatedButton(
-                                      onPressed: () {},
+                                      onPressed: isLoading
+                                          ? () {}
+                                          : () async {
+                                              setState(() {
+                                                isLoading = true;
+                                              });
+                                              try {
+                                                if (editKey.currentState!
+                                                    .validate()) {
+                                                  await ref
+                                                      .read(
+                                                        supplierControllerProvider
+                                                            .notifier,
+                                                      )
+                                                      .updateData(
+                                                        request: SupplierEntity(
+                                                          name: nama.text,
+                                                          contact: kontak.text,
+                                                          type:
+                                                              typeTabletEditController
+                                                                  .selectedItems
+                                                                  .first
+                                                                  .value,
+                                                          price: double.parse(
+                                                            harga.text,
+                                                          ),
+                                                          unit:
+                                                              unitTabletEditController
+                                                                  .selectedItems
+                                                                  .first
+                                                                  .value,
+                                                          shippingFee:
+                                                              double.parse(
+                                                            biaya.text,
+                                                          ),
+                                                          address: alamat.text,
+                                                          productName:
+                                                              produk.text,
+                                                          isActive:
+                                                              switchStatusForEdit,
+                                                        ),
+                                                        id: id!,
+                                                      );
+                                                  closeEditPanel();
+                                                }
+                                              } catch (e) {
+                                                // show snackbar or anything else
+                                              } finally {
+                                                setState(() {
+                                                  isLoading = false;
+                                                });
+                                              }
+                                            },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: hexToColor('#1F4940'),
                                         shape: const RoundedRectangleBorder(
@@ -1412,13 +1976,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                           vertical: 6.4.h,
                                           horizontal: 8.w,
                                         ),
-                                        child: const Text(
-                                          'Edit',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                        child: isLoading
+                                            ? const CustomLoadingIndicator(
+                                                color: Colors.white,
+                                              )
+                                            : const Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ],
@@ -1500,6 +2068,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                             left: 8,
                                           ),
                                           child: TextFormField(
+                                            controller: search,
+                                            onChanged: (value) {
+                                              debounceOnPhone(); // Debounce biar nggak spam API
+                                            },
+                                            onFieldSubmitted: (value) {
+                                              onSearchPhone();
+                                            },
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -1520,7 +2095,11 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                       Flexible(
                                         flex: 3,
                                         child: MultiDropdown<String>(
+                                          controller: advSearchPhoneController,
                                           items: advSearchOptions,
+                                          onSelectionChange: (selectedItems) {
+                                            onSearchPhone();
+                                          },
                                           fieldDecoration:
                                               const FieldDecoration(
                                             border: OutlineInputBorder(
@@ -1711,217 +2290,359 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: 20,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                margin: EdgeInsets.only(bottom: 7.h),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: hexToColor('#E1E1E1'),
-                                ),
-                                child: Slidable(
-                                  startActionPane: ActionPane(
-                                    extentRatio: 0.2,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: openEditPanel,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topLeft: Radius.circular(18),
-                                                  bottomLeft:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
-                                                  child: Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 8.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    margin:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 10.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
+                          child: supplier.when(
+                            data: (data) {
+                              return ListView(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: data
+                                    .map(
+                                      (e) => Container(
+                                        margin: EdgeInsets.only(bottom: 7.h),
+                                        decoration: BoxDecoration(
+                                          border:
+                                              Border.all(color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                          color: hexToColor('#E1E1E1'),
+                                        ),
+                                        child: Slidable(
+                                          startActionPane: ActionPane(
+                                            extentRatio: 0.2,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      openEditPanel(request: e);
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topLeft:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                          bottomLeft:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                        ),
+                                                        color: hexToColor(
+                                                          '#E1E1E1',
+                                                        ),
                                                       ),
-                                                      color:
-                                                          hexToColor('#FFAD0D'),
-                                                    ),
-                                                    child: const Iconify(
-                                                      Zondicons.edit_pencil,
-                                                      color: Colors.white,
+                                                      child: ClipOval(
+                                                        child: Center(
+                                                          child: Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 10.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                Radius.circular(
+                                                                  30,
+                                                                ),
+                                                              ),
+                                                              color: hexToColor(
+                                                                '#FFAD0D',
+                                                              ),
+                                                            ),
+                                                            child:
+                                                                const Iconify(
+                                                              Zondicons
+                                                                  .edit_pencil,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
+                                            ],
+                                          ),
+                                          endActionPane: ActionPane(
+                                            extentRatio: 0.2,
+                                            motion: const BehindMotion(),
+                                            children: [
+                                              Expanded(
+                                                child: SizedBox.expand(
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      showConfirmationDialog(
+                                                        context: context,
+                                                        title:
+                                                            'Hapus Supplier?',
+                                                        onDelete: isLoading
+                                                            ? () {}
+                                                            : () async {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      true;
+                                                                });
+                                                                try {
+                                                                  await ref
+                                                                      .read(
+                                                                        supplierControllerProvider
+                                                                            .notifier,
+                                                                      )
+                                                                      .deleteData(
+                                                                        id: e
+                                                                            .id!,
+                                                                        deletePermanent:
+                                                                            false,
+                                                                      );
+                                                                } catch (e) {
+                                                                  // show snackbar or anything else
+                                                                  print(
+                                                                    'delete failed : $e',
+                                                                  );
+                                                                } finally {
+                                                                  setState(() {
+                                                                    isLoading =
+                                                                        false;
+                                                                    context
+                                                                        .pop();
+                                                                    FocusScope
+                                                                        .of(
+                                                                      context,
+                                                                    ).unfocus();
+                                                                  });
+                                                                }
+                                                              },
+                                                        content:
+                                                            'Supplier ini akan terhapus dari halaman ini.',
+                                                        isWideScreen: false,
+                                                        isLoading: isLoading,
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            const BorderRadius
+                                                                .only(
+                                                          topRight:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                          bottomRight:
+                                                              Radius.circular(
+                                                            18,
+                                                          ),
+                                                        ),
+                                                        color: hexToColor(
+                                                          '#E1E1E1',
+                                                        ),
+                                                      ),
+                                                      child: ClipOval(
+                                                        child: Center(
+                                                          child: Container(
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            margin: EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 10.w,
+                                                              vertical: 8.h,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                Radius.circular(
+                                                                  30,
+                                                                ),
+                                                              ),
+                                                              color: hexToColor(
+                                                                '#F64C4C',
+                                                              ),
+                                                            ),
+                                                            child:
+                                                                const Iconify(
+                                                              Eva.trash_fill,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: Colors.grey,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              color: Colors.white,
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 10.w,
+                                              vertical: 8.h,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                    e.id!,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  width: 5,
+                                                ),
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Text(
+                                                    e.name,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  width: 3,
+                                                ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                    e.contact,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          hexToColor('#202224'),
+                                                      fontSize: 12,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  width: 2,
+                                                ),
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Center(
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        horizontal: 5.h,
+                                                      ),
+                                                      child: TextButton(
+                                                        onPressed: () {
+                                                          openDetailPanel(
+                                                            detailSupplier: e,
+                                                          );
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              hexToColor(
+                                                            '#f6e9e0',
+                                                          ),
+                                                          minimumSize:
+                                                              const Size(
+                                                            double.infinity,
+                                                            40,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Lihat',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: hexToColor(
+                                                              '#E38D5D',
+                                                            ),
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Center(
+                                                    child: PhoneSwitchWidget(
+                                                      isON: e.isActive!,
+                                                      onSwitch: (val) async {
+                                                        return ref
+                                                            .read(
+                                                              supplierControllerProvider
+                                                                  .notifier,
+                                                            )
+                                                            .toggleSupplierStatus(
+                                                              request: e,
+                                                              id: e.id!,
+                                                              currentStatus:
+                                                                  e.isActive!,
+                                                            );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  endActionPane: ActionPane(
-                                    extentRatio: 0.2,
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox.expand(
-                                          child: GestureDetector(
-                                            onTap: () {},
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                  topRight: Radius.circular(18),
-                                                  bottomRight:
-                                                      Radius.circular(18),
-                                                ),
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              child: ClipOval(
-                                                child: Center(
-                                                  child: Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 8.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    margin:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 10.w,
-                                                      vertical: 8.h,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          const BorderRadius
-                                                              .all(
-                                                        Radius.circular(30),
-                                                      ),
-                                                      color:
-                                                          hexToColor('#F64C4C'),
-                                                    ),
-                                                    child: const Iconify(
-                                                      Eva.trash_fill,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(18),
-                                      color: Colors.white,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            '00001',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Text(
-                                            'Christine Brooks',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            '+621234567890',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: hexToColor('#202224'),
-                                              fontSize: 12,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 5.h,
-                                              ),
-                                              child: TextButton(
-                                                onPressed: toggleDetailPanel,
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      hexToColor('#f6e9e0'),
-                                                  minimumSize: const Size(
-                                                    double.infinity,
-                                                    40,
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  'Lihat',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    color:
-                                                        hexToColor('#E38D5D'),
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const Expanded(
-                                          flex: 5,
-                                          child: Center(
-                                            child: PhoneSwitchWidget(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                    )
+                                    .toList(),
                               );
                             },
+                            error: (error, stackTrace) => Center(
+                              child: Text(
+                                error.toString() + stackTrace.toString(),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            loading: () => const Center(
+                              child: CustomLoadingIndicator(),
+                            ),
                           ),
                         ),
                       ],
@@ -1944,13 +2665,47 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               padding: const EdgeInsets.all(10),
                               color: hexToColor('#1F4940'),
                               icon: const Icon(Icons.arrow_back),
-                              onPressed: toggleDetailPanel,
+                              onPressed: closeDetailPanel,
                             ),
                           ),
                         ],
                       ),
                       SizedBox(
                         height: 20.h,
+                      ),
+                      Text(
+                        'ID',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 5.h,
+                      ),
+                      TextFormField(
+                        readOnly: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w400,
+                          color: Colors.black,
+                          fontSize: 14,
+                          overflow: TextOverflow.fade,
+                        ),
+                        controller: idDetail,
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 10.h,
                       ),
                       Text(
                         'Nama',
@@ -1971,7 +2726,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Christine Brooks',
+                        controller: nama,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2005,7 +2760,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: '+6281234567890',
+                        controller: kontak,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2039,7 +2794,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Buah',
+                        controller: tipe,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2073,11 +2828,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: NumberFormat.simpleCurrency(
-                          locale: 'id-ID',
-                          name: 'Rp',
-                          decimalDigits: 2,
-                        ).format(80000),
+                        controller: harga,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2111,7 +2862,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Liter',
+                        controller: unit,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2145,11 +2896,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: NumberFormat.simpleCurrency(
-                          locale: 'id-ID',
-                          name: 'Rp',
-                          decimalDigits: 2,
-                        ).format(15000),
+                        controller: biaya,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2184,8 +2931,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           overflow: TextOverflow.fade,
                         ),
                         maxLines: 3,
-                        initialValue:
-                            'Bojongsoang kecamatan suka suka, komplek Anugrah Indah',
+                        controller: alamat,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2219,7 +2965,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           fontSize: 14,
                           overflow: TextOverflow.fade,
                         ),
-                        initialValue: 'Buah Naga',
+                        controller: produk,
                         decoration: const InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -2265,6 +3011,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Form(
+                          autovalidateMode: AutovalidateMode.onUnfocus,
+                          key: createKey,
                           child: Column(
                             children: [
                               _buildTextField(
@@ -2301,6 +3049,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     ),
                                     MultiDropdown(
                                       controller: typePhoneCreateController,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required Field';
+                                        }
+                                        return null;
+                                      },
                                       singleSelect: true,
                                       items: productType,
                                       chipDecoration: ChipDecoration(
@@ -2378,6 +3132,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     ),
                                     MultiDropdown(
                                       controller: unitPhoneCreateController,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required Field';
+                                        }
+                                        return null;
+                                      },
                                       singleSelect: true,
                                       items: productUnit,
                                       chipDecoration: ChipDecoration(
@@ -2437,7 +3197,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               ),
                               _buildTextField(
                                 'Alamat',
-                                'Masukkan alamat lengkap',
+                                'Masukkan alamat supplier',
                                 alamat,
                                 TextInputType.streetAddress,
                                 12.sp,
@@ -2453,7 +3213,57 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 children: [
                                   const Spacer(),
                                   ElevatedButton(
-                                    onPressed: () {},
+                                    onPressed: isLoading
+                                        ? () {}
+                                        : () async {
+                                            setState(() {
+                                              isLoading = true;
+                                            });
+                                            try {
+                                              if (createKey.currentState!
+                                                  .validate()) {
+                                                await ref
+                                                    .read(
+                                                      supplierControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .createNew(
+                                                      request: SupplierEntity(
+                                                        name: nama.text,
+                                                        contact: kontak.text,
+                                                        type:
+                                                            typePhoneCreateController
+                                                                .selectedItems
+                                                                .first
+                                                                .value,
+                                                        price: double.parse(
+                                                          harga.text,
+                                                        ),
+                                                        unit:
+                                                            unitPhoneCreateController
+                                                                .selectedItems
+                                                                .first
+                                                                .value,
+                                                        shippingFee:
+                                                            double.parse(
+                                                          biaya.text,
+                                                        ),
+                                                        address: alamat.text,
+                                                        productName:
+                                                            produk.text,
+                                                        isActive: false,
+                                                      ),
+                                                    );
+                                                closeCreatePanel();
+                                              }
+                                            } catch (e) {
+                                              //show snackbar or anything else
+                                            } finally {
+                                              setState(() {
+                                                isLoading = false;
+                                              });
+                                            }
+                                          },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1F4940'),
                                       shape: const RoundedRectangleBorder(
@@ -2467,13 +3277,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                         vertical: 6.4.h,
                                         horizontal: 8.w,
                                       ),
-                                      child: const Text(
-                                        AppStrings.tambahBtn,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                      child: isLoading
+                                          ? const CustomLoadingIndicator(
+                                              color: Colors.white,
+                                            )
+                                          : const Text(
+                                              AppStrings.tambahBtn,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],
@@ -2513,6 +3327,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Form(
+                          key: editKey,
+                          autovalidateMode: AutovalidateMode.onUnfocus,
                           child: Column(
                             children: [
                               _buildTextField(
@@ -2549,6 +3365,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     ),
                                     MultiDropdown(
                                       controller: typePhoneEditController,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required Field';
+                                        }
+                                        return null;
+                                      },
                                       singleSelect: true,
                                       items: productType,
                                       chipDecoration: ChipDecoration(
@@ -2626,6 +3448,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                     ),
                                     MultiDropdown(
                                       controller: unitPhoneEditController,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required Field';
+                                        }
+                                        return null;
+                                      },
                                       singleSelect: true,
                                       items: productUnit,
                                       chipDecoration: ChipDecoration(
@@ -2685,7 +3513,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               ),
                               _buildTextField(
                                 'Alamat',
-                                'Masukkan alamat lengkap',
+                                'Masukkan alamat supplier',
                                 alamat,
                                 TextInputType.streetAddress,
                                 12.sp,
@@ -2701,7 +3529,59 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 children: [
                                   const Spacer(),
                                   ElevatedButton(
-                                    onPressed: () {},
+                                    onPressed: isLoading
+                                        ? () {}
+                                        : () async {
+                                            setState(() {
+                                              isLoading = true;
+                                            });
+                                            try {
+                                              if (editKey.currentState!
+                                                  .validate()) {
+                                                await ref
+                                                    .read(
+                                                      supplierControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .updateData(
+                                                      request: SupplierEntity(
+                                                        name: nama.text,
+                                                        contact: kontak.text,
+                                                        type:
+                                                            typePhoneEditController
+                                                                .selectedItems
+                                                                .first
+                                                                .value,
+                                                        price: double.parse(
+                                                          harga.text,
+                                                        ),
+                                                        unit:
+                                                            unitPhoneEditController
+                                                                .selectedItems
+                                                                .first
+                                                                .value,
+                                                        shippingFee:
+                                                            double.parse(
+                                                          biaya.text,
+                                                        ),
+                                                        address: alamat.text,
+                                                        productName:
+                                                            produk.text,
+                                                        isActive:
+                                                            switchStatusForEdit,
+                                                      ),
+                                                      id: id!,
+                                                    );
+                                                closeEditPanel();
+                                              }
+                                            } catch (e) {
+                                              // show snackbar or anything else
+                                            } finally {
+                                              setState(() {
+                                                isLoading = false;
+                                              });
+                                            }
+                                          },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1F4940'),
                                       shape: const RoundedRectangleBorder(
@@ -2715,13 +3595,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                         vertical: 6.4.h,
                                         horizontal: 8.w,
                                       ),
-                                      child: const Text(
-                                        'Edit',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                      child: isLoading
+                                          ? const CustomLoadingIndicator(
+                                              color: Colors.white,
+                                            )
+                                          : const Text(
+                                              'Edit',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],
@@ -2767,6 +3651,12 @@ Widget _buildTextField(
           height: 5.h,
         ),
         TextFormField(
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Required Field!';
+            }
+            return null;
+          },
           keyboardType: keytype,
           controller: controller,
           style: const TextStyle(
@@ -2793,5 +3683,143 @@ Widget _buildTextField(
         ),
       ],
     ),
+  );
+}
+
+///
+FutureVoid showConfirmationDialog({
+  required BuildContext context,
+  required String title,
+  required VoidCallback onDelete,
+  required String content,
+  required bool isWideScreen,
+  required bool isLoading,
+}) {
+  return showDialog(
+    barrierDismissible: false,
+    builder: (context) => Center(
+      child: Container(
+        padding:
+            isWideScreen ? null : const EdgeInsets.symmetric(horizontal: 20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(35)),
+        ),
+        margin: EdgeInsets.symmetric(
+          horizontal: isWideScreen
+              ? MediaQuery.of(context).size.width * 0.3
+              : MediaQuery.of(context).size.width * 0.05,
+          vertical: MediaQuery.of(context).size.height * 0.3,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: isWideScreen ? 35 : 24,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                top: 5,
+                bottom: 30,
+              ),
+              child: Center(
+                child: Text(
+                  content,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+            if (isLoading)
+              const Center(
+                child: CustomLoadingIndicator(),
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      context.pop();
+                      FocusScope.of(context).unfocus();
+                    },
+                    style: TextButton.styleFrom(
+                      elevation: 5,
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: hexToColor('#CACACA')),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(35)),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWideScreen
+                            ? 50
+                            : MediaQuery.of(context).size.width * 0.055,
+                        vertical: 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: isWideScreen ? 18 : 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  TextButton(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(
+                      elevation: 5,
+                      backgroundColor: hexToColor('#F64C4C'),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(35)),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWideScreen
+                            ? 50
+                            : MediaQuery.of(context).size.width * 0.055,
+                        vertical: 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Hapus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isWideScreen ? 18 : 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    ),
+    context: context,
   );
 }

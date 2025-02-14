@@ -1,14 +1,12 @@
 // ignore_for_file: avoid_positional_boolean_parameters
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 
 ///
-class PhoneSwitchWidget extends StatefulWidget {
-  /// Constructor
-  const PhoneSwitchWidget(
-      {required this.isON, required this.onSwitch, super.key});
+class CustomSwitch extends StatefulWidget {
+  ///
+  const CustomSwitch({required this.isON, required this.onSwitch, super.key});
 
   /// Status awal
   final bool isON;
@@ -17,10 +15,10 @@ class PhoneSwitchWidget extends StatefulWidget {
   final Future<bool> Function(bool isActive) onSwitch;
 
   @override
-  State<PhoneSwitchWidget> createState() => _PhoneSwitchWidgetState();
+  State<CustomSwitch> createState() => _CustomSwitchState();
 }
 
-class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
+class _CustomSwitchState extends State<CustomSwitch> {
   late bool _currentStatus;
 
   @override
@@ -47,8 +45,8 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        width: MediaQuery.of(context).size.width * 0.25,
-        height: MediaQuery.of(context).size.height * 0.05,
+        width: 90,
+        height: 50,
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
@@ -62,8 +60,8 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
               alignment:
                   _currentStatus ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.08,
-                height: MediaQuery.of(context).size.width * 0.08,
+                width: 40,
+                height: 40,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -76,13 +74,12 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
               alignment:
                   _currentStatus ? Alignment.centerLeft : Alignment.centerRight,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                padding: const EdgeInsets.symmetric(horizontal: 7),
                 child: Text(
                   _currentStatus ? 'ON' : 'OFF',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 10.sp,
                   ),
                 ),
               ),
