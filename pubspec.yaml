@@ -67,8 +67,15 @@ dependencies:
 
   # for making sure every UI is at top notch on every device dimension
   device_preview_plus: ^2.2.4
+
+  # for making fast and clear dropdown UI
   multi_dropdown: ^3.0.1
+
+  # for creating flutter charts
   fl_chart: ^0.70.2
+
+  # for fetching API responses
+  http: ^1.3.0
 
 dev_dependencies:
   flutter_test:
