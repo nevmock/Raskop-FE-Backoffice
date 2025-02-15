@@ -33,6 +33,7 @@ class _TableScreenState extends ConsumerState<TableScreen>
   final Map<String, TextEditingController> _controllers = {};
   Timer? debounceTimer;
   String storeLocation = 'Palem';
+  bool isScrollableSheetDisplayed = false;
 
   @override
   void dispose() {
@@ -69,20 +70,29 @@ class _TableScreenState extends ConsumerState<TableScreen>
       });
     }
 
+    void displayScrollableSheet() {
+      setState(() {
+        isScrollableSheetDisplayed = true;
+      });
+    }
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-          backgroundColor: Colors.white,
-          body: LayoutBuilder(builder: (context, constraints) {
+        backgroundColor: Colors.white,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
             if (storeLocation == 'Bumdes') {
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
                 child: Row(children: [
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: constraints.maxWidth > 500
+                          ? CrossAxisAlignment.start
+                          : CrossAxisAlignment.center,
                       children: [
                         PhysicalModel(
                           color: Colors.grey.shade100,
@@ -311,9 +321,11 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
-                                        _buildTableCard(data, '2'),
+                                        _buildTableCard(data, '2',
+                                            constraints.maxWidth < 800),
                                         SizedBox(height: 5),
-                                        _buildTableCard(data, '3')
+                                        _buildTableCard(data, '3',
+                                            constraints.maxWidth < 800)
                                       ],
                                     ),
                                   ),
@@ -370,12 +382,16 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                               Align(
                                                   alignment: Alignment.topRight,
                                                   child: _buildTableCard(
-                                                      data, '1')),
+                                                      data,
+                                                      '1',
+                                                      constraints.maxWidth <
+                                                          800)),
                                             ],
                                           ),
                                         ),
                                         SizedBox(height: 5),
-                                        _buildTableCard(data, '4')
+                                        _buildTableCard(data, '4',
+                                            constraints.maxWidth < 800)
                                       ],
                                     ),
                                   ),
@@ -384,8 +400,14 @@ class _TableScreenState extends ConsumerState<TableScreen>
                             ),
                           );
                         },
-                        loading: () =>
+                        loading: () => Expanded(
+                            child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                             const Center(child: CustomLoadingIndicator()),
+                          ],
+                        )),
                         error: (error, stackTrace) => Center(
                           child: Text(error.toString() + stackTrace.toString()),
                         ),
@@ -426,7 +448,7 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                       borderRadius: const BorderRadius.all(
                                           Radius.circular(20)),
                                     ),
-                                    color: hexToColor("#1f4940"),
+                                    color: Colors.white,
                                     child: Padding(
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 8.w,
@@ -442,7 +464,7 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                 'MEJA ${e.noTable}',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w700,
-                                                  color: Colors.white,
+                                                  color: Colors.black,
                                                   fontSize: 18,
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -561,6 +583,17 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                 children: [
                                                   Card(
                                                     color: Colors.white,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      side: BorderSide(
+                                                          color: hexToColor(
+                                                              '#E1E1E1')),
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                              Radius.circular(
+                                                                  20)),
+                                                    ),
                                                     child: Padding(
                                                       padding:
                                                           EdgeInsets.symmetric(
@@ -578,6 +611,17 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                     ),
                                                   ),
                                                   Card(
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      side: BorderSide(
+                                                          color: hexToColor(
+                                                              '#E1E1E1')),
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                              Radius.circular(
+                                                                  20)),
+                                                    ),
                                                     color: Colors.white,
                                                     child: Padding(
                                                       padding:
@@ -626,7 +670,7 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                               Text(
                                                 'Deskripsi',
                                                 style: TextStyle(
-                                                  color: Colors.white,
+                                                  color: Colors.black,
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 14.sp,
                                                 ),
@@ -697,9 +741,631 @@ class _TableScreenState extends ConsumerState<TableScreen>
                 ]),
               );
             } else {
-              return Text("Mobile Page");
+              return Stack(children: [
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          PhysicalModel(
+                            color: Colors.grey.shade100,
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(50)),
+                            elevation: 5,
+                            child: AnimatedContainer(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border:
+                                    Border.all(color: hexToColor('#E1E1E1')),
+                                borderRadius:
+                                    const BorderRadius.all(Radius.circular(50)),
+                              ),
+                              duration: const Duration(milliseconds: 100),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 5,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 10,
+                                      ),
+                                      backgroundColor: storeLocation == 'Palem'
+                                          ? hexToColor('#1F4940')
+                                          : Colors.transparent,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(50)),
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      setState(() {
+                                        storeLocation = 'Palem';
+                                      });
+                                    },
+                                    child: Center(
+                                      child: Text(
+                                        'Palem',
+                                        style: TextStyle(
+                                          color: storeLocation == 'Palem'
+                                              ? Colors.white
+                                              : hexToColor('#1F4940'),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    width: 12,
+                                  ),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 10,
+                                      ),
+                                      backgroundColor: storeLocation == 'Bumdes'
+                                          ? hexToColor('#1F4940')
+                                          : Colors.transparent,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(50)),
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      setState(() {
+                                        storeLocation = 'Bumdes';
+                                      });
+                                    },
+                                    child: Center(
+                                      child: Text(
+                                        'Bumdes',
+                                        style: TextStyle(
+                                          color: storeLocation == 'Bumdes'
+                                              ? Colors.white
+                                              : hexToColor('#1F4940'),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          table.when(
+                            data: (data) {
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 10),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 0, vertical: 30),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        flex: 4,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          children: [
+                                            _buildTableCard(data, '2',
+                                                constraints.maxWidth < 800),
+                                            _buildTableCard(data, '3',
+                                                constraints.maxWidth < 800)
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: 5),
+                                      Expanded(
+                                        flex: 6,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            SizedBox(
+                                              width: constraints.maxWidth < 800
+                                                  ? 400
+                                                  : 255,
+                                              height: 250,
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                children: [
+                                                  Align(
+                                                    alignment:
+                                                        Alignment.bottomLeft,
+                                                    child: SizedBox(
+                                                      width: 70,
+                                                      height:
+                                                          constraints.maxWidth <
+                                                                  800
+                                                              ? 160
+                                                              : 170,
+                                                      child: Card(
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          side: BorderSide(
+                                                              color: hexToColor(
+                                                                  '#E1E1E1')),
+                                                          borderRadius:
+                                                              const BorderRadius
+                                                                  .all(Radius
+                                                                      .circular(
+                                                                          20)),
+                                                        ),
+                                                        color: hexToColor(
+                                                            '#D9D9D9'),
+                                                        child: Center(
+                                                          child: Text(
+                                                            '',
+                                                            style: TextStyle(
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 5),
+                                                  Align(
+                                                      alignment:
+                                                          Alignment.topRight,
+                                                      child: _buildTableCard(
+                                                          data,
+                                                          '1',
+                                                          constraints.maxWidth <
+                                                              800)),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(height: 5),
+                                            _buildTableCard(data, '4',
+                                                constraints.maxWidth < 800)
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                            loading: () => SizedBox(
+                              height: constraints.maxHeight,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Center(child: CustomLoadingIndicator()),
+                                ],
+                              ),
+                            ),
+                            error: (error, stackTrace) => Center(
+                              child: Text(
+                                  error.toString() + stackTrace.toString()),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: isScrollableSheetDisplayed ? null : 0,
+                  left: isScrollableSheetDisplayed
+                      ? null
+                      : MediaQuery.of(context).size.width * 0.32,
+                  child: isScrollableSheetDisplayed
+                      ? DraggableScrollableSheet(
+                          initialChildSize: 0.15,
+                          minChildSize: 0.15,
+                          builder: (context, scrollController) {
+                            return Material(
+                              color: Colors.white,
+                              elevation: 10,
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(
+                                  color: hexToColor('#E1E1E1'),
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(30),
+                                  topRight: Radius.circular(30),
+                                ),
+                              ),
+                              child: SingleChildScrollView(
+                                controller: scrollController,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 15.w,
+                                    vertical: 10.h,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Align(
+                                          alignment: Alignment.topCenter,
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                              vertical: 8,
+                                            ),
+                                            width: 100,
+                                            height: 10,
+                                            decoration: BoxDecoration(
+                                              color: hexToColor('#8E8E8E'),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      table.when(
+                                        data: (data) {
+                                          return ListView(
+                                            padding: EdgeInsets.zero,
+                                            shrinkWrap: true,
+                                            children: data.map(
+                                              (e) {
+                                                if (!_controllers
+                                                    .containsKey(e.id)) {
+                                                  _controllers[e.id!] =
+                                                      TextEditingController(
+                                                    text: e.description,
+                                                  );
+                                                }
+                                                return Card(
+                                                  shape: RoundedRectangleBorder(
+                                                    side: BorderSide(
+                                                        color: hexToColor(
+                                                            '#E1E1E1')),
+                                                    borderRadius:
+                                                        const BorderRadius.all(
+                                                            Radius.circular(
+                                                                20)),
+                                                  ),
+                                                  color: Colors.white,
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 8.w,
+                                                      vertical: 8.h,
+                                                    ),
+                                                    child: Column(
+                                                      children: [
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: [
+                                                            Text(
+                                                              'MEJA ${e.noTable}',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: Colors
+                                                                    .black,
+                                                                fontSize: 18,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ),
+                                                            Row(
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: 95,
+                                                                  height: 50,
+                                                                  child:
+                                                                      TableLocationSwitch(
+                                                                    isOutdoor: e
+                                                                        .isOutdoor!,
+                                                                    onSwitch:
+                                                                        (val) async {
+                                                                      return ref
+                                                                          .read(
+                                                                            tableControllerProvider.notifier,
+                                                                          )
+                                                                          .toggleTableLocation(
+                                                                            request:
+                                                                                e,
+                                                                            id: e.id!,
+                                                                            currentLocation:
+                                                                                e.isOutdoor!,
+                                                                          );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 5.w),
+                                                                SizedBox(
+                                                                  width: 95,
+                                                                  height: 50,
+                                                                  child:
+                                                                      TableActiveSwitchWidget(
+                                                                    isON: e
+                                                                        .isActive!,
+                                                                    onSwitch:
+                                                                        (val) async {
+                                                                      return ref
+                                                                          .read(
+                                                                            tableControllerProvider.notifier,
+                                                                          )
+                                                                          .toggleTableStatus(
+                                                                            request:
+                                                                                e,
+                                                                            id: e.id!,
+                                                                            currentStatus:
+                                                                                e.isActive!,
+                                                                          );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            )
+                                                          ],
+                                                        ),
+                                                        SizedBox(height: 5.h),
+                                                        Column(
+                                                          children: [
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                Card(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  shape:
+                                                                      RoundedRectangleBorder(
+                                                                    side: BorderSide(
+                                                                        color: hexToColor(
+                                                                            '#E1E1E1')),
+                                                                    borderRadius:
+                                                                        const BorderRadius
+                                                                            .all(
+                                                                            Radius.circular(20)),
+                                                                  ),
+                                                                  child:
+                                                                      Padding(
+                                                                    padding: EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            5.w,
+                                                                        vertical:
+                                                                            2.h),
+                                                                    child:
+                                                                        Center(
+                                                                      child:
+                                                                          Text(
+                                                                        '0',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14.sp,
+                                                                          color:
+                                                                              Colors.black,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                Card(
+                                                                  shape:
+                                                                      RoundedRectangleBorder(
+                                                                    side: BorderSide(
+                                                                        color: hexToColor(
+                                                                            '#E1E1E1')),
+                                                                    borderRadius:
+                                                                        const BorderRadius
+                                                                            .all(
+                                                                            Radius.circular(20)),
+                                                                  ),
+                                                                  color: Colors
+                                                                      .white,
+                                                                  child:
+                                                                      Padding(
+                                                                    padding: EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            5.w,
+                                                                        vertical:
+                                                                            2.h),
+                                                                    child:
+                                                                        Center(
+                                                                      child:
+                                                                          Text(
+                                                                        '20',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14.sp,
+                                                                          color:
+                                                                              Colors.black,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              children: [
+                                                                CustomRangeSlider(
+                                                                  min: 0,
+                                                                  max: 20,
+                                                                  initialValues:
+                                                                      RangeValues(
+                                                                    e.minCapacity
+                                                                        .toDouble(),
+                                                                    e.maxCapacity
+                                                                        .toDouble(),
+                                                                  ),
+                                                                  onChanged:
+                                                                      (values) {
+                                                                    debounceOnCapacityUpdate(
+                                                                      e,
+                                                                      values
+                                                                          .start
+                                                                          .toInt(),
+                                                                      values.end
+                                                                          .toInt(),
+                                                                      ref,
+                                                                    );
+                                                                  },
+                                                                ),
+                                                              ],
+                                                            )
+                                                          ],
+                                                        ),
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              'Deskripsi',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .black,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 14.sp,
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                              height: 5.h,
+                                                            ),
+                                                            TextFormField(
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w400,
+                                                                color: Colors
+                                                                    .black,
+                                                                fontSize: 14,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .fade,
+                                                              ),
+                                                              maxLines: 3,
+                                                              controller:
+                                                                  _controllers[
+                                                                      e.id!],
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                hintText:
+                                                                    "Masukkan deskripsi meja",
+                                                                hintStyle:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .black
+                                                                      .withOpacity(
+                                                                          0.3),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                                filled: true,
+                                                                fillColor:
+                                                                    Colors
+                                                                        .white,
+                                                                focusedBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.all(
+                                                                          Radius.circular(
+                                                                              15)),
+                                                                ),
+                                                                border:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.all(
+                                                                          Radius.circular(
+                                                                              15)),
+                                                                ),
+                                                              ),
+                                                              onChanged:
+                                                                  (value) {
+                                                                debounceOnDescriptionUpdate(
+                                                                    e,
+                                                                    value,
+                                                                    ref);
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ).toList(),
+                                          );
+                                        },
+                                        loading: () => const Center(
+                                          child: CustomLoadingIndicator(),
+                                        ),
+                                        error: (error, stackTrace) => Center(
+                                          child: Text(
+                                            error.toString() +
+                                                stackTrace.toString(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : ClipRRect(
+                          child: TextButton(
+                            onPressed: displayScrollableSheet,
+                            style: TextButton.styleFrom(
+                              backgroundColor: hexToColor('#1F4940'),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Lihat Setelan Meja',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ]);
             }
-          })),
+          },
+        ),
+      ),
     );
   }
 }
@@ -833,7 +1499,7 @@ class _CustomSwitchWithIconState extends State<CustomSwitchWithIcon> {
   }
 }
 
-Widget _buildTableCard(List<TableEntity> data, String noTable) {
+Widget _buildTableCard(List<TableEntity> data, String noTable, bool? isMobile) {
   final tableEntity = data.where((table) => table.noTable == noTable).toList();
 
   Color cardColor;
@@ -846,12 +1512,24 @@ Widget _buildTableCard(List<TableEntity> data, String noTable) {
   }
 
   return SizedBox(
-    width: noTable == '4'
+    width: isMobile == false && noTable == '4'
         ? 255
-        : noTable == '1'
-            ? 180
-            : 85,
-    height: noTable == '1' ? 200 : 85,
+        : isMobile == true && noTable == '4'
+            ? 175
+            : isMobile == false && noTable == '1'
+                ? 180
+                : isMobile == true && noTable == '1'
+                    ? 100
+                    : isMobile == true
+                        ? 70
+                        : 85,
+    height: isMobile == false && noTable == '1'
+        ? 200
+        : isMobile == true && noTable == '1'
+            ? 160
+            : isMobile == true
+                ? 70
+                : 85,
     child: Card(
       shape: RoundedRectangleBorder(
         side: BorderSide(color: hexToColor('#E1E1E1')),
