@@ -718,6 +718,36 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                               ),
                                             ],
                                           ),
+                                          SizedBox(height: 5.h),
+                                          Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                e.mergedAvailable != null &&
+                                                        e.mergedAvailable!
+                                                            .isNotEmpty
+                                                    ? 'Meja ${e.noTable} bisa digabung dengan ${e.mergedAvailable!.map((id) {
+                                                          final table = data
+                                                              .where((table) =>
+                                                                  table.id ==
+                                                                  id)
+                                                              .toList();
+                                                          return table
+                                                                  .isNotEmpty
+                                                              ? 'meja ${table.first.noTable}'
+                                                              : null;
+                                                        }).where((noTable) => noTable != null).join(', ')}*'
+                                                    : 'Meja ini tidak dapat digabung',
+                                                style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14.sp,
+                                                    overflow:
+                                                        TextOverflow.clip),
+                                              ),
+                                            ],
+                                          )
                                         ],
                                       ),
                                     ),
@@ -1317,6 +1347,42 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                             ),
                                                           ],
                                                         ),
+                                                        SizedBox(height: 5.h),
+                                                        Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .end,
+                                                          children: [
+                                                            Text(
+                                                              e.mergedAvailable !=
+                                                                          null &&
+                                                                      e.mergedAvailable!
+                                                                          .isNotEmpty
+                                                                  ? 'Meja ${e.noTable} bisa digabung dengan ${e.mergedAvailable!.map((id) {
+                                                                        final table = data
+                                                                            .where((table) =>
+                                                                                table.id ==
+                                                                                id)
+                                                                            .toList();
+                                                                        return table.isNotEmpty
+                                                                            ? 'meja ${table.first.noTable}'
+                                                                            : null;
+                                                                      }).where((noTable) => noTable != null).join(', ')}*'
+                                                                  : 'Meja ini tidak dapat digabung',
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .clip),
+                                                            ),
+                                                          ],
+                                                        )
                                                       ],
                                                     ),
                                                   ),
