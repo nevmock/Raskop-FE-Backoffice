@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/bxs.dart';
@@ -7,23 +10,65 @@ import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:intl/intl.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/widgets/switch_widget.dart';
+import 'package:raskop_fe_backoffice/src/table/application/table_controller.dart';
+import 'package:raskop_fe_backoffice/src/table/domain/entities/table_entity.dart';
 import 'package:raskop_fe_backoffice/src/table/presentation/widgets/table_active_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/table/presentation/widgets/table_location_switch_widget.dart';
 
-class TableScreen extends StatefulWidget {
+class TableScreen extends ConsumerStatefulWidget {
   const TableScreen({super.key});
 
+  static const String route = 'table';
+
   @override
-  State<TableScreen> createState() => _TableScreenState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _TableScreenState();
 }
 
-class _TableScreenState extends State<TableScreen> {
-  TextEditingController notes = TextEditingController();
+class _TableScreenState extends ConsumerState<TableScreen>
+    with SingleTickerProviderStateMixin {
+  AsyncValue<List<TableEntity>> get table => ref.watch(tableControllerProvider);
+
+  final Map<String, TextEditingController> _controllers = {};
+  Timer? debounceTimer;
   String storeLocation = 'Palem';
 
   @override
+  void dispose() {
+    _controllers.forEach((key, controller) {
+      controller.dispose();
+    });
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    void debounceOnDescriptionUpdate(
+        TableEntity request, String newDescription, WidgetRef ref) {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), () {
+        ref.read(tableControllerProvider.notifier).toggleTableDescription(
+              request: request,
+              id: request.id!,
+              newDescription: newDescription,
+            );
+      });
+    }
+
+    void debounceOnCapacityUpdate(
+        TableEntity request, int minCapacity, int maxCapacity, WidgetRef ref) {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), () {
+        ref.read(tableControllerProvider.notifier).toggleTableCapacity(
+              request: request,
+              id: request.id!,
+              minCapacity: minCapacity,
+              maxCapacity: maxCapacity,
+            );
+      });
+    }
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -248,180 +293,103 @@ class _TableScreenState extends State<TableScreen> {
                           ),
                         ),
                       ),
-                      AnimatedContainer(
-                        width: MediaQuery.of(context).size.width * 0.56,
-                        duration: const Duration(milliseconds: 10),
-                        child: Container(
-                          width: double.infinity,
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 0, vertical: 30),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                flex: 4,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    SizedBox(
-                                      width: 85,
-                                      height: 85,
-                                      child: Card(
-                                        shape: RoundedRectangleBorder(
-                                          side: BorderSide(
-                                              color: hexToColor('#E1E1E1')),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(20)),
-                                        ),
-                                        color: hexToColor('#47B881'),
-                                        child: Center(
-                                          child: Text(
-                                            '2',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                      table.when(
+                        data: (data) {
+                          return AnimatedContainer(
+                            width: MediaQuery.of(context).size.width * 0.56,
+                            duration: const Duration(milliseconds: 10),
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 0, vertical: 30),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    flex: 4,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        _buildTableCard(data, '2'),
+                                        SizedBox(height: 5),
+                                        _buildTableCard(data, '3')
+                                      ],
                                     ),
-                                    SizedBox(height: 5),
-                                    SizedBox(
-                                      width: 85,
-                                      height: 85,
-                                      child: Card(
-                                        shape: RoundedRectangleBorder(
-                                          side: BorderSide(
-                                              color: hexToColor('#E1E1E1')),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(20)),
-                                        ),
-                                        color: hexToColor('#EB6F70'),
-                                        child: Center(
-                                          child: Text(
-                                            '3',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: 5),
-                              Expanded(
-                                flex: 6,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SizedBox(
-                                      width: 255,
-                                      height: 250,
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          Align(
-                                            alignment: Alignment.bottomLeft,
-                                            child: SizedBox(
-                                              width: 70,
-                                              height: 170,
-                                              child: Card(
-                                                shape: RoundedRectangleBorder(
-                                                  side: BorderSide(
-                                                      color: hexToColor(
-                                                          '#E1E1E1')),
-                                                  borderRadius:
-                                                      const BorderRadius.all(
-                                                          Radius.circular(20)),
-                                                ),
-                                                color: hexToColor('#D9D9D9'),
-                                                child: Center(
-                                                  child: Text(
-                                                    '',
-                                                    style: TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
+                                  ),
+                                  SizedBox(width: 5),
+                                  Expanded(
+                                    flex: 6,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          width: 255,
+                                          height: 250,
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              Align(
+                                                alignment: Alignment.bottomLeft,
+                                                child: SizedBox(
+                                                  width: 70,
+                                                  height: 170,
+                                                  child: Card(
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      side: BorderSide(
+                                                          color: hexToColor(
+                                                              '#E1E1E1')),
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                              Radius.circular(
+                                                                  20)),
+                                                    ),
+                                                    color:
+                                                        hexToColor('#D9D9D9'),
+                                                    child: Center(
+                                                      child: Text(
+                                                        '',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                          SizedBox(width: 5),
-                                          Align(
-                                            alignment: Alignment.topRight,
-                                            child: SizedBox(
-                                              width: 180,
-                                              height: 200,
-                                              child: Card(
-                                                shape: RoundedRectangleBorder(
-                                                  side: BorderSide(
-                                                      color: hexToColor(
-                                                          '#E1E1E1')),
-                                                  borderRadius:
-                                                      const BorderRadius.all(
-                                                          Radius.circular(20)),
-                                                ),
-                                                color: hexToColor('#47B881'),
-                                                child: Center(
-                                                  child: Text(
-                                                    '1',
-                                                    style: TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(height: 5),
-                                    SizedBox(
-                                      width: 255,
-                                      height: 85,
-                                      child: Card(
-                                        shape: RoundedRectangleBorder(
-                                          side: BorderSide(
-                                              color: hexToColor('#E1E1E1')),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(20)),
-                                        ),
-                                        color: hexToColor('#47B881'),
-                                        child: Center(
-                                          child: Text(
-                                            '4',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
+                                              SizedBox(width: 5),
+                                              Align(
+                                                  alignment: Alignment.topRight,
+                                                  child: _buildTableCard(
+                                                      data, '1')),
+                                            ],
                                           ),
                                         ),
-                                      ),
+                                        SizedBox(height: 5),
+                                        _buildTableCard(data, '4')
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          );
+                        },
+                        loading: () =>
+                            const Center(child: CustomLoadingIndicator()),
+                        error: (error, stackTrace) => Center(
+                          child: Text(error.toString() + stackTrace.toString()),
                         ),
-                      ),
+                      )
                     ],
                   ),
                   const Spacer(),
@@ -439,196 +407,289 @@ class _TableScreenState extends State<TableScreen> {
                       child: Padding(
                         padding: EdgeInsets.only(
                             left: 10.w, top: 10.h, right: 0.h, bottom: 10.h),
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: 10,
-                          itemBuilder: (context, index) {
-                            return Card(
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(color: hexToColor('#E1E1E1')),
-                                borderRadius:
-                                    const BorderRadius.all(Radius.circular(20)),
-                              ),
-                              color: hexToColor("#1f4940"),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 8.h,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          "MEJA 1",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                            fontSize: 18,
+                        child: table.when(
+                          data: (data) {
+                            return ListView(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              children: data.map(
+                                (e) {
+                                  if (!_controllers.containsKey(e.id)) {
+                                    _controllers[e.id!] = TextEditingController(
+                                      text: e.description,
+                                    );
+                                  }
+                                  return Card(
+                                    shape: RoundedRectangleBorder(
+                                      side: BorderSide(
+                                          color: hexToColor('#E1E1E1')),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(20)),
+                                    ),
+                                    color: hexToColor("#1f4940"),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w,
+                                        vertical: 8.h,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'MEJA ${e.noTable}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                  fontSize: 18,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              constraints.maxWidth > 900
+                                                  ? Row(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 95,
+                                                          height: 50,
+                                                          child:
+                                                              TableLocationSwitch(
+                                                            isOutdoor:
+                                                                e.isOutdoor!,
+                                                            onSwitch:
+                                                                (val) async {
+                                                              return ref
+                                                                  .read(
+                                                                    tableControllerProvider
+                                                                        .notifier,
+                                                                  )
+                                                                  .toggleTableLocation(
+                                                                    request: e,
+                                                                    id: e.id!,
+                                                                    currentLocation:
+                                                                        e.isOutdoor!,
+                                                                  );
+                                                            },
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 5.w),
+                                                        SizedBox(
+                                                          width: 95,
+                                                          height: 50,
+                                                          child:
+                                                              TableActiveSwitchWidget(
+                                                            isON: e.isActive!,
+                                                            onSwitch:
+                                                                (val) async {
+                                                              return ref
+                                                                  .read(
+                                                                    tableControllerProvider
+                                                                        .notifier,
+                                                                  )
+                                                                  .toggleTableStatus(
+                                                                    request: e,
+                                                                    id: e.id!,
+                                                                    currentStatus:
+                                                                        e.isActive!,
+                                                                  );
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    )
+                                                  : Column(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 95,
+                                                          height: 50,
+                                                          child:
+                                                              TableLocationSwitch(
+                                                            isOutdoor:
+                                                                e.isOutdoor!,
+                                                            onSwitch:
+                                                                (val) async {
+                                                              return ref
+                                                                  .read(
+                                                                    tableControllerProvider
+                                                                        .notifier,
+                                                                  )
+                                                                  .toggleTableLocation(
+                                                                    request: e,
+                                                                    id: e.id!,
+                                                                    currentLocation:
+                                                                        e.isOutdoor!,
+                                                                  );
+                                                            },
+                                                          ),
+                                                        ),
+                                                        SizedBox(height: 5.h),
+                                                        SizedBox(
+                                                          width: 95,
+                                                          height: 50,
+                                                          child:
+                                                              TableActiveSwitchWidget(
+                                                            isON: e.isActive!,
+                                                            onSwitch:
+                                                                (val) async {
+                                                              return ref
+                                                                  .read(
+                                                                    tableControllerProvider
+                                                                        .notifier,
+                                                                  )
+                                                                  .toggleTableStatus(
+                                                                    request: e,
+                                                                    id: e.id!,
+                                                                    currentStatus:
+                                                                        e.isActive!,
+                                                                  );
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    )
+                                            ],
                                           ),
-                                        ),
-                                        constraints.maxWidth > 900
-                                            ? Row(
+                                          SizedBox(height: 5.h),
+                                          Column(
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
                                                 children: [
-                                                  SizedBox(
-                                                    width: 95,
-                                                    height: 50,
-                                                    child: TableLocationSwitch(
-                                                      isOutdoor: false,
-                                                      onSwitch: (val) async {
-                                                        return val;
-                                                      },
+                                                  Card(
+                                                    color: Colors.white,
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 5.w,
+                                                              vertical: 2.h),
+                                                      child: Center(
+                                                        child: Text(
+                                                          '0',
+                                                          style: TextStyle(
+                                                            fontSize: 14.sp,
+                                                            color: Colors.black,
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
-                                                  SizedBox(width: 5.w),
-                                                  SizedBox(
-                                                    width: 95,
-                                                    height: 50,
-                                                    child:
-                                                        TableActiveSwitchWidget(
-                                                      isON: false,
-                                                      onSwitch: (val) async {
-                                                        return val;
-                                                      },
+                                                  Card(
+                                                    color: Colors.white,
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 5.w,
+                                                              vertical: 2.h),
+                                                      child: Center(
+                                                        child: Text(
+                                                          '20',
+                                                          style: TextStyle(
+                                                            fontSize: 14.sp,
+                                                            color: Colors.black,
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
-                                              )
-                                            : Column(
+                                              ),
+                                              Row(
                                                 children: [
-                                                  SizedBox(
-                                                    width: 95,
-                                                    height: 50,
-                                                    child: TableLocationSwitch(
-                                                      isOutdoor: false,
-                                                      onSwitch: (val) async {
-                                                        return val;
-                                                      },
+                                                  CustomRangeSlider(
+                                                    min: 0,
+                                                    max: 20,
+                                                    initialValues: RangeValues(
+                                                      e.minCapacity.toDouble(),
+                                                      e.maxCapacity.toDouble(),
                                                     ),
-                                                  ),
-                                                  SizedBox(height: 5.h),
-                                                  SizedBox(
-                                                    width: 95,
-                                                    height: 50,
-                                                    child:
-                                                        TableActiveSwitchWidget(
-                                                      isON: false,
-                                                      onSwitch: (val) async {
-                                                        return val;
-                                                      },
-                                                    ),
+                                                    onChanged: (values) {
+                                                      debounceOnCapacityUpdate(
+                                                        e,
+                                                        values.start.toInt(),
+                                                        values.end.toInt(),
+                                                        ref,
+                                                      );
+                                                    },
                                                   ),
                                                 ],
                                               )
-                                      ],
-                                    ),
-                                    SizedBox(height: 5.h),
-                                    Column(
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Card(
-                                              color: Colors.white,
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 5.w,
-                                                    vertical: 2.h),
-                                                child: Center(
-                                                  child: Text(
-                                                    '0',
-                                                    style: TextStyle(
-                                                      fontSize: 14.sp,
-                                                      color: Colors.black,
-                                                    ),
-                                                  ),
+                                            ],
+                                          ),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Deskripsi',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14.sp,
                                                 ),
                                               ),
-                                            ),
-                                            Card(
-                                              color: Colors.white,
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 5.w,
-                                                    vertical: 2.h),
-                                                child: Center(
-                                                  child: Text(
-                                                    '12',
-                                                    style: TextStyle(
-                                                      fontSize: 14.sp,
-                                                      color: Colors.black,
-                                                    ),
+                                              SizedBox(
+                                                height: 5.h,
+                                              ),
+                                              TextFormField(
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w400,
+                                                  color: Colors.black,
+                                                  fontSize: 14,
+                                                  overflow: TextOverflow.fade,
+                                                ),
+                                                maxLines: 3,
+                                                controller: _controllers[e.id!],
+                                                decoration: InputDecoration(
+                                                  hintText:
+                                                      "Masukkan deskripsi meja",
+                                                  hintStyle: TextStyle(
+                                                    color: Colors.black
+                                                        .withOpacity(0.3),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(
+                                                                15)),
+                                                  ),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(
+                                                                15)),
                                                   ),
                                                 ),
+                                                onChanged: (value) {
+                                                  debounceOnDescriptionUpdate(
+                                                      e, value, ref);
+                                                },
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                        Row(
-                                          children: [
-                                            CustomRangeSlider(
-                                              min: 0,
-                                              max: 12,
-                                              initialValues:
-                                                  const RangeValues(0, 6),
-                                            ),
-                                          ],
-                                        )
-                                      ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Deskripsi',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14.sp,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: 5.h,
-                                        ),
-                                        TextFormField(
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w400,
-                                            color: Colors.black,
-                                            fontSize: 14,
-                                            overflow: TextOverflow.fade,
-                                          ),
-                                          maxLines: 3,
-                                          decoration: InputDecoration(
-                                            hintText: "Masukkan deskripsi meja",
-                                            hintStyle: TextStyle(
-                                              color:
-                                                  Colors.black.withOpacity(0.3),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(15)),
-                                            ),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(15)),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  );
+                                },
+                              ).toList(),
                             );
                           },
+                          loading: () => const Center(
+                            child: CustomLoadingIndicator(),
+                          ),
+                          error: (error, stackTrace) => Center(
+                            child: Text(
+                              error.toString() + stackTrace.toString(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -647,12 +708,14 @@ class CustomRangeSlider extends StatefulWidget {
   final double min;
   final double max;
   final RangeValues initialValues;
+  final ValueChanged<RangeValues> onChanged;
 
   const CustomRangeSlider({
     Key? key,
     required this.min,
     required this.max,
     required this.initialValues,
+    required this.onChanged,
   }) : super(key: key);
 
   @override
@@ -688,6 +751,7 @@ class _CustomRangeSliderState extends State<CustomRangeSlider> {
               setState(() {
                 if (values.start >= widget.min && values.end <= widget.max) {
                   _rangeSliderValues = values;
+                  widget.onChanged(values);
                 }
               });
             },
@@ -767,4 +831,43 @@ class _CustomSwitchWithIconState extends State<CustomSwitchWithIcon> {
       ),
     );
   }
+}
+
+Widget _buildTableCard(List<TableEntity> data, String noTable) {
+  final tableEntity = data.where((table) => table.noTable == noTable).toList();
+
+  Color cardColor;
+  if (tableEntity.isNotEmpty) {
+    cardColor = tableEntity.first.isActive
+        ? hexToColor('#47B881')
+        : hexToColor('#EB6F70');
+  } else {
+    cardColor = hexToColor('#D9D9D9');
+  }
+
+  return SizedBox(
+    width: noTable == '4'
+        ? 255
+        : noTable == '1'
+            ? 180
+            : 85,
+    height: noTable == '1' ? 200 : 85,
+    child: Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: hexToColor('#E1E1E1')),
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
+      ),
+      color: cardColor,
+      child: Center(
+        child: Text(
+          noTable,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ),
+  );
 }

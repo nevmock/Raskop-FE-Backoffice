@@ -13,7 +13,6 @@ class TableEntity with _$TableEntity {
 
   /// fields
   const factory TableEntity({
-    required String name,
     required String noTable,
     required int minCapacity,
     required int maxCapacity,

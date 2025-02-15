@@ -31,6 +31,14 @@ abstract class TableRepositoryInterface {
   });
 
   ///
+  FutureEitherVoid updateTableCapacity({
+    required TableEntity request,
+    required String id,
+    required int minCapacity,
+    required int maxCapacity,
+  });
+
+  ///
   FutureEitherVoid deleteTable({
     required String id,
     required bool deletePermanent,

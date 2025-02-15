@@ -149,6 +149,41 @@ class TableRepository implements TableRepositoryInterface {
   }
 
   @override
+  FutureEitherVoid updateTableCapacity({
+    required TableEntity request,
+    required String id,
+    required int minCapacity,
+    required int maxCapacity,
+  }) async {
+    try {
+      final uri = Uri.https(url, endpoint);
+
+      final requestMultipart = http.MultipartRequest('POST', uri);
+
+      requestMultipart.fields['id'] = id;
+      requestMultipart.fields['minCapacity'] = minCapacity.toString();
+      requestMultipart.fields['maxCapacity'] = maxCapacity.toString();
+      requestMultipart.fields['noTable'] = request.noTable;
+      requestMultipart.fields['isActive'] = request.isActive.toString();
+      requestMultipart.fields['isOutdoor'] = request.isOutdoor.toString();
+
+      final response = await requestMultipart.send();
+
+      final responseBody = await http.Response.fromStream(response);
+      final json = jsonDecode(responseBody.body) as Map<String, dynamic>;
+
+      if (json['code'] == 200 || json['status'] == 'OK') {
+        return right(const ResponseSuccess.edited());
+      }
+      return left(const ResponseFailure.internalServerError());
+    } catch (e) {
+      return left(ResponseFailure.unprocessableEntity(message: e.toString()));
+    } finally {
+      client.close();
+    }
+  }
+
+  @override
   FutureEitherVoid deleteTable({
     required String id,
     required bool deletePermanent,
