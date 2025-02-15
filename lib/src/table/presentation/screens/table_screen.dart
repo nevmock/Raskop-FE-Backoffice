@@ -31,6 +31,124 @@ class _TableScreenState extends State<TableScreen> {
       child: Scaffold(
           backgroundColor: Colors.white,
           body: LayoutBuilder(builder: (context, constraints) {
+            if (storeLocation == 'Bumdes') {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        PhysicalModel(
+                          color: Colors.grey.shade100,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(50)),
+                          elevation: 5,
+                          child: AnimatedContainer(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: hexToColor('#E1E1E1')),
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(50)),
+                            ),
+                            duration: const Duration(milliseconds: 100),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 5,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                    backgroundColor: storeLocation == 'Palem'
+                                        ? hexToColor('#1F4940')
+                                        : Colors.transparent,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(50)),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    setState(() {
+                                      storeLocation = 'Palem';
+                                    });
+                                  },
+                                  child: Center(
+                                    child: Text(
+                                      'Palem',
+                                      style: TextStyle(
+                                        color: storeLocation == 'Palem'
+                                            ? Colors.white
+                                            : hexToColor('#1F4940'),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(
+                                  width: 12,
+                                ),
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                    backgroundColor: storeLocation == 'Bumdes'
+                                        ? hexToColor('#1F4940')
+                                        : Colors.transparent,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(50)),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    setState(() {
+                                      storeLocation = 'Bumdes';
+                                    });
+                                  },
+                                  child: Center(
+                                    child: Text(
+                                      'Bumdes',
+                                      style: TextStyle(
+                                        color: storeLocation == 'Bumdes'
+                                            ? Colors.white
+                                            : hexToColor('#1F4940'),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              "Under Development",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20.sp,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              );
+            }
             if (constraints.maxWidth > 500) {
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
