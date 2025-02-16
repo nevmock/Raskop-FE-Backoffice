@@ -2,31 +2,34 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:iconify_flutter/icons/bxs.dart';
+import 'package:iconify_flutter/icons/icon_park_solid.dart';
 
 ///
-class PhoneSwitchWidget extends StatefulWidget {
+class TableLocationSwitch extends StatefulWidget {
   /// Constructor
-  const PhoneSwitchWidget(
-      {required this.isON, required this.onSwitch, super.key});
+  const TableLocationSwitch(
+      {required this.isOutdoor, required this.onSwitch, super.key});
 
   /// Status awal
-  final bool isON;
+  final bool isOutdoor;
 
   /// Callback saat switch diubah
-  final Future<bool> Function(bool isActive) onSwitch;
+  final Future<bool> Function(bool isOutdoor) onSwitch;
 
   @override
-  State<PhoneSwitchWidget> createState() => _PhoneSwitchWidgetState();
+  State<TableLocationSwitch> createState() => _TableLocationSwitchState();
 }
 
-class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
+class _TableLocationSwitchState extends State<TableLocationSwitch> {
   late bool _currentStatus;
 
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.isON; // Set awal dari parent
+    _currentStatus = widget.isOutdoor; // Set awal dari parent
   }
 
   Future<void> _handleTap() async {
@@ -62,8 +65,8 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
               alignment:
                   _currentStatus ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.08,
-                height: MediaQuery.of(context).size.width * 0.08,
+                width: 45,
+                height: 45,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -76,15 +79,18 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
               alignment:
                   _currentStatus ? Alignment.centerLeft : Alignment.centerRight,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.w),
-                child: Text(
-                  _currentStatus ? 'ON' : 'OFF',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10.sp,
-                  ),
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                child: _currentStatus
+                    ? Iconify(
+                        IconParkSolid.outdoor,
+                        color: Colors.white,
+                        size: 30,
+                      )
+                    : Iconify(
+                        Bxs.home_alt_2,
+                        color: Colors.white,
+                        size: 30,
+                      ),
               ),
             ),
           ],

@@ -5,9 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 
 ///
-class PhoneSwitchWidget extends StatefulWidget {
+class TableActiveSwitchWidget extends StatefulWidget {
   /// Constructor
-  const PhoneSwitchWidget(
+  const TableActiveSwitchWidget(
       {required this.isON, required this.onSwitch, super.key});
 
   /// Status awal
@@ -17,10 +17,11 @@ class PhoneSwitchWidget extends StatefulWidget {
   final Future<bool> Function(bool isActive) onSwitch;
 
   @override
-  State<PhoneSwitchWidget> createState() => _PhoneSwitchWidgetState();
+  State<TableActiveSwitchWidget> createState() =>
+      _TableActiveSwitchWidgetState();
 }
 
-class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
+class _TableActiveSwitchWidgetState extends State<TableActiveSwitchWidget> {
   late bool _currentStatus;
 
   @override
@@ -62,8 +63,8 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
               alignment:
                   _currentStatus ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.08,
-                height: MediaQuery.of(context).size.width * 0.08,
+                width: 45,
+                height: 45,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -82,7 +83,7 @@ class _PhoneSwitchWidgetState extends State<PhoneSwitchWidget> {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 10.sp,
+                    fontSize: 12.sp,
                   ),
                 ),
               ),
