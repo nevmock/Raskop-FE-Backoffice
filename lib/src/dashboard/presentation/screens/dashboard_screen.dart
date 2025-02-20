@@ -2,23 +2,29 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/application/dashboard_controller.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/domain/entities/fav_menu_entity.dart';
 
 ///
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   ///
   const DashboardScreen({super.key});
 
   ///
-  static const String route = 'dashboar';
+  static const String route = 'dashboard';
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  AsyncValue<List<FavMenuEntity>> get favMenu =>
+      ref.watch(dashboardControllerProvider);
+
   final statusTabletController = MultiSelectController<String>();
   final statusPhoneController = MultiSelectController<String>();
 
@@ -278,86 +284,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final int i in [1, 2, 3]) ...[
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(16),
-                ),
-              ),
-              child: Stack(
+          const SizedBox(height: 4),
+          favMenu.when(
+            data: (data) {
+              return Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 16,
-                      children: [
-                        const SizedBox(
-                          width: 125,
-                          height: 125,
-                          child: Placeholder(
-                            child: Center(
-                              child: Text(
-                                'INI FOTO MAKANAN',
-                                textAlign: TextAlign.center,
+                  for (final FavMenuEntity menu in favMenu.value ?? []) ...[
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(16),
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: 16,
+                              children: [
+                                SizedBox(
+                                  width: 125,
+                                  height: 125,
+                                  child: Image.network(
+                                    menu.image_uri,
+                                    errorBuilder:
+                                        (context, object, stackTrace) {
+                                      return const Text('Error');
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        menu.menu_name,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Food',
+                                        style: TextStyle(
+                                          color: hexToColor('#CACACA'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            right: 10,
+                            bottom: 10,
+                            child: Text(
+                              'Terjual ${menu.qty.toInt()} pcs',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Steak With Paprica',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                          Positioned(
+                            right: -5,
+                            bottom: -10,
+                            child: Text(
+                              ((favMenu.value ?? []).indexOf(menu) + 1)
+                                  .toString(),
+                              style: TextStyle(
+                                fontSize: 120,
+                                height: 1,
+                                color: hexToColor('#1F4940').withOpacity(.25),
                               ),
-                              Text(
-                                'Food',
-                                style: TextStyle(
-                                  color: hexToColor('#CACACA'),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    right: 10,
-                    bottom: 10,
-                    child: Text(
-                      'Terjual ${i}5 pcs',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        ],
                       ),
                     ),
-                  ),
-                  Positioned(
-                    right: -5,
-                    bottom: -10,
-                    child: Text(
-                      i.toString(),
-                      style: TextStyle(
-                        fontSize: 120,
-                        height: 1,
-                        color: hexToColor('#1F4940').withOpacity(.25),
-                      ),
-                    ),
-                  ),
+                    const SizedBox(height: 16),
+                  ],
                 ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              );
+            },
+            error: (error, stackTrace) {
+              return const Text('Error');
+            },
+            loading: () {
+              return const CircularProgressIndicator();
+            },
+          ),
+          // for (final int i in [1, 2, 3]) ...[
+          //   ,
+          //   const SizedBox(height: 16),
+          // ],
         ],
       ),
     );
@@ -429,6 +454,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     onPressed: () async {
+                      favMenu.when(
+                        data: (data) {
+                          print('data: $data');
+                        },
+                        error: (error, stackTrace) {
+                          print(error);
+                        },
+                        loading: () {},
+                      );
                       setState(() {
                         filter = 'Hari ini';
                       });
@@ -446,9 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(
-                    width: 12,
-                  ),
+                  const SizedBox(width: 4),
                   TextButton(
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -480,9 +512,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(
-                    width: 12,
-                  ),
+                  const SizedBox(width: 4),
                   TextButton(
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
