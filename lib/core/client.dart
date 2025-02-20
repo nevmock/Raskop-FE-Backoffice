@@ -13,7 +13,10 @@ final httpClientProvider = Provider<http.Client>((ref) {
 });
 
 /// api client provier
-final apiClientProvider = Provider<ApiClient>((ref) {
-  final client = ref.watch(httpClientProvider);
-  return ApiClient(client: client, baseUrl: BasePaths.baseAPIURL);
-});
+Provider<ApiClient> apiClientProvider({
+  String baseUrl = BasePaths.baseAPIURL,
+}) =>
+    Provider<ApiClient>((ref) {
+      final client = ref.watch(httpClientProvider);
+      return ApiClient(client: client, baseUrl: baseUrl);
+    });

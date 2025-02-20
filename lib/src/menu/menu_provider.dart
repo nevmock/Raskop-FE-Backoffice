@@ -11,6 +11,6 @@ part 'menu_provider.g.dart';
 ///
 MenuRepository menuRepository(Ref ref) {
   final client = http.Client();
-  final baseClient = ref.watch(apiClientProvider);
+  final baseClient = ref.watch(apiClientProvider());
   return MenuRepository(client: client, baseClient: baseClient);
 }

@@ -9,6 +9,6 @@ part 'supplier_provider.g.dart';
 
 ///
 SupplierRepository supplierRepository(Ref ref) {
-  final client = ref.watch(apiClientProvider);
+  final client = ref.watch(apiClientProvider());
   return SupplierRepository(client: client);
 }
