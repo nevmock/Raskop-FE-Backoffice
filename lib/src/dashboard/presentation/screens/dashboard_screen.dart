@@ -543,10 +543,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     onPressed: () async {
                       final date = await showDateRangePicker(
                         context: context,
-                        firstDate: DateTime(2025),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 30),
-                        ),
+                        currentDate: DateTime.now(),
+                        firstDate: DateTime(0),
+                        lastDate: DateTime(DateTime.now().year + 5),
                       );
                       if (date?.start != null || date?.end != null) {
                         setState(() {
