@@ -4,8 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/dashboard/application/dashboard_controller.dart';
 import 'package:raskop_fe_backoffice/src/dashboard/domain/entities/fav_menu_entity.dart';
 
@@ -82,7 +84,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _buildDashboardChart(),
                     _buildDashboardChart(),
                     _buildDashboardChart(),
-                    const SizedBox(height: 24)
+                    const SizedBox(height: 24),
                   ],
                 );
               }
@@ -289,86 +291,93 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             data: (data) {
               return Column(
                 children: [
-                  for (final FavMenuEntity menu in favMenu.value ?? []) ...[
-                    Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(16),
+                  if ((favMenu.value ?? []).isNotEmpty == true)
+                    for (final FavMenuEntity menu in favMenu.value ?? []) ...[
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(16),
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 16,
+                                children: [
+                                  SizedBox(
+                                    width: 125,
+                                    height: 125,
+                                    child: Image.network(
+                                      menu.image_uri,
+                                      errorBuilder:
+                                          (context, object, stackTrace) {
+                                        return const Text('Error');
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          menu.menu_name,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Food',
+                                          style: TextStyle(
+                                            color: hexToColor('#CACACA'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              right: 10,
+                              bottom: 10,
+                              child: Text(
+                                'Terjual ${menu.qty.toInt()} pcs',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: -5,
+                              bottom: -10,
+                              child: Text(
+                                ((favMenu.value ?? []).indexOf(menu) + 1)
+                                    .toString(),
+                                style: TextStyle(
+                                  fontSize: 120,
+                                  height: 1,
+                                  color: hexToColor('#1F4940').withOpacity(.25),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Stack(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: 16,
-                              children: [
-                                SizedBox(
-                                  width: 125,
-                                  height: 125,
-                                  child: Image.network(
-                                    menu.image_uri,
-                                    errorBuilder:
-                                        (context, object, stackTrace) {
-                                      return const Text('Error');
-                                    },
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        menu.menu_name,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Food',
-                                        style: TextStyle(
-                                          color: hexToColor('#CACACA'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            right: 10,
-                            bottom: 10,
-                            child: Text(
-                              'Terjual ${menu.qty.toInt()} pcs',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: -5,
-                            bottom: -10,
-                            child: Text(
-                              ((favMenu.value ?? []).indexOf(menu) + 1)
-                                  .toString(),
-                              style: TextStyle(
-                                fontSize: 120,
-                                height: 1,
-                                color: hexToColor('#1F4940').withOpacity(.25),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 16),
+                    ]
+                  else
+                    const Text(
+                      'Data Kosong',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.left,
                     ),
-                    const SizedBox(height: 16),
-                  ],
                 ],
               );
             },
@@ -376,13 +385,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               return const Text('Error');
             },
             loading: () {
-              return const CircularProgressIndicator();
+              return const Center(child: CustomLoadingIndicator());
             },
           ),
-          // for (final int i in [1, 2, 3]) ...[
-          //   ,
-          //   const SizedBox(height: 16),
-          // ],
         ],
       ),
     );
@@ -454,18 +459,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     onPressed: () async {
-                      favMenu.when(
-                        data: (data) {
-                          print('data: $data');
-                        },
-                        error: (error, stackTrace) {
-                          print(error);
-                        },
-                        loading: () {},
-                      );
                       setState(() {
                         filter = 'Hari ini';
                       });
+                      final now = DateTime.now();
+                      final format = DateFormat('yyyy-MM-dd');
+                      final start = format
+                          .format(DateTime(now.year, now.month, now.day - 1));
+                      final end =
+                          format.format(DateTime(now.year, now.month, now.day));
+                      await ref
+                          .read(dashboardControllerProvider.notifier)
+                          .getFavouriteMenus(start, end);
                     },
                     child: Center(
                       child: Text(
@@ -498,6 +503,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       setState(() {
                         filter = 'Bulan ini';
                       });
+                      final now = DateTime.now();
+                      final format = DateFormat('yyyy-MM-dd');
+                      final start =
+                          format.format(DateTime(now.year, now.month));
+                      final end =
+                          format.format(DateTime(now.year, now.month + 1, 0));
+                      await ref
+                          .read(dashboardControllerProvider.notifier)
+                          .getFavouriteMenus(start, end);
                     },
                     child: Center(
                       child: Text(
@@ -538,6 +552,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         setState(() {
                           filter = 'Tanggal';
                         });
+                        final format = DateFormat('yyyy-MM-dd');
+                        final start = format.format(date!.start);
+                        final end = format.format(date.end);
+                        await ref
+                            .read(dashboardControllerProvider.notifier)
+                            .getFavouriteMenus(start, end);
                       }
                     },
                     child: Center(
