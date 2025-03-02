@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 
 ///
@@ -13,10 +12,10 @@ class ReservasiRegulerButtonFilterWidget extends StatefulWidget {
   });
 
   ///
-  final FutureVoid onReservasi;
+  final VoidCallback onReservasi;
 
   ///
-  final FutureVoid onReguler;
+  final VoidCallback onReguler;
 
   ///
   final bool isWideScreen;
@@ -75,7 +74,7 @@ class _ReservasiRegulerButtonFilterWidgetState
               ),
               onPressed: () async {
                 if (!isReservasi) {
-                  await widget.onReservasi;
+                  widget.onReservasi();
                   onReservasi();
                 }
               },
@@ -104,7 +103,7 @@ class _ReservasiRegulerButtonFilterWidgetState
               ),
               onPressed: () async {
                 if (isReservasi) {
-                  await widget.onReguler;
+                  widget.onReguler();
                   onReguler();
                 }
               },
