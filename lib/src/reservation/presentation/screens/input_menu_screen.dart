@@ -1,32 +1,42 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/ic.dart';
 import 'package:intl/intl.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
+import 'package:raskop_fe_backoffice/res/paths.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
+import 'package:raskop_fe_backoffice/src/menu/application/menu_controller.dart';
+import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/widgets/dynamic_height_grid_view_widget.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/widgets/group_button_widget.dart';
 
 /// Menu Type Filter
-enum MenuType { food, coffee, nonCoffee, manualBrew, mocktail }
+enum MenuType { all, food, coffee, nonCoffee, desert, other }
 
 const List<(MenuType, String)> menuTypeOptions = <(MenuType, String)>[
+  (MenuType.all, 'All'),
   (MenuType.food, 'Food'),
   (MenuType.coffee, 'Coffee'),
   (MenuType.nonCoffee, 'Non-Coffee'),
-  (MenuType.manualBrew, 'Manual Brew'),
-  (MenuType.mocktail, 'Mocktail'),
+  (MenuType.desert, 'Desert'),
+  (MenuType.other, 'Other'),
 ];
 
 ///
-class InputMenuScreen extends StatefulWidget {
+class InputMenuScreen extends ConsumerStatefulWidget {
   ///
   const InputMenuScreen({
+    required this.orderId,
+    required this.orderList,
     required this.onBack,
     required this.isInput,
     required this.orderMenu,
@@ -39,23 +49,25 @@ class InputMenuScreen extends StatefulWidget {
 
   final List<(String, double, int, String)> orderMenu;
 
+  final List<Map<String, dynamic>> orderList;
+
+  final String orderId;
+
   @override
-  State<InputMenuScreen> createState() => _InputMenuScreenState();
+  ConsumerState<InputMenuScreen> createState() => _InputMenuScreenState();
 }
 
-class _InputMenuScreenState extends State<InputMenuScreen> {
+class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
+  AsyncValue<List<MenuEntity>> get menus => ref.watch(menuControllerProvider);
   TextEditingController notes = TextEditingController();
+  TextEditingController search = TextEditingController();
   int qty = 1;
   double grandTotal = 0;
   bool isLastStep = false;
   final List<bool> toggleMenuType =
-      MenuType.values.map((MenuType e) => e == MenuType.food).toList();
+      MenuType.values.map((MenuType e) => e == MenuType.all).toList();
 
-  // /// Dummy List For Summary Ordered Item Widget Testing
-  // List<(String, double, int, String)> dummyItemList =
-  //     <(String, double, int, String)>[];
-
-  final isExpanded = List<bool>.generate(20, (_) => false);
+  List<bool> isExpanded = [];
 
   void toggleExpansion(int index) {
     setState(() {
@@ -81,11 +93,31 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
     );
   }
 
+  void onSearch() {
+    ref.read(menuControllerProvider.notifier).fetchMenus(
+      // search: search.text,
+      advSearch: {
+        'withDeleted': false,
+        'isActive': true,
+        'name': search.text,
+        if (double.tryParse(search.text) != null)
+          'price': double.tryParse(search.text),
+      },
+    );
+  }
+
   bool isScrollableSheetDisplayed = false;
   void displayScrollableSheet() {
     setState(() {
       isScrollableSheetDisplayed = true;
     });
+  }
+
+  Timer? debounceTimer;
+
+  void debounceSearch() {
+    if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+    debounceTimer = Timer(const Duration(milliseconds: 500), onSearch);
   }
 
   @override
@@ -132,7 +164,7 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                 Expanded(
                                   flex: 2,
                                   child: Image.asset(
-                                    'assets/img/raskop.png',
+                                    ImageAssets.raskop,
                                     width: 100.w,
                                     height: 50.h,
                                     scale: 1 / 5,
@@ -153,6 +185,13 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                       ),
                                     ),
                                     child: TextFormField(
+                                      controller: search,
+                                      onChanged: (val) {
+                                        debounceSearch();
+                                      },
+                                      onFieldSubmitted: (val) {
+                                        onSearch();
+                                      },
                                       textAlignVertical:
                                           TextAlignVertical.center,
                                       decoration: InputDecoration(
@@ -189,6 +228,28 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                     i++) {
                                   toggleMenuType[i] = i == idx;
                                 }
+                                if (menuTypeOptions.elementAt(idx).$1 ==
+                                    MenuType.all) {
+                                  ref
+                                      .read(menuControllerProvider.notifier)
+                                      .fetchMenus(
+                                    advSearch: {
+                                      'withDeleted': false,
+                                      'isActive': true,
+                                    },
+                                  );
+                                } else {
+                                  ref
+                                      .read(menuControllerProvider.notifier)
+                                      .fetchMenus(
+                                    advSearch: {
+                                      'category':
+                                          menuTypeOptions.elementAt(idx).$2,
+                                      'withDeleted': false,
+                                      'isActive': true,
+                                    },
+                                  );
+                                }
                               });
                             },
                             borderRadius:
@@ -221,77 +282,154 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                         Expanded(
                           child: SizedBox(
                             height: MediaQuery.of(context).size.height,
-                            child: DynamicHeightGridView(
-                              itemCount: 20,
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                              builder: (context, idx) {
-                                return GestureDetector(
-                                  onTap: () => toggleExpansion(idx),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    transitionBuilder: (child, animation) {
-                                      return ScaleTransition(
-                                        scale: animation,
-                                        child: child,
-                                      );
-                                    },
-                                    child: widget.isInput
-                                        ? isExpanded[idx]
-                                            ? buildExpandedMenuItem(
-                                                index: idx,
-                                                qty: qty,
-                                                onDecrement: () {
-                                                  setState(() {
-                                                    if (qty == 1) {
-                                                      qty = 1;
-                                                    } else {
-                                                      qty--;
-                                                    }
-                                                  });
-                                                },
-                                                onIncrement: () {
-                                                  setState(() {
-                                                    qty++;
-                                                  });
-                                                },
-                                                onAdd: () {
-                                                  setState(() {
-                                                    widget.orderMenu.add(
-                                                      (
-                                                        'Steak with Paprika',
-                                                        80000.00,
-                                                        qty,
-                                                        notes.text
-                                                      ),
-                                                    );
+                            child: menus.when(
+                              data: (data) {
+                                if (isExpanded.isEmpty ||
+                                    isExpanded.length !=
+                                        data
+                                            .where(
+                                              (element) => element.isActive!,
+                                            )
+                                            .length) {
+                                  isExpanded = List<bool>.generate(
+                                    data
+                                        .where(
+                                          (element) => element.isActive!,
+                                        )
+                                        .length,
+                                    (_) => false,
+                                  );
+                                }
+                                return DynamicHeightGridView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  itemCount: data
+                                      .where((element) => element.isActive!)
+                                      .length,
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 20,
+                                  mainAxisSpacing: 20,
+                                  builder: (context, idx) {
+                                    final menuActive = data
+                                        .where(
+                                          (element) => element.isActive!,
+                                        )
+                                        .toList();
+                                    final menu = menuActive[idx];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          // Toggle Expand and Collapsed Menu Item
+                                          for (var i = 0;
+                                              i <
+                                                  data
+                                                      .where(
+                                                        (element) =>
+                                                            element.isActive!,
+                                                      )
+                                                      .length;
+                                              i++) {
+                                            if (i == idx) {
+                                              isExpanded[i] = !isExpanded[i];
+                                            } else {
+                                              isExpanded[i] = i == idx;
+                                            }
+                                          }
+                                          qty = 1;
+                                          notes.clear();
+                                        });
+                                      },
+                                      child: AnimatedSwitcher(
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        transitionBuilder: (child, animation) {
+                                          return ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          );
+                                        },
+                                        child: widget.isInput
+                                            ? isExpanded[idx]
+                                                ? buildExpandedMenuItem(
+                                                    index: idx,
+                                                    menuName: menu.name,
+                                                    menuPrice: menu.price,
+                                                    imageUri: menu.imageUri,
+                                                    qty: qty,
+                                                    onDecrement: () {
+                                                      setState(() {
+                                                        if (qty == 1) {
+                                                          qty = 1;
+                                                        } else {
+                                                          qty--;
+                                                        }
+                                                      });
+                                                    },
+                                                    onIncrement: () {
+                                                      setState(() {
+                                                        qty++;
+                                                      });
+                                                    },
+                                                    onAdd: () {
+                                                      setState(() {
+                                                        widget.orderMenu.add(
+                                                          (
+                                                            menu.name,
+                                                            menu.price,
+                                                            qty,
+                                                            notes.text
+                                                          ),
+                                                        );
+                                                        widget.orderList.add({
+                                                          'id': menu.id,
+                                                          'quantity': qty,
+                                                          if (notes
+                                                              .text.isNotEmpty)
+                                                            'note': notes.text,
+                                                        });
 
-                                                    grandTotal =
-                                                        widget.orderMenu.fold(
-                                                      0,
-                                                      (a, b) =>
-                                                          a + (b.$2 * b.$3),
-                                                    );
-                                                  });
-                                                },
-                                                notes: notes,
-                                                context: context,
-                                                isWideScreen: true,
-                                              )
+                                                        grandTotal = widget
+                                                            .orderMenu
+                                                            .fold(
+                                                          0,
+                                                          (a, b) =>
+                                                              a + (b.$2 * b.$3),
+                                                        );
+                                                      });
+                                                    },
+                                                    notes: notes,
+                                                    context: context,
+                                                    isWideScreen: true,
+                                                    onNotesTap: () {},
+                                                  )
+                                                : buildCollapsedMenuItem(
+                                                    index: idx,
+                                                    context: context,
+                                                    isWideScreen: true,
+                                                    menuName: menu.name,
+                                                    imageUri: menu.imageUri,
+                                                    price: menu.price,
+                                                  )
                                             : buildCollapsedMenuItem(
                                                 index: idx,
                                                 context: context,
                                                 isWideScreen: true,
-                                              )
-                                        : buildCollapsedMenuItem(
-                                            index: idx,
-                                            context: context,
-                                            isWideScreen: true,
-                                          ),
-                                  ),
+                                                menuName: menu.name,
+                                                imageUri: menu.imageUri,
+                                                price: menu.price,
+                                              ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
+                              error: (error, stackTrace) => Center(
+                                child: Text(
+                                  error.toString() + stackTrace.toString(),
+                                ),
+                              ),
+                              loading: () =>
+                                  const Center(child: CustomLoadingIndicator()),
                             ),
                           ),
                         ),
@@ -330,7 +468,9 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                   flex: 5,
                                   child: Text(
                                     maxLines: 2,
-                                    '#12345678-1234-1234-1234-123456789abc',
+                                    widget.isInput
+                                        ? 'auto-generated after create'
+                                        : widget.orderId,
                                     style: TextStyle(
                                       color: hexToColor('#8E8E8E'),
                                       overflow: TextOverflow.ellipsis,
@@ -360,6 +500,7 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                             onRemoved: () {
                                               setState(() {
                                                 widget.orderMenu.removeAt(idx);
+                                                widget.orderList.removeAt(idx);
                                                 grandTotal =
                                                     widget.orderMenu.fold(
                                                   0,
@@ -533,6 +674,13 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                         ),
                                       ),
                                       child: TextFormField(
+                                        controller: search,
+                                        onChanged: (val) {
+                                          debounceSearch();
+                                        },
+                                        onFieldSubmitted: (val) {
+                                          onSearch();
+                                        },
                                         textAlignVertical:
                                             TextAlignVertical.center,
                                         decoration: InputDecoration(
@@ -569,6 +717,28 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                     i++) {
                                   toggleMenuType[i] = i == idx;
                                 }
+                                if (menuTypeOptions.elementAt(idx).$1 ==
+                                    MenuType.all) {
+                                  ref
+                                      .read(menuControllerProvider.notifier)
+                                      .fetchMenus(
+                                    advSearch: {
+                                      'withDeleted': false,
+                                      'isActive': true,
+                                    },
+                                  );
+                                } else {
+                                  ref
+                                      .read(menuControllerProvider.notifier)
+                                      .fetchMenus(
+                                    advSearch: {
+                                      'category':
+                                          menuTypeOptions.elementAt(idx).$2,
+                                      'withDeleted': false,
+                                      'isActive': true,
+                                    },
+                                  );
+                                }
                               });
                             },
                             borderRadius:
@@ -599,76 +769,154 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                           ),
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.8,
-                            child: DynamicHeightGridView(
-                              itemCount: 20,
-                              crossAxisCount: 1,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                              builder: (context, idx) {
-                                return GestureDetector(
-                                  onTap: () => toggleExpansion(idx),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    transitionBuilder: (child, animation) {
-                                      return ScaleTransition(
-                                        scale: animation,
-                                        child: child,
-                                      );
-                                    },
-                                    child: widget.isInput
-                                        ? isExpanded[idx]
-                                            ? buildExpandedMenuItem(
-                                                index: idx,
-                                                qty: qty,
-                                                onDecrement: () {
-                                                  setState(() {
-                                                    if (qty == 1) {
-                                                      qty = 1;
-                                                    } else {
-                                                      qty--;
-                                                    }
-                                                  });
-                                                },
-                                                onIncrement: () {
-                                                  setState(() {
-                                                    qty++;
-                                                  });
-                                                },
-                                                onAdd: () {
-                                                  setState(() {
-                                                    widget.orderMenu.add(
-                                                      (
-                                                        'Steak with Paprika',
-                                                        80000.00,
-                                                        qty,
-                                                        notes.text
-                                                      ),
-                                                    );
-                                                    grandTotal =
-                                                        widget.orderMenu.fold(
-                                                      0,
-                                                      (a, b) =>
-                                                          a + (b.$2 * b.$3),
-                                                    );
-                                                  });
-                                                },
-                                                notes: notes,
-                                                context: context,
-                                                isWideScreen: false,
-                                              )
+                            child: menus.when(
+                              data: (data) {
+                                if (isExpanded.isEmpty ||
+                                    isExpanded.length !=
+                                        data
+                                            .where(
+                                              (element) => element.isActive!,
+                                            )
+                                            .length) {
+                                  isExpanded = List<bool>.generate(
+                                    data
+                                        .where(
+                                          (element) => element.isActive!,
+                                        )
+                                        .length,
+                                    (_) => false,
+                                  );
+                                }
+                                return DynamicHeightGridView(
+                                  itemCount: data
+                                      .where(
+                                        (element) => element.isActive!,
+                                      )
+                                      .length,
+                                  crossAxisCount: 1,
+                                  crossAxisSpacing: 20,
+                                  mainAxisSpacing: 20,
+                                  builder: (context, idx) {
+                                    final menuActive = data
+                                        .where(
+                                          (element) => element.isActive!,
+                                        )
+                                        .toList();
+                                    final menu = menuActive[idx];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          // Toggle Expand and Collapsed Menu Item
+                                          for (var i = 0;
+                                              i <
+                                                  data
+                                                      .where(
+                                                        (element) =>
+                                                            element.isActive!,
+                                                      )
+                                                      .length;
+                                              i++) {
+                                            if (i == idx) {
+                                              isExpanded[i] = !isExpanded[i];
+                                            } else {
+                                              isExpanded[i] = i == idx;
+                                            }
+                                          }
+                                          qty = 1;
+                                          notes.clear();
+                                        });
+                                      },
+                                      child: AnimatedSwitcher(
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        transitionBuilder: (child, animation) {
+                                          return ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          );
+                                        },
+                                        child: widget.isInput
+                                            ? isExpanded[idx]
+                                                ? buildExpandedMenuItem(
+                                                    index: idx,
+                                                    menuName: menu.name,
+                                                    menuPrice: menu.price,
+                                                    imageUri: menu.imageUri,
+                                                    qty: qty,
+                                                    onDecrement: () {
+                                                      setState(() {
+                                                        if (qty == 1) {
+                                                          qty = 1;
+                                                        } else {
+                                                          qty--;
+                                                        }
+                                                      });
+                                                    },
+                                                    onIncrement: () {
+                                                      setState(() {
+                                                        qty++;
+                                                      });
+                                                    },
+                                                    onAdd: () {
+                                                      setState(() {
+                                                        widget.orderMenu.add(
+                                                          (
+                                                            menu.name,
+                                                            menu.price,
+                                                            qty,
+                                                            notes.text
+                                                          ),
+                                                        );
+                                                        widget.orderList.add({
+                                                          'id': menu.id,
+                                                          'quantity': qty,
+                                                          if (notes
+                                                              .text.isNotEmpty)
+                                                            'note': notes.text,
+                                                        });
+
+                                                        grandTotal = widget
+                                                            .orderMenu
+                                                            .fold(
+                                                          0,
+                                                          (a, b) =>
+                                                              a + (b.$2 * b.$3),
+                                                        );
+                                                      });
+                                                    },
+                                                    notes: notes,
+                                                    context: context,
+                                                    isWideScreen: false,
+                                                    onNotesTap: () {},
+                                                  )
+                                                : buildCollapsedMenuItem(
+                                                    index: idx,
+                                                    context: context,
+                                                    isWideScreen: false,
+                                                    menuName: menu.name,
+                                                    imageUri: menu.imageUri,
+                                                    price: menu.price,
+                                                  )
                                             : buildCollapsedMenuItem(
                                                 index: idx,
                                                 context: context,
                                                 isWideScreen: false,
-                                              )
-                                        : buildCollapsedMenuItem(
-                                            index: idx,
-                                            context: context,
-                                            isWideScreen: false,
-                                          ),
-                                  ),
+                                                menuName: menu.name,
+                                                imageUri: menu.imageUri,
+                                                price: menu.price,
+                                              ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
+                              error: (error, stackTrace) => Center(
+                                child: Text(
+                                  error.toString() + stackTrace.toString(),
+                                ),
+                              ),
+                              loading: () =>
+                                  const Center(child: CustomLoadingIndicator()),
                             ),
                           ),
                         ],
@@ -736,7 +984,9 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                               flex: 5,
                                               child: Text(
                                                 maxLines: 2,
-                                                '#12345678-1234-1234-1234-123456789abc',
+                                                widget.isInput
+                                                    ? 'auto-generated after create'
+                                                    : widget.orderId,
                                                 style: TextStyle(
                                                   color: hexToColor('#8E8E8E'),
                                                   overflow:
@@ -778,6 +1028,8 @@ class _InputMenuScreenState extends State<InputMenuScreen> {
                                                               .removeAt(
                                                             idx,
                                                           );
+                                                          widget.orderList
+                                                              .removeAt(idx);
                                                           grandTotal = widget
                                                               .orderMenu
                                                               .fold(
@@ -1042,6 +1294,9 @@ Widget buildCollapsedMenuItem({
   required int index,
   required BuildContext context,
   required bool isWideScreen,
+  required String menuName,
+  required String? imageUri,
+  required double price,
 }) {
   return PhysicalModel(
     borderRadius: const BorderRadius.all(Radius.circular(15)),
@@ -1063,13 +1318,74 @@ Widget buildCollapsedMenuItem({
                   ? MediaQuery.of(context).size.width * 0.1
                   : MediaQuery.of(context).size.width * 0.3,
               height: MediaQuery.of(context).size.height * 0.14,
-              child: const Placeholder(
-                child: Center(
-                  child: Text(
-                    'INI FOTO MAKANAN',
-                    textAlign: TextAlign.center,
-                  ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
+                clipBehavior: Clip.hardEdge,
+                child: imageUri == null || imageUri == ''
+                    ? const Center(child: Text('Gambar Belum Diunggah'))
+                    : imageUri.contains('https://')
+                        ? Image.network(
+                            imageUri,
+                            fit: BoxFit.cover, // Menggunakan BoxFit.cover
+                            loadingBuilder: (
+                              BuildContext context,
+                              Widget child,
+                              ImageChunkEvent? loadingProgress,
+                            ) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          (loadingProgress.expectedTotalBytes ??
+                                              1)
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (
+                              BuildContext context,
+                              Object error,
+                              StackTrace? stackTrace,
+                            ) {
+                              return Center(
+                                child: Text('Failed to load image: $error'),
+                              );
+                            },
+                          )
+                        : Image.network(
+                            'https://${BasePaths.baseAPIURL}/$imageUri',
+                            fit: BoxFit.cover, // Menggunakan BoxFit.cover
+                            loadingBuilder: (
+                              BuildContext context,
+                              Widget child,
+                              ImageChunkEvent? loadingProgress,
+                            ) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          (loadingProgress.expectedTotalBytes ??
+                                              1)
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (
+                              BuildContext context,
+                              Object error,
+                              StackTrace? stackTrace,
+                            ) {
+                              return Center(
+                                child: Text('Failed to load image: $error'),
+                              );
+                            },
+                          ),
               ),
             ),
             SizedBox(
@@ -1082,7 +1398,7 @@ Widget buildCollapsedMenuItem({
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Steak With Paprica',
+                    menuName,
                     maxLines: 2,
                     style: TextStyle(
                       fontSize: 16.sp,
@@ -1091,7 +1407,11 @@ Widget buildCollapsedMenuItem({
                     ),
                   ),
                   Text(
-                    'Rp80.000,00',
+                    NumberFormat.simpleCurrency(
+                      locale: 'id-ID',
+                      name: 'Rp',
+                      decimalDigits: 2,
+                    ).format(price),
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w500,
@@ -1116,6 +1436,10 @@ Widget buildExpandedMenuItem({
   required TextEditingController notes,
   required BuildContext context,
   required bool isWideScreen,
+  required String? imageUri,
+  required String menuName,
+  required double menuPrice,
+  required VoidCallback onNotesTap,
 }) {
   return Card(
     shadowColor: hexToColor('#000000'),
@@ -1142,13 +1466,82 @@ Widget buildExpandedMenuItem({
                     ? MediaQuery.of(context).size.width * 0.1
                     : MediaQuery.of(context).size.width * 0.3,
                 height: MediaQuery.of(context).size.height * 0.15,
-                child: const Placeholder(
-                  child: Center(
-                    child: Text(
-                      'INI FOTO MAKANAN',
-                      textAlign: TextAlign.center,
-                    ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
                   ),
+                  clipBehavior: Clip.hardEdge,
+                  child: imageUri == null || imageUri == ''
+                      ? const Center(child: Text('Gambar Belum Diunggah'))
+                      : imageUri.contains('https://')
+                          ? Image.network(
+                              imageUri,
+                              fit: BoxFit.cover, // Menggunakan BoxFit.cover
+                              loadingBuilder: (
+                                BuildContext context,
+                                Widget child,
+                                ImageChunkEvent? loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (
+                                BuildContext context,
+                                Object error,
+                                StackTrace? stackTrace,
+                              ) {
+                                return Center(
+                                  child: Text(
+                                    'Failed to load image: $error',
+                                  ),
+                                );
+                              },
+                            )
+                          : Image.network(
+                              'https://${BasePaths.baseAPIURL}/$imageUri',
+                              fit: BoxFit.cover, // Menggunakan BoxFit.cover
+                              loadingBuilder: (
+                                BuildContext context,
+                                Widget child,
+                                ImageChunkEvent? loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            (loadingProgress
+                                                    .expectedTotalBytes ??
+                                                1)
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (
+                                BuildContext context,
+                                Object error,
+                                StackTrace? stackTrace,
+                              ) {
+                                return Center(
+                                  child: Text(
+                                    'Failed to load image: $error',
+                                  ),
+                                );
+                              },
+                            ),
                 ),
               ),
               SizedBox(
@@ -1160,7 +1553,7 @@ Widget buildExpandedMenuItem({
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Steak With Paprica',
+                      menuName,
                       maxLines: 2,
                       style: TextStyle(
                         fontSize: 16.sp,
@@ -1169,7 +1562,11 @@ Widget buildExpandedMenuItem({
                       ),
                     ),
                     Text(
-                      'Rp80.000,00',
+                      NumberFormat.simpleCurrency(
+                        locale: 'id-ID',
+                        name: 'Rp',
+                        decimalDigits: 2,
+                      ).format(menuPrice),
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
@@ -1258,6 +1655,7 @@ Widget buildExpandedMenuItem({
               color: Colors.white,
             ),
             child: TextFormField(
+              onTap: onNotesTap,
               controller: notes,
               decoration: InputDecoration(
                 filled: false,
