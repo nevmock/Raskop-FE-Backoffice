@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -14,6 +15,7 @@ import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/shared/currency_formatter.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/application/supplier_controller.dart';
 import 'package:raskop_fe_backoffice/src/supplier/domain/entities/supplier_entity.dart';
@@ -118,6 +120,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = ref.watch(supplierControllerProvider.notifier);
     void openDetailPanel({required SupplierEntity detailSupplier}) {
       setState(() {
         nama.value = TextEditingValue(text: detailSupplier.name);
@@ -197,8 +200,22 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         isEditPanelVisible = !isEditPanelVisible;
         nama.value = TextEditingValue(text: request.name);
         kontak.value = TextEditingValue(text: request.contact);
-        harga.value = TextEditingValue(text: request.price.toString());
-        biaya.value = TextEditingValue(text: request.shippingFee.toString());
+        harga.value = TextEditingValue(
+          text: CurrencyInputFormatter()
+              .formatEditUpdate(
+                TextEditingValue.empty,
+                TextEditingValue(text: request.price.toString()),
+              )
+              .text,
+        );
+        biaya.value = TextEditingValue(
+          text: CurrencyInputFormatter()
+              .formatEditUpdate(
+                TextEditingValue.empty,
+                TextEditingValue(text: request.shippingFee.toString()),
+              )
+              .text,
+        );
         alamat.value = TextEditingValue(text: request.address);
         produk.value = TextEditingValue(text: request.productName);
         typeTabletEditController
@@ -234,7 +251,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     }
 
     void onSearchPhone() {
-      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
+      ref.read(supplierControllerProvider.notifier).onSearch(
         advSearch: {
           'withDeleted': false,
           for (final item in advSearchPhoneController.selectedItems)
@@ -250,7 +267,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     }
 
     void onSearchTablet() {
-      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
+      ref.read(supplierControllerProvider.notifier).onSearch(
         advSearch: {
           'withDeleted': false,
           for (final item in advSearchTabletController.selectedItems)
@@ -277,15 +294,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
       debounceTimer = Timer(const Duration(milliseconds: 500), onSearchTablet);
     }
 
-    void onSort({required String column, required String direction}) {
-      ref.read(supplierControllerProvider.notifier).fetchSuppliers(
-        order: [
-          <String, dynamic>{
-            'column': column,
-            'direction': direction,
-          },
-        ],
-      );
+    String unformatCurrency(String formattedValue) {
+      return formattedValue.replaceAll('.', '');
     }
 
     return GestureDetector(
@@ -355,20 +365,27 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         flex: 3,
                                         child: TextFormField(
                                           controller: search,
-                                          onChanged: (value) {
-                                            debounceOnTablet();
-                                          },
-                                          onFieldSubmitted: (value) {
-                                            onSearchTablet();
-                                          },
+                                          onChanged: advSearchTabletController
+                                                  .selectedItems.isEmpty
+                                              ? (value) {}
+                                              : (value) {
+                                                  debounceOnTablet();
+                                                },
+                                          onFieldSubmitted:
+                                              advSearchTabletController
+                                                      .selectedItems.isEmpty
+                                                  ? (value) {}
+                                                  : (value) {
+                                                      onSearchTablet();
+                                                    },
                                           decoration: InputDecoration(
                                             filled: false,
                                             border: InputBorder.none,
                                             hintText:
                                                 'Temukan nama, kontak, unit...',
                                             hintStyle: TextStyle(
-                                              color:
-                                                  Colors.black.withOpacity(0.3),
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.3),
                                               fontWeight: FontWeight.w400,
                                             ),
                                           ),
@@ -380,7 +397,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                           items: advSearchOptions,
                                           controller: advSearchTabletController,
                                           onSelectionChange: (selectedItems) {
-                                            onSearchTablet();
+                                            setState(() {});
                                           },
                                           fieldDecoration:
                                               const FieldDecoration(
@@ -494,7 +511,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                       ),
                                       GestureDetector(
                                         onTap: () {
-                                          onSort(
+                                          controller.onSort(
                                             column: 'name',
                                             direction: isNameAscending
                                                 ? 'DESC'
@@ -527,7 +544,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                       ),
                                       GestureDetector(
                                         onTap: () {
-                                          onSort(
+                                          controller.onSort(
                                             column: 'contact',
                                             direction: isContactAscending
                                                 ? 'DESC'
@@ -625,172 +642,48 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                           child: supplier.when(
                             data: (data) {
                               return ListView(
+                                controller: controller.controller,
                                 padding: EdgeInsets.zero,
                                 shrinkWrap: true,
-                                children: data
-                                    .map(
-                                      (e) => Container(
-                                        margin: EdgeInsets.only(bottom: 7.h),
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(18),
-                                          color: hexToColor('#E1E1E1'),
-                                        ),
-                                        child: Slidable(
-                                          startActionPane: ActionPane(
-                                            extentRatio: 0.08,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      openEditPanel(request: e);
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topLeft:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
-                                                          bottomLeft:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
+                                children: [
+                                  for (final e in data)
+                                    Container(
+                                      margin: EdgeInsets.only(bottom: 7.h),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(18),
+                                        color: hexToColor('#E1E1E1'),
+                                      ),
+                                      child: Slidable(
+                                        startActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    openEditPanel(request: e);
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
-                                                        color: hexToColor(
-                                                          '#E1E1E1',
+                                                        bottomLeft:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
                                                       ),
-                                                      child: ClipOval(
-                                                        child: Center(
-                                                          child: Container(
-                                                            width:
-                                                                MediaQuery.of(
-                                                                      context,
-                                                                    )
-                                                                        .size
-                                                                        .width *
-                                                                    0.05,
-                                                            height:
-                                                                MediaQuery.of(
-                                                                      context,
-                                                                    )
-                                                                        .size
-                                                                        .width *
-                                                                    0.05,
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(
-                                                              12,
-                                                            ),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  const BorderRadius
-                                                                      .all(
-                                                                Radius.circular(
-                                                                  30,
-                                                                ),
-                                                              ),
-                                                              color: hexToColor(
-                                                                '#FFAD0D',
-                                                              ),
-                                                            ),
-                                                            child:
-                                                                const Iconify(
-                                                              Zondicons
-                                                                  .edit_pencil,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                          ),
-                                                        ),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
                                                       ),
                                                     ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          endActionPane: ActionPane(
-                                            extentRatio: 0.08,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      showConfirmationDialog(
-                                                        context: context,
-                                                        title:
-                                                            'Hapus Supplier?',
-                                                        onDelete: isLoading
-                                                            ? () {}
-                                                            : () async {
-                                                                setState(() {
-                                                                  isLoading =
-                                                                      true;
-                                                                });
-                                                                try {
-                                                                  await ref
-                                                                      .read(
-                                                                        supplierControllerProvider
-                                                                            .notifier,
-                                                                      )
-                                                                      .deleteData(
-                                                                        id: e
-                                                                            .id!,
-                                                                        deletePermanent:
-                                                                            false,
-                                                                      );
-                                                                } catch (e) {
-                                                                  // show snackbar or anything else
-                                                                  print(
-                                                                    'delete failed : $e',
-                                                                  );
-                                                                } finally {
-                                                                  setState(() {
-                                                                    isLoading =
-                                                                        false;
-                                                                    context
-                                                                        .pop();
-                                                                    FocusScope
-                                                                        .of(
-                                                                      context,
-                                                                    ).unfocus();
-                                                                  });
-                                                                }
-                                                              },
-                                                        content:
-                                                            'Supplier ini akan terhapus dari halaman ini.',
-                                                        isWideScreen: true,
-                                                        isLoading: isLoading,
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topRight:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
-                                                          bottomRight:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
-                                                        ),
-                                                        color: hexToColor(
-                                                          '#E1E1E1',
-                                                        ),
-                                                      ),
+                                                    child: ClipOval(
                                                       child: Center(
                                                         child: Container(
                                                           width: MediaQuery.of(
@@ -803,7 +696,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                               0.05,
                                                           padding:
                                                               const EdgeInsets
-                                                                  .all(12),
+                                                                  .all(
+                                                            12,
+                                                          ),
                                                           decoration:
                                                               BoxDecoration(
                                                             borderRadius:
@@ -814,11 +709,12 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                               ),
                                                             ),
                                                             color: hexToColor(
-                                                              '#F64C4C',
+                                                              '#FFAD0D',
                                                             ),
                                                           ),
                                                           child: const Iconify(
-                                                            Eva.trash_fill,
+                                                            Zondicons
+                                                                .edit_pencil,
                                                             color: Colors.white,
                                                           ),
                                                         ),
@@ -827,213 +723,302 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   ),
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: Colors.grey,
+                                            ),
+                                          ],
+                                        ),
+                                        endActionPane: ActionPane(
+                                          extentRatio: 0.08,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    showConfirmationDialog(
+                                                      context: context,
+                                                      title: 'Hapus Supplier?',
+                                                      onDelete: isLoading
+                                                          ? () {}
+                                                          : () async {
+                                                              setState(() {
+                                                                isLoading =
+                                                                    true;
+                                                              });
+                                                              try {
+                                                                await ref
+                                                                    .read(
+                                                                      supplierControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                    .deleteData(
+                                                                      id: e.id!,
+                                                                      deletePermanent:
+                                                                          false,
+                                                                    );
+                                                              } catch (e) {
+                                                                // show snackbar or anything else
+                                                                print(
+                                                                  'delete failed : $e',
+                                                                );
+                                                              } finally {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                  context.pop();
+                                                                  FocusScope.of(
+                                                                    context,
+                                                                  ).unfocus();
+                                                                });
+                                                              }
+                                                            },
+                                                      content:
+                                                          'Supplier ini akan terhapus dari halaman ini.',
+                                                      isWideScreen: true,
+                                                      isLoading: isLoading,
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
+                                                        bottomRight:
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
+                                                      ),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Container(
+                                                        width: MediaQuery.of(
+                                                              context,
+                                                            ).size.width *
+                                                            0.05,
+                                                        height: MediaQuery.of(
+                                                              context,
+                                                            ).size.width *
+                                                            0.05,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(12),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              const BorderRadius
+                                                                  .all(
+                                                            Radius.circular(
+                                                              30,
+                                                            ),
+                                                          ),
+                                                          color: hexToColor(
+                                                            '#F64C4C',
+                                                          ),
+                                                        ),
+                                                        child: const Iconify(
+                                                          Eva.trash_fill,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(18),
-                                              color: Colors.white,
                                             ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 10.w,
-                                              vertical: 8.h,
+                                          ],
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
                                             ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: Text(
-                                                    e.id!,
-                                                    maxLines: 1,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 14,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: Colors.white,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 8.h,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                flex: 2,
+                                                child: Text(
+                                                  e.id!,
+                                                  maxLines: 1,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  flex: 3,
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.name,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.contact,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 14,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Center(
                                                   child: Text(
-                                                    e.name,
+                                                    productType
+                                                        .firstWhere(
+                                                          (el) =>
+                                                              e.type ==
+                                                              el.value,
+                                                        )
+                                                        .label,
                                                     maxLines: 2,
+                                                    textAlign: TextAlign.center,
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w500,
-                                                      color:
-                                                          hexToColor('#202224'),
+                                                      color: hexToColor(
+                                                        '#202224',
+                                                      ),
                                                       fontSize: 14,
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  flex: 3,
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Center(
                                                   child: Text(
-                                                    e.contact,
+                                                    NumberFormat.simpleCurrency(
+                                                      locale: 'id-ID',
+                                                      name: 'Rp',
+                                                      decimalDigits: 2,
+                                                    ).format(e.price),
                                                     maxLines: 2,
+                                                    textAlign: TextAlign.center,
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w500,
-                                                      color:
-                                                          hexToColor('#202224'),
+                                                      color: hexToColor(
+                                                        '#202224',
+                                                      ),
                                                       fontSize: 14,
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Center(
-                                                    child: Text(
-                                                      productType
-                                                          .firstWhere(
-                                                            (el) =>
-                                                                e.type ==
-                                                                el.value,
-                                                          )
-                                                          .label,
-                                                      maxLines: 2,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: hexToColor(
-                                                          '#202224',
-                                                        ),
-                                                        fontSize: 14,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 10.h,
                                                     ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Center(
-                                                    child: Text(
-                                                      NumberFormat
-                                                          .simpleCurrency(
-                                                        locale: 'id-ID',
-                                                        name: 'Rp',
-                                                        decimalDigits: 2,
-                                                      ).format(e.price),
-                                                      maxLines: 2,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: hexToColor(
-                                                          '#202224',
-                                                        ),
-                                                        fontSize: 14,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Center(
-                                                    child: Padding(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                        horizontal: 10.h,
-                                                      ),
-                                                      child: TextButton(
-                                                        onPressed: () {
-                                                          openDetailPanel(
-                                                            detailSupplier:
-                                                                SupplierEntity(
-                                                              id: e.id,
-                                                              name: e.name,
-                                                              contact:
-                                                                  e.contact,
-                                                              type: e.type,
-                                                              price: e.price,
-                                                              unit: e.unit,
-                                                              shippingFee:
-                                                                  e.shippingFee,
-                                                              address:
-                                                                  e.address,
-                                                              productName:
-                                                                  e.productName,
-                                                              isActive:
-                                                                  e.isActive,
-                                                            ),
-                                                          );
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              hexToColor(
-                                                            '#f6e9e0',
-                                                          ),
-                                                          minimumSize:
-                                                              const Size(
-                                                            double.infinity,
-                                                            40,
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'Lihat',
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: hexToColor(
-                                                              '#E38D5D',
-                                                            ),
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: Center(
-                                                    child: CustomSwitch(
-                                                      isON: e.isActive!,
-                                                      onSwitch: (val) {
-                                                        return ref
-                                                            .read(
-                                                              supplierControllerProvider
-                                                                  .notifier,
-                                                            )
-                                                            .toggleSupplierStatus(
-                                                              request: e,
-                                                              id: e.id!,
-                                                              currentStatus:
-                                                                  e.isActive!,
-                                                            );
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        openDetailPanel(
+                                                          detailSupplier: e,
+                                                        );
                                                       },
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                          '#f6e9e0',
+                                                        ),
+                                                        minimumSize: const Size(
+                                                          double.infinity,
+                                                          40,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Lihat',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: hexToColor(
+                                                            '#E38D5D',
+                                                          ),
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                              Expanded(
+                                                flex: 2,
+                                                child: Center(
+                                                  child: CustomSwitch(
+                                                    isON: e.isActive!,
+                                                    onSwitch: (val) {
+                                                      return ref
+                                                          .read(
+                                                            supplierControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .toggleSupplierStatus(
+                                                            request: e,
+                                                            id: e.id!,
+                                                            currentStatus:
+                                                                e.isActive!,
+                                                          );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                                    )
-                                    .toList(),
+                                    ),
+                                  if (controller.hasMore)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 16),
+                                      child: Center(
+                                        child: CustomLoadingIndicator(),
+                                      ),
+                                    ),
+                                ],
                               );
                             },
                             loading: () => const Center(
@@ -1370,7 +1355,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   color: Colors.black
-                                                      .withOpacity(0.3),
+                                                      .withValues(alpha: 0.3),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                                 suffixIcon: const Padding(
@@ -1476,7 +1461,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   color: Colors.black
-                                                      .withOpacity(0.3),
+                                                      .withValues(alpha: 0.3),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                                 suffixIcon: const Padding(
@@ -1553,6 +1538,13 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                               try {
                                                 if (createKey.currentState!
                                                     .validate()) {
+                                                  print(
+                                                    double.parse(
+                                                      unformatCurrency(
+                                                        harga.text,
+                                                      ),
+                                                    ),
+                                                  );
                                                   await ref
                                                       .read(
                                                         supplierControllerProvider
@@ -1568,7 +1560,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   .first
                                                                   .value,
                                                           price: double.parse(
-                                                            harga.text,
+                                                            unformatCurrency(
+                                                              harga.text,
+                                                            ),
                                                           ),
                                                           unit:
                                                               unitTabletCreateController
@@ -1577,7 +1571,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   .value,
                                                           shippingFee:
                                                               double.parse(
-                                                            biaya.text,
+                                                            unformatCurrency(
+                                                              biaya.text,
+                                                            ),
                                                           ),
                                                           address: alamat.text,
                                                           productName:
@@ -1746,7 +1742,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   color: Colors.black
-                                                      .withOpacity(0.3),
+                                                      .withValues(alpha: 0.3),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                                 suffixIcon: const Padding(
@@ -1843,7 +1839,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   color: Colors.black
-                                                      .withOpacity(0.3),
+                                                      .withValues(alpha: 0.3),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                                 suffixIcon: const Padding(
@@ -1934,7 +1930,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   .first
                                                                   .value,
                                                           price: double.parse(
-                                                            harga.text,
+                                                            unformatCurrency(
+                                                              harga.text,
+                                                            ),
                                                           ),
                                                           unit:
                                                               unitTabletEditController
@@ -1943,7 +1941,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                   .value,
                                                           shippingFee:
                                                               double.parse(
-                                                            biaya.text,
+                                                            unformatCurrency(
+                                                              biaya.text,
+                                                            ),
                                                           ),
                                                           address: alamat.text,
                                                           productName:
@@ -2069,12 +2069,19 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                           ),
                                           child: TextFormField(
                                             controller: search,
-                                            onChanged: (value) {
-                                              debounceOnPhone(); // Debounce biar nggak spam API
-                                            },
-                                            onFieldSubmitted: (value) {
-                                              onSearchPhone();
-                                            },
+                                            onChanged: advSearchPhoneController
+                                                    .selectedItems.isEmpty
+                                                ? (value) {}
+                                                : (value) {
+                                                    debounceOnPhone(); // Debounce biar nggak spam API
+                                                  },
+                                            onFieldSubmitted:
+                                                advSearchPhoneController
+                                                        .selectedItems.isEmpty
+                                                    ? (value) {}
+                                                    : (value) {
+                                                        onSearchPhone();
+                                                      },
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -2084,7 +2091,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                               hintText: 'Temukan...',
                                               hintStyle: TextStyle(
                                                 color: Colors.black
-                                                    .withOpacity(0.3),
+                                                    .withValues(alpha: 0.3),
                                                 fontWeight: FontWeight.w400,
                                                 fontSize: 12,
                                               ),
@@ -2098,7 +2105,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                           controller: advSearchPhoneController,
                                           items: advSearchOptions,
                                           onSelectionChange: (selectedItems) {
-                                            onSearchPhone();
+                                            setState(() {});
                                           },
                                           fieldDecoration:
                                               const FieldDecoration(
@@ -2293,81 +2300,77 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                           child: supplier.when(
                             data: (data) {
                               return ListView(
+                                controller: controller.controller,
                                 padding: EdgeInsets.zero,
                                 shrinkWrap: true,
-                                children: data
-                                    .map(
-                                      (e) => Container(
-                                        margin: EdgeInsets.only(bottom: 7.h),
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(18),
-                                          color: hexToColor('#E1E1E1'),
-                                        ),
-                                        child: Slidable(
-                                          startActionPane: ActionPane(
-                                            extentRatio: 0.2,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      openEditPanel(request: e);
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topLeft:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
-                                                          bottomLeft:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
+                                children: [
+                                  for (final e in data)
+                                    Container(
+                                      margin: EdgeInsets.only(bottom: 7.h),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(18),
+                                        color: hexToColor('#E1E1E1'),
+                                      ),
+                                      child: Slidable(
+                                        startActionPane: ActionPane(
+                                          extentRatio: 0.2,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    openEditPanel(request: e);
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
-                                                        color: hexToColor(
-                                                          '#E1E1E1',
+                                                        bottomLeft:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
                                                       ),
-                                                      child: ClipOval(
-                                                        child: Center(
-                                                          child: Container(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 10.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  const BorderRadius
-                                                                      .all(
-                                                                Radius.circular(
-                                                                  30,
-                                                                ),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
+                                                    ),
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          margin: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 10.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
                                                               ),
-                                                              color: hexToColor(
-                                                                '#FFAD0D',
-                                                              ),
                                                             ),
-                                                            child:
-                                                                const Iconify(
-                                                              Zondicons
-                                                                  .edit_pencil,
-                                                              color:
-                                                                  Colors.white,
+                                                            color: hexToColor(
+                                                              '#FFAD0D',
                                                             ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Zondicons
+                                                                .edit_pencil,
+                                                            color: Colors.white,
                                                           ),
                                                         ),
                                                       ),
@@ -2375,263 +2378,259 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                   ),
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                          endActionPane: ActionPane(
-                                            extentRatio: 0.2,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      showConfirmationDialog(
-                                                        context: context,
-                                                        title:
-                                                            'Hapus Supplier?',
-                                                        onDelete: isLoading
-                                                            ? () {}
-                                                            : () async {
+                                            ),
+                                          ],
+                                        ),
+                                        endActionPane: ActionPane(
+                                          extentRatio: 0.2,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    showConfirmationDialog(
+                                                      context: context,
+                                                      title: 'Hapus Supplier?',
+                                                      onDelete: isLoading
+                                                          ? () {}
+                                                          : () async {
+                                                              setState(() {
+                                                                isLoading =
+                                                                    true;
+                                                              });
+                                                              try {
+                                                                await ref
+                                                                    .read(
+                                                                      supplierControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                    .deleteData(
+                                                                      id: e.id!,
+                                                                      deletePermanent:
+                                                                          false,
+                                                                    );
+                                                              } catch (e) {
+                                                                // show snackbar or anything else
+                                                                print(
+                                                                  'delete failed : $e',
+                                                                );
+                                                              } finally {
                                                                 setState(() {
                                                                   isLoading =
-                                                                      true;
+                                                                      false;
+                                                                  context.pop();
+                                                                  FocusScope.of(
+                                                                    context,
+                                                                  ).unfocus();
                                                                 });
-                                                                try {
-                                                                  await ref
-                                                                      .read(
-                                                                        supplierControllerProvider
-                                                                            .notifier,
-                                                                      )
-                                                                      .deleteData(
-                                                                        id: e
-                                                                            .id!,
-                                                                        deletePermanent:
-                                                                            false,
-                                                                      );
-                                                                } catch (e) {
-                                                                  // show snackbar or anything else
-                                                                  print(
-                                                                    'delete failed : $e',
-                                                                  );
-                                                                } finally {
-                                                                  setState(() {
-                                                                    isLoading =
-                                                                        false;
-                                                                    context
-                                                                        .pop();
-                                                                    FocusScope
-                                                                        .of(
-                                                                      context,
-                                                                    ).unfocus();
-                                                                  });
-                                                                }
-                                                              },
-                                                        content:
-                                                            'Supplier ini akan terhapus dari halaman ini.',
-                                                        isWideScreen: false,
-                                                        isLoading: isLoading,
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topRight:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
-                                                          bottomRight:
-                                                              Radius.circular(
-                                                            18,
-                                                          ),
+                                                              }
+                                                            },
+                                                      content:
+                                                          'Supplier ini akan terhapus dari halaman ini.',
+                                                      isWideScreen: false,
+                                                      isLoading: isLoading,
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
-                                                        color: hexToColor(
-                                                          '#E1E1E1',
+                                                        bottomRight:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
                                                       ),
-                                                      child: ClipOval(
-                                                        child: Center(
-                                                          child: Container(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 10.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  const BorderRadius
-                                                                      .all(
-                                                                Radius.circular(
-                                                                  30,
-                                                                ),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
+                                                    ),
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          margin: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 10.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
                                                               ),
-                                                              color: hexToColor(
-                                                                '#F64C4C',
-                                                              ),
                                                             ),
-                                                            child:
-                                                                const Iconify(
-                                                              Eva.trash_fill,
-                                                              color:
-                                                                  Colors.white,
+                                                            color: hexToColor(
+                                                              '#F64C4C',
                                                             ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Eva.trash_fill,
+                                                            color: Colors.white,
                                                           ),
                                                         ),
                                                       ),
                                                     ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: Colors.white,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 8.h,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.id!,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: 5,
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Text(
+                                                  e.name,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: 3,
+                                              ),
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.contact,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: 2,
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 5.h,
+                                                    ),
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        openDetailPanel(
+                                                          detailSupplier: e,
+                                                        );
+                                                      },
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                          '#f6e9e0',
+                                                        ),
+                                                        minimumSize: const Size(
+                                                          double.infinity,
+                                                          40,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Lihat',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: hexToColor(
+                                                            '#E38D5D',
+                                                          ),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: PhoneSwitchWidget(
+                                                    isON: e.isActive!,
+                                                    onSwitch: (val) async {
+                                                      return ref
+                                                          .read(
+                                                            supplierControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .toggleSupplierStatus(
+                                                            request: e,
+                                                            id: e.id!,
+                                                            currentStatus:
+                                                                e.isActive!,
+                                                          );
+                                                    },
                                                   ),
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(18),
-                                              color: Colors.white,
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 10.w,
-                                              vertical: 8.h,
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Text(
-                                                    e.id!,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(
-                                                  width: 5,
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Text(
-                                                    e.name,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(
-                                                  width: 3,
-                                                ),
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Text(
-                                                    e.contact,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(
-                                                  width: 2,
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Center(
-                                                    child: Padding(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                        horizontal: 5.h,
-                                                      ),
-                                                      child: TextButton(
-                                                        onPressed: () {
-                                                          openDetailPanel(
-                                                            detailSupplier: e,
-                                                          );
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              hexToColor(
-                                                            '#f6e9e0',
-                                                          ),
-                                                          minimumSize:
-                                                              const Size(
-                                                            double.infinity,
-                                                            40,
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'Lihat',
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: hexToColor(
-                                                              '#E38D5D',
-                                                            ),
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Center(
-                                                    child: PhoneSwitchWidget(
-                                                      isON: e.isActive!,
-                                                      onSwitch: (val) async {
-                                                        return ref
-                                                            .read(
-                                                              supplierControllerProvider
-                                                                  .notifier,
-                                                            )
-                                                            .toggleSupplierStatus(
-                                                              request: e,
-                                                              id: e.id!,
-                                                              currentStatus:
-                                                                  e.isActive!,
-                                                            );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
                                           ),
                                         ),
                                       ),
-                                    )
-                                    .toList(),
+                                    ),
+                                  if (controller.hasMore)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 16),
+                                      child: Center(
+                                        child: CustomLoadingIndicator(),
+                                      ),
+                                    ),
+                                ],
                               );
                             },
                             error: (error, stackTrace) => Center(
@@ -3074,7 +3073,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         hintStyle: TextStyle(
                                           fontSize: 14.sp,
                                           overflow: TextOverflow.ellipsis,
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
                                           fontWeight: FontWeight.w600,
                                         ),
                                         suffixIcon: const Padding(
@@ -3157,7 +3157,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         hintStyle: TextStyle(
                                           fontSize: 14.sp,
                                           overflow: TextOverflow.ellipsis,
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
                                           fontWeight: FontWeight.w600,
                                         ),
                                         suffixIcon: const Padding(
@@ -3237,7 +3238,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                 .first
                                                                 .value,
                                                         price: double.parse(
-                                                          harga.text,
+                                                          unformatCurrency(
+                                                            harga.text,
+                                                          ),
                                                         ),
                                                         unit:
                                                             unitPhoneCreateController
@@ -3246,7 +3249,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                 .value,
                                                         shippingFee:
                                                             double.parse(
-                                                          biaya.text,
+                                                          unformatCurrency(
+                                                            biaya.text,
+                                                          ),
                                                         ),
                                                         address: alamat.text,
                                                         productName:
@@ -3390,7 +3395,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         hintStyle: TextStyle(
                                           fontSize: 14.sp,
                                           overflow: TextOverflow.ellipsis,
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
                                           fontWeight: FontWeight.w600,
                                         ),
                                         suffixIcon: const Padding(
@@ -3473,7 +3479,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                         hintStyle: TextStyle(
                                           fontSize: 14.sp,
                                           overflow: TextOverflow.ellipsis,
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
                                           fontWeight: FontWeight.w600,
                                         ),
                                         suffixIcon: const Padding(
@@ -3553,7 +3560,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                 .first
                                                                 .value,
                                                         price: double.parse(
-                                                          harga.text,
+                                                          unformatCurrency(
+                                                            harga.text,
+                                                          ),
                                                         ),
                                                         unit:
                                                             unitPhoneEditController
@@ -3562,7 +3571,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                 .value,
                                                         shippingFee:
                                                             double.parse(
-                                                          biaya.text,
+                                                          unformatCurrency(
+                                                            biaya.text,
+                                                          ),
                                                         ),
                                                         address: alamat.text,
                                                         productName:
@@ -3655,6 +3666,21 @@ Widget _buildTextField(
             if (value == null || value.isEmpty) {
               return 'Required Field!';
             }
+            if (label == 'Kontak' && (value.length < 3 || value.length > 12)) {
+              return 'Must be min 3 char. and max 12 char.';
+            }
+            if (label == 'Nama' && (value.length < 3 || value.length > 150)) {
+              return 'Must be min 3 char. and max 150 char.';
+            }
+            if ((label == 'Alamat' || label == 'Produk') &&
+                value.length > 150) {
+              return 'Must be max 150 char.';
+            }
+            if ((label == 'Harga' || label == 'Biaya Pengiriman') &&
+                (value.startsWith('0') || value.contains('-'))) {
+              return 'Must be greater than 0.';
+            }
+
             return null;
           },
           keyboardType: keytype,
@@ -3680,6 +3706,11 @@ Widget _buildTextField(
               borderRadius: BorderRadius.all(Radius.circular(15)),
             ),
           ),
+          inputFormatters: keytype == TextInputType.number
+              ? [
+                  CurrencyInputFormatter(),
+                ]
+              : [],
         ),
       ],
     ),

@@ -19,8 +19,8 @@ class SupplierRepository implements SupplierRepositoryInterface {
 
   @override
   FutureEither<List<SupplierEntity>> getAllSupplierData({
+    int? start,
     int? length,
-    String? search,
     Map<String, dynamic>? advSearch,
     List<Map<String, dynamic>>? order,
   }) async {
@@ -31,8 +31,8 @@ class SupplierRepository implements SupplierRepositoryInterface {
           .map((e) => SupplierEntity.fromJson(e as Map<String, dynamic>))
           .toList(),
       queryParameters: {
+        if (start != null) 'start': start.toString(),
         if (length != null) 'length': length.toString(),
-        if (search != null) 'search': search,
         if (advSearch != null)
           'advSearch': jsonEncode(advSearch)
         else
@@ -53,6 +53,7 @@ class SupplierRepository implements SupplierRepositoryInterface {
 
   @override
   FutureEitherVoid createNewSupplier({required SupplierEntity request}) async {
+    print(request.copyWith(id: null).toJson());
     return client.request<ResponseSuccess>(
       action: 'create',
       method: 'POST',
