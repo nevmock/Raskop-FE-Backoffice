@@ -83,12 +83,24 @@ class ApiClient {
         return right(result);
       }
       if (jsonResponse['code'] == 404) {
-        return left(const ResponseFailure.notFound());
+        return left(
+          ResponseFailure.notFound(
+            message: jsonResponse['errors'].toString(),
+          ),
+        );
       }
       if (jsonResponse['code'] == 400) {
-        return left(const ResponseFailure.badRequest());
+        return left(
+          ResponseFailure.badRequest(
+            message: jsonResponse['errors'].toString(),
+          ),
+        );
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(
+        ResponseFailure.internalServerError(
+          message: jsonResponse['errors'].toString(),
+        ),
+      );
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     }

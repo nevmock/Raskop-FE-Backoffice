@@ -7,8 +7,11 @@ import 'package:raskop_fe_backoffice/shared/const.dart';
 ///
 class PhoneSwitchWidget extends StatefulWidget {
   /// Constructor
-  const PhoneSwitchWidget(
-      {required this.isON, required this.onSwitch, super.key});
+  const PhoneSwitchWidget({
+    required this.isON,
+    required this.onSwitch,
+    super.key,
+  });
 
   /// Status awal
   final bool isON;
