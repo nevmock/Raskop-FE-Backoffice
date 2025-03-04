@@ -83,7 +83,7 @@ class ReservationRepository implements ReservationRepositoryInterface {
     required UpdateStatusOrderRequestEntity request,
   }) {
     return client.request<ResponseSuccess>(
-      endpoint: '$endpoint/${request.id}/update-status',
+      endpoint: '$endpoint/update-status',
       action: 'edit',
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -94,7 +94,7 @@ class ReservationRepository implements ReservationRepositoryInterface {
   @override
   FutureEitherVoid cancelReservation({required Map<String, dynamic> id}) {
     return client.request<ResponseSuccess>(
-      endpoint: '$endpoint/$id/cancel',
+      endpoint: '$endpoint/cancel',
       action: 'delete',
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -116,6 +116,23 @@ class ReservationRepository implements ReservationRepositoryInterface {
       fromJson: (json) => (json['data']['tables'] as List<dynamic>)
           .map((e) => TableSuggestionEntity.fromJson(e as Map<String, dynamic>))
           .toList(),
+    );
+  }
+
+  @override
+  FutureEither<CreateOrderResponseEntity> generatePayment({
+    required String id,
+    required String paymentMethod,
+  }) {
+    return client.request(
+      endpoint: '${Endpoints.transaction}/generate-payment',
+      action: 'create',
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: <String, dynamic>{'orderId': id, 'paymentMethod': paymentMethod},
+      fromJson: (json) => CreateOrderResponseEntity.fromJson(
+        json['data'] as Map<String, dynamic>,
+      ),
     );
   }
 }

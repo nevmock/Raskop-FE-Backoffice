@@ -32,6 +32,7 @@ class _WebviewPaymentScreenState extends ConsumerState<WebviewPaymentScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: const Text('Status Pembayaran'),
           content: Text(message),
           actions: [

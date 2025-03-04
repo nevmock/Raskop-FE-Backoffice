@@ -45,7 +45,7 @@ class ReservationController extends _$ReservationController {
   @override
   FutureOr<List<ReservationEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 10));
+    ref.cacheFor(const Duration(minutes: 3));
     return fetchReservations();
   }
 
@@ -66,18 +66,21 @@ class ReservationController extends _$ReservationController {
     isLoading = true;
 
     final res = await ref.read(reservationRepositoryProvider).getAllReservation(
-          start: start,
-          length: length,
-          advSearch: advSearch.isEmpty ? null : advSearch,
-          order: column == '' || direction == ''
-              ? null
-              : [
-                  <String, dynamic>{
-                    'column': column,
-                    'direction': direction,
-                  }
-                ],
-        );
+      start: start,
+      length: length,
+      advSearch: advSearch.isEmpty ? null : advSearch,
+      order: [
+        if (column != '' && direction != '')
+          <String, dynamic>{
+            'column': column,
+            'direction': direction,
+          },
+        <String, dynamic>{
+          'column': 'createdAt',
+          'direction': 'DESC',
+        }
+      ],
+    );
     return res.fold(
       (l) {
         state = AsyncError(l, StackTrace.current);
@@ -144,10 +147,7 @@ class ReservationController extends _$ReservationController {
         .read(reservationRepositoryProvider)
         .createNewReservation(request: request);
     return res.fold(
-      (l) {
-        // state = AsyncError(l, StackTrace.current);
-        throw l;
-      },
+      (l) => throw l,
       (r) {
         refresh();
         return r;
@@ -178,7 +178,7 @@ class ReservationController extends _$ReservationController {
     final res =
         await ref.read(reservationRepositoryProvider).cancelReservation(id: id);
     res.fold(
-      (l) => state = AsyncError(l, StackTrace.current),
+      (l) => throw l,
       (r) {
         refresh();
         return r;
@@ -194,11 +194,25 @@ class ReservationController extends _$ReservationController {
         .read(reservationRepositoryProvider)
         .getTableSuggestion(request: request);
     return res.fold(
-      (l) {
-        state = AsyncError(l, StackTrace.current);
-        throw l;
-      },
+      (l) => throw l,
       (r) => r,
+    );
+  }
+
+  ///
+  Future<CreateOrderResponseEntity> generatePayment({
+    required String orderId,
+    required String paymentMethod,
+  }) async {
+    final res = await ref
+        .read(reservationRepositoryProvider)
+        .generatePayment(id: orderId, paymentMethod: paymentMethod);
+    return res.fold(
+      (l) => throw l,
+      (r) {
+        refresh();
+        return r;
+      },
     );
   }
 

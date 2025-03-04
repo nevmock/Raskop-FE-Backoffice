@@ -33,4 +33,10 @@ abstract class ReservationRepositoryInterface {
   FutureEither<List<TableSuggestionEntity>> getTableSuggestion({
     required TableSuggestionRequestEntity request,
   });
+
+  /// POST, generate payment for pelunasan
+  FutureEither<CreateOrderResponseEntity> generatePayment({
+    required String id,
+    required String paymentMethod,
+  });
 }

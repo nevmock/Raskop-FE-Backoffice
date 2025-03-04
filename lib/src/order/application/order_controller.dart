@@ -45,7 +45,7 @@ class OrderController extends _$OrderController {
   /// auto build widget when calling the controller
   FutureOr<List<OrderEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 10));
+    ref.cacheFor(const Duration(minutes: 3));
     return fetchOrders();
   }
 
@@ -66,18 +66,21 @@ class OrderController extends _$OrderController {
     isLoading = true;
 
     final res = await ref.read(orderRepositoryProvider).getAllOrders(
-          start: start,
-          length: length,
-          advSearch: advSearch.isEmpty ? null : advSearch,
-          order: column == '' || direction == ''
-              ? null
-              : [
-                  <String, dynamic>{
-                    'column': column,
-                    'direction': direction,
-                  },
-                ],
-        );
+      start: start,
+      length: length,
+      advSearch: advSearch.isEmpty ? null : advSearch,
+      order: [
+        if (column != '' && direction != '')
+          <String, dynamic>{
+            'column': column,
+            'direction': direction,
+          },
+        <String, dynamic>{
+          'column': 'createdAt',
+          'direction': 'DESC',
+        }
+      ],
+    );
     return res.fold(
       (l) {
         state = AsyncValue.error(l, StackTrace.current);
