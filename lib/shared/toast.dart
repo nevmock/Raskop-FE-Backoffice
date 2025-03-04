@@ -35,7 +35,6 @@ class Toast {
     required BuildContext context,
     required String title,
     String description = '',
-    Duration duration = const Duration(seconds: 5),
   }) {
     CherryToast.error(
       animationType: AnimationType.fromRight,
@@ -52,7 +51,7 @@ class Toast {
         ),
       ),
       animationCurve: Curves.easeInOut,
-      toastDuration: duration,
+      autoDismiss: false,
     ).show(context);
   }
 }
