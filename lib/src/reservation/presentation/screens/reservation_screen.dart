@@ -16,6 +16,7 @@ import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/shared/toast.dart';
+import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/reservation/application/reservation_controller.dart';
 import 'package:raskop_fe_backoffice/src/reservation/domain/entities/create_reservation_request_entity.dart';
@@ -170,10 +171,12 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         komunitas.value = TextEditingValue(text: detail.community ?? '');
         jumlah.value = TextEditingValue(text: '$jumlahByMinCapacity Orang');
         paymentInfo = {
-          'method': 'bank_transfer',
+          'method': detail.orders?.first.transaction?.first.paymentMethod ??
+              'unknown',
           'status': detail.halfPayment ? 'DP' : 'Settlement',
         };
         orderId = detail.orders!.first.id;
+        kontak.value = TextEditingValue(text: detail.phoneNumber);
         isDetailPanelVisible = true;
       });
     }
@@ -190,7 +193,9 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         paymentInfo = {};
         itemList.clear();
         reservedTable.clear();
+        kontak.clear();
         orderId = null;
+        paymentMethod = null;
 
         isDetailPanelVisible = false;
       });
@@ -239,6 +244,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         statusController.clearAll();
         paymentMethod = null;
         isOutdoor = null;
+        orderList.clear();
       });
     }
 
@@ -268,7 +274,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
     void onSearchPhone() {
       ref.read(reservationControllerProvider.notifier).onSearch(
         advSearch: {
-          'withDeleted': false,
+          'withRelation': true,
+          'withDeleted': true,
           for (final item in advSearchPhoneController.selectedItems)
             item.value: search.text,
         },
@@ -278,7 +285,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
     void onSearchTablet() {
       ref.read(reservationControllerProvider.notifier).onSearch(
         advSearch: {
-          'withDeleted': false,
+          'withRelation': true,
+          'withDeleted': true,
           for (final item in advSearchPhoneController.selectedItems)
             item.value: search.text,
         },
@@ -659,8 +667,31 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                             .id,
                                                                       },
                                                                     );
+                                                                    setState(
+                                                                        () {
+                                                                      Toast()
+                                                                          .showSuccessToast(
+                                                                        context:
+                                                                            context,
+                                                                        title:
+                                                                            'Tolak Reservasi Success',
+                                                                        description:
+                                                                            'Successfully Tolak Reservasi',
+                                                                      );
+                                                                    });
                                                                   } catch (e) {
-                                                                    //show snackbar or anything else
+                                                                    setState(
+                                                                        () {
+                                                                      Toast()
+                                                                          .showErrorToast(
+                                                                        context:
+                                                                            context,
+                                                                        title:
+                                                                            'Tolak Reservasi Error',
+                                                                        description:
+                                                                            'Desc: $e',
+                                                                      );
+                                                                    });
                                                                     print(
                                                                       'error occured on cancel reservasi : $e',
                                                                     );
@@ -1096,7 +1127,203 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                             ),
                                           ),
                                           color: hexToColor('#FFAD0D'),
-                                          onTap: () {},
+                                          onTap: () async {
+                                            await showDialog<AlertDialog>(
+                                              context: context,
+                                              builder: (context) {
+                                                return AlertDialog(
+                                                  backgroundColor: Colors.white,
+                                                  title: const Text(
+                                                    'Metode Pembayaran',
+                                                  ),
+                                                  content: const Text(
+                                                    'Pilih Metode Pembayaran',
+                                                  ),
+                                                  actions: [
+                                                    _customButton(
+                                                      child: Image.asset(
+                                                        ImageAssets.qris,
+                                                        fit: BoxFit.fill,
+                                                        width: 50,
+                                                        height: 20,
+                                                      ),
+                                                      color: Colors.white,
+                                                      onTap: () async {
+                                                        setState(() {
+                                                          paymentMethod =
+                                                              'other_qris';
+                                                        });
+                                                        try {
+                                                          final res = await ref
+                                                              .read(
+                                                                reservationControllerProvider
+                                                                    .notifier,
+                                                              )
+                                                              .generatePayment(
+                                                                orderId:
+                                                                    orderId!,
+                                                                paymentMethod:
+                                                                    'other_qris',
+                                                              );
+                                                          if (res.token
+                                                                  .isNotEmpty &&
+                                                              res.redirectUrl
+                                                                  .isNotEmpty) {
+                                                            setState(() {
+                                                              context.pop();
+                                                            });
+                                                            await redirectToMidtransWebView(
+                                                              res.redirectUrl,
+                                                            );
+                                                          }
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            context.pop();
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Generate Payment Error',
+                                                              description:
+                                                                  'Desc: ${e.allError}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {});
+                                                          closeDetailPanel();
+                                                        }
+                                                      },
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                        Radius.circular(
+                                                          15,
+                                                        ),
+                                                      ),
+                                                      isWideScreen: true,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        vertical: MediaQuery.of(
+                                                              context,
+                                                            ).size.height *
+                                                            0.018,
+                                                      ),
+                                                      borderColor:
+                                                          paymentMethod ==
+                                                                  'other_qris'
+                                                              ? Colors.black
+                                                              : Colors.grey,
+                                                      borderWidth:
+                                                          paymentMethod ==
+                                                                  'other_qris'
+                                                              ? 2
+                                                              : 1,
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 5,
+                                                      height: 10,
+                                                    ),
+                                                    _customButton(
+                                                      child: const Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Iconify(
+                                                            IconAssets.bankCard,
+                                                            color: Colors.black,
+                                                            size: 20,
+                                                          ),
+                                                          SizedBox(
+                                                            width: 5,
+                                                          ),
+                                                          Text(
+                                                            'Transfer',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      color: Colors.white,
+                                                      onTap: () async {
+                                                        setState(() {
+                                                          paymentMethod =
+                                                              'bank_transfer';
+                                                        });
+                                                        try {
+                                                          final res = await ref
+                                                              .read(
+                                                                reservationControllerProvider
+                                                                    .notifier,
+                                                              )
+                                                              .generatePayment(
+                                                                orderId:
+                                                                    orderId!,
+                                                                paymentMethod:
+                                                                    'bank_transfer',
+                                                              );
+                                                          if (res.token
+                                                                  .isNotEmpty &&
+                                                              res.redirectUrl
+                                                                  .isNotEmpty) {
+                                                            setState(() {
+                                                              context.pop();
+                                                            });
+                                                            await redirectToMidtransWebView(
+                                                              res.redirectUrl,
+                                                            );
+                                                          }
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            context.pop();
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Generate Payment Error',
+                                                              description:
+                                                                  'Desc: ${e.allError}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {});
+                                                          closeDetailPanel();
+                                                        }
+                                                      },
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                        Radius.circular(
+                                                          15,
+                                                        ),
+                                                      ),
+                                                      isWideScreen: true,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        vertical: MediaQuery.of(
+                                                              context,
+                                                            ).size.height *
+                                                            0.018,
+                                                      ),
+                                                      borderColor:
+                                                          paymentMethod ==
+                                                                  'bank_transfer'
+                                                              ? Colors.black
+                                                              : Colors.grey,
+                                                      borderWidth:
+                                                          paymentMethod ==
+                                                                  'bank_transfer'
+                                                              ? 2
+                                                              : 1,
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
                                           borderRadius: const BorderRadius.all(
                                             Radius.circular(15),
                                           ),
@@ -1216,32 +1443,40 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                   height: 5.h,
                                 ),
                                 _customButton(
-                                  child: paymentInfo['method'] != 'other_qris'
+                                  child: paymentInfo['method'] == 'qris'
                                       ? Image.asset(
                                           ImageAssets.qris,
                                           fit: BoxFit.contain,
                                           width: 50,
                                           height: 25,
                                         )
-                                      : const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Iconify(
-                                              IconAssets.bankCard,
-                                              color: Colors.black,
-                                              size: 30,
-                                            ),
-                                            SizedBox(width: 5),
-                                            Text(
-                                              'Transfer',
+                                      : paymentInfo['method'] == 'bank_transfer'
+                                          ? const Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Iconify(
+                                                  IconAssets.bankCard,
+                                                  color: Colors.black,
+                                                  size: 30,
+                                                ),
+                                                SizedBox(width: 5),
+                                                Text(
+                                                  'Transfer',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : const Text(
+                                              'Unknown Payment',
                                               style: TextStyle(
                                                 color: Colors.black,
                                                 fontSize: 14,
                                               ),
                                             ),
-                                          ],
-                                        ),
                                   color: Colors.white,
                                   onTap: () {},
                                   borderRadius: const BorderRadius.all(
@@ -1437,6 +1672,14 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       height: 5.h,
                                                     ),
                                                     MultiDropdown(
+                                                      validator:
+                                                          (selectedOptions) {
+                                                        if (selectedOptions ==
+                                                            null) {
+                                                          return 'Required Field';
+                                                        }
+                                                        return null;
+                                                      },
                                                       controller:
                                                           statusController,
                                                       singleSelect: true,
@@ -2655,10 +2898,60 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                     'Tolak pengajuan reservasi?',
                                                                 content:
                                                                     'Reservasi ini akan ditolak dan terhapus secara permanen.',
-                                                                onConfirm: () {
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  );
+                                                                onConfirm:
+                                                                    () async {
+                                                                  try {
+                                                                    await ref
+                                                                        .read(
+                                                                      reservationControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                        .cancelReservation(
+                                                                      id: <String,
+                                                                          dynamic>{
+                                                                        'id': e
+                                                                            .id,
+                                                                      },
+                                                                    );
+                                                                    setState(
+                                                                        () {
+                                                                      Toast()
+                                                                          .showSuccessToast(
+                                                                        context:
+                                                                            context,
+                                                                        title:
+                                                                            'Tolak Reservasi Success',
+                                                                        description:
+                                                                            'Successfully Tolak Reservasi',
+                                                                      );
+                                                                    });
+                                                                  } catch (e) {
+                                                                    setState(
+                                                                        () {
+                                                                      Toast()
+                                                                          .showErrorToast(
+                                                                        context:
+                                                                            context,
+                                                                        title:
+                                                                            'Tolak Reservasi Error',
+                                                                        description:
+                                                                            'Desc: $e',
+                                                                      );
+                                                                    });
+                                                                    print(
+                                                                      'error occured on cancel reservasi : $e',
+                                                                    );
+                                                                  } finally {
+                                                                    setState(
+                                                                        () {
+                                                                      context
+                                                                          .pop();
+                                                                      FocusScope
+                                                                          .of(
+                                                                        context,
+                                                                      ).unfocus();
+                                                                    });
+                                                                  }
                                                                 },
                                                                 isWideScreen:
                                                                     false,
@@ -3010,16 +3303,6 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                     fontSize: 14,
                                     overflow: TextOverflow.fade,
                                   ),
-                                  // initialValue:
-                                  //     DateFormat('dd/MM/yy; hh:mm a').format(
-                                  //   DateTime.utc(
-                                  //     2024,
-                                  //     11,
-                                  //     23,
-                                  //     23,
-                                  //     30,
-                                  //   ),
-                                  // ),
                                   controller: startText,
                                   decoration: const InputDecoration(
                                     filled: true,
@@ -3056,10 +3339,6 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                     fontSize: 14,
                                     overflow: TextOverflow.fade,
                                   ),
-                                  // initialValue:
-                                  //     DateFormat('dd/MM/yy; hh:mm a').format(
-                                  //   DateTime.utc(2024, 11, 24, 3),
-                                  // ),
                                   controller: endText,
                                   decoration: const InputDecoration(
                                     filled: true,
@@ -3160,7 +3439,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                 SizedBox(
                                   height: 5.h,
                                 ),
-                                if (paymentInfo['status'] != 'DP')
+                                if (paymentInfo['status'] == 'DP')
                                   Row(
                                     children: [
                                       Flexible(
@@ -3203,7 +3482,203 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                             ),
                                           ),
                                           color: hexToColor('#FFAD0D'),
-                                          onTap: () {},
+                                          onTap: () async {
+                                            await showDialog<AlertDialog>(
+                                              context: context,
+                                              builder: (context) {
+                                                return AlertDialog(
+                                                  backgroundColor: Colors.white,
+                                                  title: const Text(
+                                                    'Metode Pembayaran',
+                                                  ),
+                                                  content: const Text(
+                                                    'Pilih Metode Pembayaran',
+                                                  ),
+                                                  actions: [
+                                                    _customButton(
+                                                      child: Image.asset(
+                                                        ImageAssets.qris,
+                                                        fit: BoxFit.fill,
+                                                        width: 50,
+                                                        height: 20,
+                                                      ),
+                                                      color: Colors.white,
+                                                      onTap: () async {
+                                                        setState(() {
+                                                          paymentMethod =
+                                                              'other_qris';
+                                                        });
+                                                        try {
+                                                          final res = await ref
+                                                              .read(
+                                                                reservationControllerProvider
+                                                                    .notifier,
+                                                              )
+                                                              .generatePayment(
+                                                                orderId:
+                                                                    orderId!,
+                                                                paymentMethod:
+                                                                    'other_qris',
+                                                              );
+                                                          if (res.token
+                                                                  .isNotEmpty &&
+                                                              res.redirectUrl
+                                                                  .isNotEmpty) {
+                                                            setState(() {
+                                                              context.pop();
+                                                            });
+                                                            await redirectToMidtransWebView(
+                                                              res.redirectUrl,
+                                                            );
+                                                          }
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            context.pop();
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Generate Payment Error',
+                                                              description:
+                                                                  'Desc: ${e.allError}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {});
+                                                          closeDetailPanel();
+                                                        }
+                                                      },
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                        Radius.circular(
+                                                          15,
+                                                        ),
+                                                      ),
+                                                      isWideScreen: true,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        vertical: MediaQuery.of(
+                                                              context,
+                                                            ).size.height *
+                                                            0.018,
+                                                      ),
+                                                      borderColor:
+                                                          paymentMethod ==
+                                                                  'other_qris'
+                                                              ? Colors.black
+                                                              : Colors.grey,
+                                                      borderWidth:
+                                                          paymentMethod ==
+                                                                  'other_qris'
+                                                              ? 2
+                                                              : 1,
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 5,
+                                                      height: 10,
+                                                    ),
+                                                    _customButton(
+                                                      child: const Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Iconify(
+                                                            IconAssets.bankCard,
+                                                            color: Colors.black,
+                                                            size: 20,
+                                                          ),
+                                                          SizedBox(
+                                                            width: 5,
+                                                          ),
+                                                          Text(
+                                                            'Transfer',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      color: Colors.white,
+                                                      onTap: () async {
+                                                        setState(() {
+                                                          paymentMethod =
+                                                              'bank_transfer';
+                                                        });
+                                                        try {
+                                                          final res = await ref
+                                                              .read(
+                                                                reservationControllerProvider
+                                                                    .notifier,
+                                                              )
+                                                              .generatePayment(
+                                                                orderId:
+                                                                    orderId!,
+                                                                paymentMethod:
+                                                                    'bank_transfer',
+                                                              );
+                                                          if (res.token
+                                                                  .isNotEmpty &&
+                                                              res.redirectUrl
+                                                                  .isNotEmpty) {
+                                                            setState(() {
+                                                              context.pop();
+                                                            });
+                                                            await redirectToMidtransWebView(
+                                                              res.redirectUrl,
+                                                            );
+                                                          }
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            context.pop();
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Generate Payment Error',
+                                                              description:
+                                                                  'Desc: ${e.allError}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {});
+                                                          closeDetailPanel();
+                                                        }
+                                                      },
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                        Radius.circular(
+                                                          15,
+                                                        ),
+                                                      ),
+                                                      isWideScreen: true,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        vertical: MediaQuery.of(
+                                                              context,
+                                                            ).size.height *
+                                                            0.018,
+                                                      ),
+                                                      borderColor:
+                                                          paymentMethod ==
+                                                                  'bank_transfer'
+                                                              ? Colors.black
+                                                              : Colors.grey,
+                                                      borderWidth:
+                                                          paymentMethod ==
+                                                                  'bank_transfer'
+                                                              ? 2
+                                                              : 1,
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
                                           borderRadius: const BorderRadius.all(
                                             Radius.circular(15),
                                           ),
@@ -3262,7 +3737,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                     fontSize: 14,
                                     overflow: TextOverflow.fade,
                                   ),
-                                  initialValue: reservedTable.join(', '),
+                                  controller: tables,
                                   decoration: const InputDecoration(
                                     filled: true,
                                     fillColor: Colors.white,
@@ -3323,32 +3798,40 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                   height: 5.h,
                                 ),
                                 _customButton(
-                                  child: paymentInfo['method'] == 'QRIS'
+                                  child: paymentInfo['method'] == 'qris'
                                       ? Image.asset(
                                           ImageAssets.qris,
                                           fit: BoxFit.contain,
                                           width: 50,
                                           height: 25,
                                         )
-                                      : const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Iconify(
-                                              IconAssets.bankCard,
-                                              color: Colors.black,
-                                              size: 30,
-                                            ),
-                                            SizedBox(width: 5),
-                                            Text(
-                                              'Transfer',
+                                      : paymentInfo['method'] == 'bank_transfer'
+                                          ? const Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Iconify(
+                                                  IconAssets.bankCard,
+                                                  color: Colors.black,
+                                                  size: 30,
+                                                ),
+                                                SizedBox(width: 5),
+                                                Text(
+                                                  'Transfer',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : const Text(
+                                              'Unknown Payment',
                                               style: TextStyle(
                                                 color: Colors.black,
                                                 fontSize: 14,
                                               ),
                                             ),
-                                          ],
-                                        ),
                                   color: Colors.white,
                                   onTap: () {},
                                   borderRadius: const BorderRadius.all(
@@ -3515,6 +3998,14 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 height: 5.h,
                                               ),
                                               MultiDropdown(
+                                                validator: (selectedOptions) {
+                                                  if (selectedOptions == null) {
+                                                    return 'Required Field';
+                                                  }
+                                                  return null;
+                                                },
+                                                autovalidateMode:
+                                                    AutovalidateMode.onUnfocus,
                                                 controller: statusController,
                                                 singleSelect: true,
                                                 items: paymentStatus,
@@ -4390,7 +4881,13 @@ Widget _buildDateTimePickerField({
         SizedBox(
           height: 5.h,
         ),
-        TextField(
+        TextFormField(
+          validator: (value) {
+            if (value == null || value == '') {
+              return 'Required Field';
+            }
+            return null;
+          },
           onTap: onTap,
           controller: controller,
           readOnly: true,
