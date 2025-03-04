@@ -46,4 +46,15 @@ class ResponseFailure implements Exception {
   String get notFoundError => this is _NotFoundResponseFailure
       ? (this as _NotFoundResponseFailure).message
       : '$this';
+
+  /// Get all of the error message
+  String get allError => this is _UnprocessableEntityResponseFailure
+      ? (this as _UnprocessableEntityResponseFailure).message
+      : this is _BadRequestResponseFailure
+          ? (this as _BadRequestResponseFailure).message
+          : this is _InternalServerErrorResponseFailure
+              ? (this as _InternalServerErrorResponseFailure).message
+              : this is _NotFoundResponseFailure
+                  ? (this as _NotFoundResponseFailure).message
+                  : '$this';
 }
