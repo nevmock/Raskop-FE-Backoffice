@@ -114,6 +114,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
 
   bool isLoading = false;
 
+  bool isFetchingTable = false;
+
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(reservationControllerProvider.notifier);
@@ -609,12 +611,50 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                       loading: () => const Center(
                                         child: CustomLoadingIndicator(),
                                       ),
-                                      error: (error, stackTrace) => Center(
-                                        child: Text(
-                                          error.toString() +
-                                              stackTrace.toString(),
-                                        ),
-                                      ),
+                                      error: (error, stackTrace) {
+                                        final err = error as ResponseFailure;
+                                        final finalErr = err.allError
+                                            as Map<String, dynamic>;
+                                        return Center(
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                '${finalErr['name']} - ${finalErr['message']}',
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  ref.invalidate(
+                                                    reservationControllerProvider,
+                                                  );
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor:
+                                                      hexToColor('#1F4940'),
+                                                  shape: RoundedRectangleBorder(
+                                                    side: BorderSide(
+                                                      color:
+                                                          hexToColor('#E1E1E1'),
+                                                    ),
+                                                    borderRadius:
+                                                        const BorderRadius.all(
+                                                      Radius.circular(50),
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: const Center(
+                                                  child: Text(
+                                                    'Refresh',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                       data: (data) {
                                         return ListView(
                                           controller: controller.controller,
@@ -679,7 +719,12 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                             'Successfully Tolak Reservasi',
                                                                       );
                                                                     });
-                                                                  } catch (e) {
+                                                                  } on ResponseFailure catch (e) {
+                                                                    final err = e
+                                                                            .allError
+                                                                        as Map<
+                                                                            String,
+                                                                            dynamic>;
                                                                     setState(
                                                                         () {
                                                                       Toast()
@@ -687,14 +732,11 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                         context:
                                                                             context,
                                                                         title:
-                                                                            'Tolak Reservasi Error',
+                                                                            'Tolak Reservasi Failed',
                                                                         description:
-                                                                            'Desc: $e',
+                                                                            '${err['name']} - ${err['message']}',
                                                                       );
                                                                     });
-                                                                    print(
-                                                                      'error occured on cancel reservasi : $e',
-                                                                    );
                                                                   } finally {
                                                                     setState(
                                                                         () {
@@ -1177,15 +1219,18 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             );
                                                           }
                                                         } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
                                                             context.pop();
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Generate Payment Error',
+                                                                  'Generate Payment Failed',
                                                               description:
-                                                                  'Desc: ${e.allError}',
+                                                                  '${err['name']} - ${err['message']}',
                                                             );
                                                           });
                                                         } finally {
@@ -1283,7 +1328,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Generate Payment Error',
+                                                                  'Generate Payment Failed',
                                                               description:
                                                                   'Desc: ${e.allError}',
                                                             );
@@ -1672,10 +1717,16 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       height: 5.h,
                                                     ),
                                                     MultiDropdown(
+                                                      autovalidateMode:
+                                                          AutovalidateMode
+                                                              .onUnfocus,
                                                       validator:
                                                           (selectedOptions) {
                                                         if (selectedOptions ==
-                                                            null) {
+                                                                null ||
+                                                            statusController
+                                                                .selectedItems
+                                                                .isEmpty) {
                                                           return 'Required Field';
                                                         }
                                                         return null;
@@ -1773,106 +1824,119 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                     SizedBox(
                                                       height: 5.h,
                                                     ),
-                                                    MultiDropdown(
-                                                      autovalidateMode:
-                                                          AutovalidateMode
-                                                              .onUnfocus,
-                                                      validator: (option) {
-                                                        if (jumlah.text == '') {
-                                                          return 'Required Jumlah Orang field';
-                                                        }
+                                                    if (isFetchingTable)
+                                                      const CustomLoadingIndicator()
+                                                    else
+                                                      MultiDropdown(
+                                                        autovalidateMode:
+                                                            AutovalidateMode
+                                                                .onUnfocus,
+                                                        validator: (option) {
+                                                          if (jumlah.text ==
+                                                              '') {
+                                                            return 'Required Jumlah Orang field';
+                                                          }
 
-                                                        if (startText.text ==
-                                                            '') {
-                                                          return 'Required Start Time field';
-                                                        }
+                                                          if (startText.text ==
+                                                              '') {
+                                                            return 'Required Start Time field';
+                                                          }
 
-                                                        if (endText.text ==
-                                                            '') {
-                                                          return 'Required End Time field';
-                                                        }
+                                                          if (endText.text ==
+                                                              '') {
+                                                            return 'Required End Time field';
+                                                          }
 
-                                                        if (isOutdoor == null) {
-                                                          return 'Required To Choose Ruangan field';
-                                                        }
+                                                          if (isOutdoor ==
+                                                              null) {
+                                                            return 'Required To Choose Ruangan field';
+                                                          }
 
-                                                        if (option == null) {
-                                                          return 'Required field';
-                                                        }
-                                                        return null;
-                                                      },
-                                                      enabled: tableController
-                                                          .items.isNotEmpty,
-                                                      items: tableData,
-                                                      controller:
-                                                          tableController,
-                                                      chipDecoration:
-                                                          ChipDecoration(
-                                                        wrap: false,
-                                                        backgroundColor:
-                                                            hexToColor(
-                                                          '#E1E1E1',
+                                                          if (option == null ||
+                                                              tableController
+                                                                  .selectedItems
+                                                                  .isEmpty) {
+                                                            return 'Required field';
+                                                          }
+                                                          return null;
+                                                        },
+                                                        enabled: tableController
+                                                            .items.isNotEmpty,
+                                                        items: tableData,
+                                                        controller:
+                                                            tableController,
+                                                        chipDecoration:
+                                                            ChipDecoration(
+                                                          wrap: false,
+                                                          backgroundColor:
+                                                              hexToColor(
+                                                            '#E1E1E1',
+                                                          ),
+                                                          runSpacing: 2,
+                                                          spacing: 10,
                                                         ),
-                                                        runSpacing: 2,
-                                                        spacing: 10,
-                                                      ),
-                                                      fieldDecoration:
-                                                          FieldDecoration(
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                          vertical: 16,
-                                                          horizontal: 12,
-                                                        ),
-                                                        hintText: tableController
-                                                                .items
-                                                                .isNotEmpty
-                                                            ? 'Pilih satu atau lebih meja yang tersedia'
-                                                            : 'Lengkapi start, end, jml org, dan ruangan',
-                                                        hintStyle: TextStyle(
-                                                          fontSize: 14.sp,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          color: Colors.black
-                                                              .withOpacity(0.3),
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                        suffixIcon:
-                                                            const Padding(
+                                                        fieldDecoration:
+                                                            FieldDecoration(
+                                                          backgroundColor:
+                                                              Colors.white,
                                                           padding:
-                                                              EdgeInsets.all(
-                                                            12,
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                            vertical: 16,
+                                                            horizontal: 12,
                                                           ),
-                                                          child: Iconify(
-                                                            Zondicons
-                                                                .cheveron_down,
+                                                          hintText: tableController
+                                                                  .items
+                                                                  .isNotEmpty
+                                                              ? 'Pilih satu atau lebih meja yang tersedia'
+                                                              : 'Lengkapi start, end, jml org, dan ruangan',
+                                                          hintStyle: TextStyle(
+                                                            fontSize: 14.sp,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                              0.3,
+                                                            ),
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          suffixIcon:
+                                                              const Padding(
+                                                            padding:
+                                                                EdgeInsets.all(
+                                                              12,
+                                                            ),
+                                                            child: Iconify(
+                                                              Zondicons
+                                                                  .cheveron_down,
+                                                            ),
+                                                          ),
+                                                          showClearIcon: false,
+                                                          border:
+                                                              OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                              15,
+                                                            ),
+                                                            borderSide:
+                                                                const BorderSide(
+                                                              color: Colors
+                                                                  .black87,
+                                                            ),
                                                           ),
                                                         ),
-                                                        showClearIcon: false,
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(15),
-                                                          borderSide:
-                                                              const BorderSide(
-                                                            color:
-                                                                Colors.black87,
+                                                        itemSeparator:
+                                                            const Padding(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 12,
                                                           ),
+                                                          child: Divider(),
                                                         ),
                                                       ),
-                                                      itemSeparator:
-                                                          const Padding(
-                                                        padding: EdgeInsets
-                                                            .symmetric(
-                                                          horizontal: 12,
-                                                        ),
-                                                        child: Divider(),
-                                                      ),
-                                                    ),
                                                   ],
                                                 ),
                                               ),
@@ -2168,26 +2232,57 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             ),
                                                             color: Colors.white,
                                                             onTap: () {
-                                                              setState(() {
-                                                                isOutdoor =
-                                                                    true;
-                                                                if (jumlah
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                if (startText
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                if (endText
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                print(
-                                                                  TableSuggestionRequestEntity(
+                                                              if (jumlah.text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Jumlah Orang is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (startText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Start Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (endText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field End Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              try {
+                                                                setState(() {
+                                                                  isOutdoor =
+                                                                      true;
+                                                                  isFetchingTable =
+                                                                      true;
+                                                                });
+                                                                tableSuggest(
+                                                                  request:
+                                                                      TableSuggestionRequestEntity(
                                                                     capacity: int
                                                                         .parse(
                                                                       jumlah
@@ -2213,36 +2308,30 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                     ),
                                                                   ),
                                                                 );
-                                                                tableSuggest(
-                                                                  request:
-                                                                      TableSuggestionRequestEntity(
-                                                                    capacity: int
-                                                                        .parse(
-                                                                      jumlah
-                                                                          .text,
-                                                                    ),
-                                                                    isOutdoor:
-                                                                        isOutdoor!,
-                                                                    date:
-                                                                        DateFormat(
-                                                                      'yyyy-MM-dd',
-                                                                    ).format(
-                                                                      start,
-                                                                    ),
-                                                                    startTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      start,
-                                                                    ),
-                                                                    endTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      end!,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                                setState(() {});
-                                                              });
+                                                              } on ResponseFailure catch (e) {
+                                                                setState(() {
+                                                                  final err = e
+                                                                          .allError
+                                                                      as Map<
+                                                                          String,
+                                                                          dynamic>;
+
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Get Table Suggestion Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
+                                                              } finally {
+                                                                setState(() {
+                                                                  isFetchingTable =
+                                                                      false;
+                                                                });
+                                                              }
                                                             },
                                                             borderRadius:
                                                                 const BorderRadius
@@ -2310,51 +2399,54 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             ),
                                                             color: Colors.white,
                                                             onTap: () {
-                                                              setState(() {
-                                                                isOutdoor =
-                                                                    false;
-                                                                if (jumlah
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                if (startText
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                if (endText
-                                                                        .text ==
-                                                                    '') {
-                                                                  return;
-                                                                }
-                                                                print(
-                                                                  TableSuggestionRequestEntity(
-                                                                    capacity: int
-                                                                        .parse(
-                                                                      jumlah
-                                                                          .text,
-                                                                    ),
-                                                                    isOutdoor:
-                                                                        true,
-                                                                    date:
-                                                                        DateFormat(
-                                                                      'yyyy-MM-dd',
-                                                                    ).format(
-                                                                      start,
-                                                                    ),
-                                                                    startTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      start,
-                                                                    ),
-                                                                    endTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      end!,
-                                                                    ),
-                                                                  ),
+                                                              if (jumlah.text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Jumlah Orang is Required!',
                                                                 );
+                                                                return;
+                                                              }
+                                                              if (startText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Start Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (endText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field End Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              try {
+                                                                setState(() {
+                                                                  isOutdoor =
+                                                                      false;
+                                                                  isFetchingTable =
+                                                                      true;
+                                                                });
                                                                 tableSuggest(
                                                                   request:
                                                                       TableSuggestionRequestEntity(
@@ -2364,7 +2456,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                           .text,
                                                                     ),
                                                                     isOutdoor:
-                                                                        isOutdoor!,
+                                                                        false,
                                                                     date:
                                                                         DateFormat(
                                                                       'yyyy-MM-dd',
@@ -2383,8 +2475,30 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                     ),
                                                                   ),
                                                                 );
-                                                                setState(() {});
-                                                              });
+                                                              } on ResponseFailure catch (e) {
+                                                                setState(() {
+                                                                  final err = e
+                                                                          .allError
+                                                                      as Map<
+                                                                          String,
+                                                                          dynamic>;
+
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Get Table Suggestion Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
+                                                              } finally {
+                                                                setState(() {
+                                                                  isFetchingTable =
+                                                                      false;
+                                                                });
+                                                              }
                                                             },
                                                             borderRadius:
                                                                 const BorderRadius
@@ -2491,27 +2605,24 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                   .isNotEmpty &&
                                                               res.redirectUrl
                                                                   .isNotEmpty) {
-                                                            print(
-                                                              '${res.token} and ${res.redirectUrl}',
-                                                            );
                                                             await redirectToMidtransWebView(
                                                               res.redirectUrl,
                                                             );
                                                           }
-                                                        } catch (e) {
+                                                        } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Tambah Reservasi Error',
+                                                                  'Create Reservasi Failed',
                                                               description:
-                                                                  'Desc: $e',
+                                                                  '${err['name']} - ${err['message']}',
                                                             );
                                                           });
-                                                          print(
-                                                            'create reservation error: $e',
-                                                          );
                                                         } finally {
                                                           setState(() {
                                                             isLoading = false;
@@ -2925,7 +3036,12 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                             'Successfully Tolak Reservasi',
                                                                       );
                                                                     });
-                                                                  } catch (e) {
+                                                                  } on ResponseFailure catch (e) {
+                                                                    final err = e
+                                                                            .allError
+                                                                        as Map<
+                                                                            String,
+                                                                            dynamic>;
                                                                     setState(
                                                                         () {
                                                                       Toast()
@@ -2933,14 +3049,11 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                         context:
                                                                             context,
                                                                         title:
-                                                                            'Tolak Reservasi Error',
+                                                                            'Tolak Reservasi Failed',
                                                                         description:
-                                                                            'Desc: $e',
+                                                                            '${err['name']} - ${err['message']}',
                                                                       );
                                                                     });
-                                                                    print(
-                                                                      'error occured on cancel reservasi : $e',
-                                                                    );
                                                                   } finally {
                                                                     setState(
                                                                         () {
@@ -3173,11 +3286,50 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                           ],
                                         );
                                       },
-                                      error: (error, stk) => Center(
-                                        child: Text(
-                                          error.toString() + stk.toString(),
-                                        ),
-                                      ),
+                                      error: (error, stackTrace) {
+                                        final err = error as ResponseFailure;
+                                        final finalErr = err.allError
+                                            as Map<String, dynamic>;
+                                        return Center(
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                '${finalErr['name']} - ${finalErr['message']}',
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  ref.invalidate(
+                                                    reservationControllerProvider,
+                                                  );
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor:
+                                                      hexToColor('#1F4940'),
+                                                  shape: RoundedRectangleBorder(
+                                                    side: BorderSide(
+                                                      color:
+                                                          hexToColor('#E1E1E1'),
+                                                    ),
+                                                    borderRadius:
+                                                        const BorderRadius.all(
+                                                      Radius.circular(50),
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: const Center(
+                                                  child: Text(
+                                                    'Refresh',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                       loading: () => const Center(
                                         child: CustomLoadingIndicator(),
                                       ),
@@ -3532,15 +3684,18 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             );
                                                           }
                                                         } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
                                                             context.pop();
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Generate Payment Error',
+                                                                  'Generate Payment Failed',
                                                               description:
-                                                                  'Desc: ${e.allError}',
+                                                                  '${err['name']} - ${err['message']}',
                                                             );
                                                           });
                                                         } finally {
@@ -3638,7 +3793,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Generate Payment Error',
+                                                                  'Generate Payment Failed',
                                                               description:
                                                                   'Desc: ${e.allError}',
                                                             );
@@ -3999,7 +4154,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               ),
                                               MultiDropdown(
                                                 validator: (selectedOptions) {
-                                                  if (selectedOptions == null) {
+                                                  if (selectedOptions == null ||
+                                                      statusController
+                                                          .selectedItems
+                                                          .isEmpty) {
                                                     return 'Required Field';
                                                   }
                                                   return null;
@@ -4083,90 +4241,101 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               SizedBox(
                                                 height: 5.h,
                                               ),
-                                              MultiDropdown(
-                                                autovalidateMode:
-                                                    AutovalidateMode.onUnfocus,
-                                                validator: (option) {
-                                                  if (jumlah.text == '') {
-                                                    return 'Required Jumlah Orang field';
-                                                  }
+                                              if (isFetchingTable)
+                                                const CustomLoadingIndicator()
+                                              else
+                                                MultiDropdown(
+                                                  autovalidateMode:
+                                                      AutovalidateMode
+                                                          .onUnfocus,
+                                                  validator: (option) {
+                                                    if (jumlah.text == '') {
+                                                      return 'Required Jumlah Orang field';
+                                                    }
 
-                                                  if (startText.text == '') {
-                                                    return 'Required Start Time field';
-                                                  }
+                                                    if (startText.text == '') {
+                                                      return 'Required Start Time field';
+                                                    }
 
-                                                  if (endText.text == '') {
-                                                    return 'Required End Time field';
-                                                  }
+                                                    if (endText.text == '') {
+                                                      return 'Required End Time field';
+                                                    }
 
-                                                  if (isOutdoor == null) {
-                                                    return 'Required To Choose Ruangan field';
-                                                  }
+                                                    if (isOutdoor == null) {
+                                                      return 'Required To Choose Ruangan field';
+                                                    }
 
-                                                  if (option == null) {
-                                                    return 'Required field';
-                                                  }
-                                                  return null;
-                                                },
-                                                enabled: tableController
-                                                    .items.isNotEmpty,
-                                                items: tableData,
-                                                controller: tableController,
-                                                chipDecoration: ChipDecoration(
-                                                  wrap: false,
-                                                  backgroundColor: hexToColor(
-                                                    '#E1E1E1',
+                                                    if (option == null ||
+                                                        tableController
+                                                            .selectedItems
+                                                            .isEmpty) {
+                                                      return 'Required field';
+                                                    }
+                                                    return null;
+                                                  },
+                                                  enabled: tableController
+                                                      .items.isNotEmpty,
+                                                  items: tableData,
+                                                  controller: tableController,
+                                                  chipDecoration:
+                                                      ChipDecoration(
+                                                    wrap: false,
+                                                    backgroundColor: hexToColor(
+                                                      '#E1E1E1',
+                                                    ),
+                                                    runSpacing: 2,
+                                                    spacing: 10,
                                                   ),
-                                                  runSpacing: 2,
-                                                  spacing: 10,
+                                                  fieldDecoration:
+                                                      FieldDecoration(
+                                                    backgroundColor:
+                                                        Colors.white,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      vertical: 16,
+                                                      horizontal: 12,
+                                                    ),
+                                                    hintText: tableController
+                                                            .items.isNotEmpty
+                                                        ? 'Pilih satu atau lebih meja yang tersedia'
+                                                        : 'Lengkapi start, end, jml org, dan ruangan',
+                                                    hintStyle: TextStyle(
+                                                      fontSize: 14.sp,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                    suffixIcon: const Padding(
+                                                      padding: EdgeInsets.all(
+                                                        12,
+                                                      ),
+                                                      child: Iconify(
+                                                        Zondicons.cheveron_down,
+                                                      ),
+                                                    ),
+                                                    showClearIcon: false,
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        15,
+                                                      ),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  itemSeparator: const Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                                    child: Divider(),
+                                                  ),
                                                 ),
-                                                fieldDecoration:
-                                                    FieldDecoration(
-                                                  backgroundColor: Colors.white,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    vertical: 16,
-                                                    horizontal: 12,
-                                                  ),
-                                                  hintText: tableController
-                                                          .items.isNotEmpty
-                                                      ? 'Pilih satu atau lebih meja yang tersedia'
-                                                      : 'Lengkapi start, end, jml org, dan ruangan',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 14.sp,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    color: Colors.black
-                                                        .withOpacity(0.3),
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  suffixIcon: const Padding(
-                                                    padding: EdgeInsets.all(
-                                                      12,
-                                                    ),
-                                                    child: Iconify(
-                                                      Zondicons.cheveron_down,
-                                                    ),
-                                                  ),
-                                                  showClearIcon: false,
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      15,
-                                                    ),
-                                                    borderSide:
-                                                        const BorderSide(
-                                                      color: Colors.black87,
-                                                    ),
-                                                  ),
-                                                ),
-                                                itemSeparator: const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                  ),
-                                                  child: Divider(),
-                                                ),
-                                              ),
                                             ],
                                           ),
                                         ),
@@ -4432,69 +4601,93 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       ),
                                                       color: Colors.white,
                                                       onTap: () {
-                                                        setState(() {
-                                                          isOutdoor = true;
-                                                        });
                                                         if (jumlah.text == '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field Jumlah Orang is Required!',
+                                                          );
                                                           return;
                                                         }
                                                         if (startText.text ==
                                                             '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field Start Time is Required!',
+                                                          );
                                                           return;
                                                         }
                                                         if (endText.text ==
                                                             '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field End Time is Required!',
+                                                          );
                                                           return;
                                                         }
-                                                        print(
-                                                          TableSuggestionRequestEntity(
-                                                            capacity: int.parse(
-                                                              jumlah.text,
+                                                        try {
+                                                          setState(() {
+                                                            isOutdoor = true;
+                                                            isFetchingTable =
+                                                                true;
+                                                          });
+                                                          tableSuggest(
+                                                            request:
+                                                                TableSuggestionRequestEntity(
+                                                              capacity:
+                                                                  int.parse(
+                                                                jumlah.text,
+                                                              ),
+                                                              isOutdoor: true,
+                                                              date: DateFormat(
+                                                                'yyyy-MM-dd',
+                                                              ).format(
+                                                                start,
+                                                              ),
+                                                              startTime:
+                                                                  DateFormat
+                                                                          .Hms()
+                                                                      .format(
+                                                                start,
+                                                              ),
+                                                              endTime:
+                                                                  DateFormat
+                                                                          .Hms()
+                                                                      .format(
+                                                                end!,
+                                                              ),
                                                             ),
-                                                            isOutdoor: true,
-                                                            date: DateFormat(
-                                                              'yyyy-MM-dd',
-                                                            ).format(
-                                                              start,
-                                                            ),
-                                                            startTime:
-                                                                DateFormat.Hms()
-                                                                    .format(
-                                                              start,
-                                                            ),
-                                                            endTime:
-                                                                DateFormat.Hms()
-                                                                    .format(
-                                                              end!,
-                                                            ),
-                                                          ),
-                                                        );
-                                                        tableSuggest(
-                                                          request:
-                                                              TableSuggestionRequestEntity(
-                                                            capacity: int.parse(
-                                                              jumlah.text,
-                                                            ),
-                                                            isOutdoor:
-                                                                isOutdoor!,
-                                                            date: DateFormat(
-                                                              'yyyy-MM-dd',
-                                                            ).format(
-                                                              start,
-                                                            ),
-                                                            startTime:
-                                                                DateFormat.Hms()
-                                                                    .format(
-                                                              start,
-                                                            ),
-                                                            endTime:
-                                                                DateFormat.Hms()
-                                                                    .format(
-                                                              end!,
-                                                            ),
-                                                          ),
-                                                        );
-                                                        setState(() {});
+                                                          );
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            final err = e
+                                                                    .allError
+                                                                as Map<String,
+                                                                    dynamic>;
+
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Get Table Suggestion Failed',
+                                                              description:
+                                                                  '${err['name']} - ${err['message']}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {
+                                                            isFetchingTable =
+                                                                false;
+                                                          });
+                                                        }
                                                       },
                                                       borderRadius:
                                                           const BorderRadius
@@ -4554,46 +4747,44 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       ),
                                                       color: Colors.white,
                                                       onTap: () {
-                                                        setState(() {
-                                                          isOutdoor = false;
-                                                          if (jumlah.text ==
-                                                              '') {
-                                                            return;
-                                                          }
-                                                          if (startText.text ==
-                                                              '') {
-                                                            return;
-                                                          }
-                                                          if (endText.text ==
-                                                              '') {
-                                                            return;
-                                                          }
-                                                          print(
-                                                            TableSuggestionRequestEntity(
-                                                              capacity:
-                                                                  int.parse(
-                                                                jumlah.text,
-                                                              ),
-                                                              isOutdoor: true,
-                                                              date: DateFormat(
-                                                                'yyyy-MM-dd',
-                                                              ).format(
-                                                                start,
-                                                              ),
-                                                              startTime:
-                                                                  DateFormat
-                                                                          .Hms()
-                                                                      .format(
-                                                                start,
-                                                              ),
-                                                              endTime:
-                                                                  DateFormat
-                                                                          .Hms()
-                                                                      .format(
-                                                                end!,
-                                                              ),
-                                                            ),
+                                                        if (jumlah.text == '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field Jumlah Orang is Required!',
                                                           );
+                                                          return;
+                                                        }
+                                                        if (startText.text ==
+                                                            '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field Start Time is Required!',
+                                                          );
+                                                          return;
+                                                        }
+                                                        if (endText.text ==
+                                                            '') {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title: 'Error',
+                                                            description:
+                                                                'Field End Time is Required!',
+                                                          );
+                                                          return;
+                                                        }
+                                                        try {
+                                                          setState(() {
+                                                            isOutdoor = false;
+                                                            isFetchingTable =
+                                                                true;
+                                                          });
                                                           tableSuggest(
                                                             request:
                                                                 TableSuggestionRequestEntity(
@@ -4601,7 +4792,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                   int.parse(
                                                                 jumlah.text,
                                                               ),
-                                                              isOutdoor: true,
+                                                              isOutdoor: false,
                                                               date: DateFormat(
                                                                 'yyyy-MM-dd',
                                                               ).format(
@@ -4621,8 +4812,28 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                               ),
                                                             ),
                                                           );
-                                                          setState(() {});
-                                                        });
+                                                        } on ResponseFailure catch (e) {
+                                                          setState(() {
+                                                            final err = e
+                                                                    .allError
+                                                                as Map<String,
+                                                                    dynamic>;
+
+                                                            Toast()
+                                                                .showErrorToast(
+                                                              context: context,
+                                                              title:
+                                                                  'Get Table Suggestion Failed',
+                                                              description:
+                                                                  '${err['name']} - ${err['message']}',
+                                                            );
+                                                          });
+                                                        } finally {
+                                                          setState(() {
+                                                            isFetchingTable =
+                                                                false;
+                                                          });
+                                                        }
                                                       },
                                                       borderRadius:
                                                           const BorderRadius
@@ -4723,27 +4934,24 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                   .isNotEmpty &&
                                                               res.redirectUrl
                                                                   .isNotEmpty) {
-                                                            print(
-                                                              '${res.token} and ${res.redirectUrl}',
-                                                            );
                                                             await redirectToMidtransWebView(
                                                               res.redirectUrl,
                                                             );
                                                           }
-                                                        } catch (e) {
+                                                        } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
                                                               title:
-                                                                  'Tambah Reservasi Error',
+                                                                  'Create Reservasi Failed',
                                                               description:
-                                                                  'Desc: $e',
+                                                                  '${err['name']} - ${err['message']}',
                                                             );
                                                           });
-                                                          print(
-                                                            'create reservation error: $e',
-                                                          );
                                                         } finally {
                                                           setState(() {
                                                             isLoading = false;
