@@ -85,20 +85,20 @@ class ApiClient {
       if (jsonResponse['code'] == 404) {
         return left(
           ResponseFailure.notFound(
-            message: jsonResponse['errors'].toString(),
+            message: jsonResponse['errors'] as Map<String, dynamic>,
           ),
         );
       }
       if (jsonResponse['code'] == 400) {
         return left(
           ResponseFailure.badRequest(
-            message: jsonResponse['errors'].toString(),
+            message: jsonResponse['errors'] as Map<String, dynamic>,
           ),
         );
       }
       return left(
         ResponseFailure.internalServerError(
-          message: jsonResponse['errors'].toString(),
+          message: jsonResponse['errors'] as Map<String, dynamic>,
         ),
       );
     } catch (e) {
