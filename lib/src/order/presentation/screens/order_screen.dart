@@ -11,6 +11,7 @@ import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/shared/toast.dart';
+import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/order/application/order_controller.dart';
 import 'package:raskop_fe_backoffice/src/order/domain/entities/order_detail_entity.dart';
@@ -306,11 +307,49 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                   loading: () => const Center(
                                     child: CustomLoadingIndicator(),
                                   ),
-                                  error: (error, stackTrace) => Center(
-                                    child: Text(
-                                      error.toString() + stackTrace.toString(),
-                                    ),
-                                  ),
+                                  error: (error, stackTrace) {
+                                    final err = error as ResponseFailure;
+                                    final finalErr =
+                                        err.allError as Map<String, dynamic>;
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${finalErr['name']} - ${finalErr['message']}',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              ref.invalidate(
+                                                orderControllerProvider,
+                                              );
+                                            },
+                                            style: TextButton.styleFrom(
+                                              backgroundColor:
+                                                  hexToColor('#1F4940'),
+                                              shape: RoundedRectangleBorder(
+                                                side: BorderSide(
+                                                  color: hexToColor('#E1E1E1'),
+                                                ),
+                                                borderRadius:
+                                                    const BorderRadius.all(
+                                                  Radius.circular(50),
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: Text(
+                                                'Refresh',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                   data: (data) {
                                     return ListView(
                                       controller: controller.controller,
@@ -739,18 +778,18 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                         'Order with ID: ${idDetail.text} has been successfully updated',
                                                   );
                                                 });
-                                              } catch (e) {
+                                              } on ResponseFailure catch (e) {
+                                                final err = e.allError
+                                                    as Map<String, dynamic>;
                                                 setState(() {
                                                   Toast().showErrorToast(
                                                     context: context,
                                                     title:
-                                                        'Update Status Error',
-                                                    description: 'Desc: $e',
+                                                        'Update Status Failed',
+                                                    description:
+                                                        '${err['name']} - ${err['message']}}',
                                                   );
                                                 });
-                                                print(
-                                                  'update status order occured: $e',
-                                                );
                                               } finally {
                                                 setState(() {
                                                   isLoading = false;
@@ -1173,11 +1212,49 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                   loading: () => const Center(
                                     child: CustomLoadingIndicator(),
                                   ),
-                                  error: (error, stackTrace) => Center(
-                                    child: Text(
-                                      error.toString() + stackTrace.toString(),
-                                    ),
-                                  ),
+                                  error: (error, stackTrace) {
+                                    final err = error as ResponseFailure;
+                                    final finalErr =
+                                        err.allError as Map<String, dynamic>;
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${finalErr['name']} - ${finalErr['message']}',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              ref.invalidate(
+                                                orderControllerProvider,
+                                              );
+                                            },
+                                            style: TextButton.styleFrom(
+                                              backgroundColor:
+                                                  hexToColor('#1F4940'),
+                                              shape: RoundedRectangleBorder(
+                                                side: BorderSide(
+                                                  color: hexToColor('#E1E1E1'),
+                                                ),
+                                                borderRadius:
+                                                    const BorderRadius.all(
+                                                  Radius.circular(50),
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: Text(
+                                                'Refresh',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                   data: (data) {
                                     return ListView(
                                       controller: controller.controller,
@@ -1659,18 +1736,18 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                         'Order with ID: ${idDetail.text} has been successfully updated',
                                                   );
                                                 });
-                                              } catch (e) {
+                                              } on ResponseFailure catch (e) {
+                                                final err = e.allError
+                                                    as Map<String, dynamic>;
                                                 setState(() {
                                                   Toast().showErrorToast(
                                                     context: context,
                                                     title:
-                                                        'Update Status Error',
-                                                    description: 'Desc: $e',
+                                                        'Update Status Failed',
+                                                    description:
+                                                        '${err['name']} - ${err['message']}',
                                                   );
                                                 });
-                                                print(
-                                                  'update status order occured: $e',
-                                                );
                                               } finally {
                                                 setState(() {
                                                   isLoading = false;

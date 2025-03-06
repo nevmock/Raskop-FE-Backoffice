@@ -16,6 +16,8 @@ import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/shared/currency_formatter.dart';
+import 'package:raskop_fe_backoffice/shared/toast.dart';
+import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/application/supplier_controller.dart';
 import 'package:raskop_fe_backoffice/src/supplier/domain/entities/supplier_entity.dart';
@@ -755,11 +757,34 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                       deletePermanent:
                                                                           false,
                                                                     );
-                                                              } catch (e) {
-                                                                // show snackbar or anything else
-                                                                print(
-                                                                  'delete failed : $e',
-                                                                );
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showSuccessToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Supplier Success',
+                                                                    description:
+                                                                        'Successfully delete supplier',
+                                                                  );
+                                                                });
+                                                              } on ResponseFailure catch (e) {
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Supplier Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}}',
+                                                                  );
+                                                                });
                                                               } finally {
                                                                 setState(() {
                                                                   isLoading =
@@ -1024,11 +1049,47 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                             loading: () => const Center(
                               child: CustomLoadingIndicator(),
                             ),
-                            error: (error, stackTrace) => Center(
-                              child: Text(
-                                error.toString() + stackTrace.toString(),
-                              ),
-                            ),
+                            error: (error, stackTrace) {
+                              final err = error as ResponseFailure;
+                              final finalErr =
+                                  err.allError as Map<String, dynamic>;
+                              return Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${finalErr['name']} - ${finalErr['message']}',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        ref.invalidate(
+                                          supplierControllerProvider,
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: hexToColor('#1F4940'),
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                            color: hexToColor('#E1E1E1'),
+                                          ),
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(50),
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Refresh',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -1538,13 +1599,6 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                               try {
                                                 if (createKey.currentState!
                                                     .validate()) {
-                                                  print(
-                                                    double.parse(
-                                                      unformatCurrency(
-                                                        harga.text,
-                                                      ),
-                                                    ),
-                                                  );
                                                   await ref
                                                       .read(
                                                         supplierControllerProvider
@@ -1581,10 +1635,29 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                           isActive: false,
                                                         ),
                                                       );
+                                                  setState(() {
+                                                    Toast().showSuccessToast(
+                                                      context: context,
+                                                      title:
+                                                          'Create Supplier Success',
+                                                      description:
+                                                          'Successfully creating new supplier',
+                                                    );
+                                                  });
                                                   closeCreatePanel();
                                                 }
-                                              } catch (e) {
-                                                //show snackbar or anything else
+                                              } on ResponseFailure catch (e) {
+                                                final err = e.allError
+                                                    as Map<String, dynamic>;
+                                                setState(() {
+                                                  Toast().showErrorToast(
+                                                    context: context,
+                                                    title:
+                                                        'Create Supplier Failed',
+                                                    description:
+                                                        '${err['name']} - ${err['message']}',
+                                                  );
+                                                });
                                               } finally {
                                                 setState(() {
                                                   isLoading = false;
@@ -1953,10 +2026,29 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                         ),
                                                         id: id!,
                                                       );
+                                                  setState(() {
+                                                    Toast().showSuccessToast(
+                                                      context: context,
+                                                      title:
+                                                          'Edit Supplier Success',
+                                                      description:
+                                                          'Supplier with ID: ${id!} successfully edited',
+                                                    );
+                                                  });
                                                   closeEditPanel();
                                                 }
-                                              } catch (e) {
-                                                // show snackbar or anything else
+                                              } on ResponseFailure catch (e) {
+                                                final err = e.allError
+                                                    as Map<String, dynamic>;
+                                                setState(() {
+                                                  Toast().showErrorToast(
+                                                    context: context,
+                                                    title:
+                                                        'Edit Supplier Failed',
+                                                    description:
+                                                        '${err['name']} - ${err['message']}',
+                                                  );
+                                                });
                                               } finally {
                                                 setState(() {
                                                   isLoading = false;
@@ -2410,11 +2502,34 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                                       deletePermanent:
                                                                           false,
                                                                     );
-                                                              } catch (e) {
-                                                                // show snackbar or anything else
-                                                                print(
-                                                                  'delete failed : $e',
-                                                                );
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showSuccessToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Supplier Success',
+                                                                    description:
+                                                                        'Successfully delete supplier',
+                                                                  );
+                                                                });
+                                                              } on ResponseFailure catch (e) {
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Supplier Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}}',
+                                                                  );
+                                                                });
                                                               } finally {
                                                                 setState(() {
                                                                   isLoading =
@@ -2633,12 +2748,47 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                 ],
                               );
                             },
-                            error: (error, stackTrace) => Center(
-                              child: Text(
-                                error.toString() + stackTrace.toString(),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                            error: (error, stackTrace) {
+                              final err = error as ResponseFailure;
+                              final finalErr =
+                                  err.allError as Map<String, dynamic>;
+                              return Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${finalErr['name']} - ${finalErr['message']}',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        ref.invalidate(
+                                          supplierControllerProvider,
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: hexToColor('#1F4940'),
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                            color: hexToColor('#E1E1E1'),
+                                          ),
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(50),
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Refresh',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                             loading: () => const Center(
                               child: CustomLoadingIndicator(),
                             ),
@@ -3259,10 +3409,29 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                         isActive: false,
                                                       ),
                                                     );
+                                                setState(() {
+                                                  Toast().showSuccessToast(
+                                                    context: context,
+                                                    title:
+                                                        'Create Supplier Success',
+                                                    description:
+                                                        'Successfully creating new supplier',
+                                                  );
+                                                });
                                                 closeCreatePanel();
                                               }
-                                            } catch (e) {
-                                              //show snackbar or anything else
+                                            } on ResponseFailure catch (e) {
+                                              final err = e.allError
+                                                  as Map<String, dynamic>;
+                                              setState(() {
+                                                Toast().showErrorToast(
+                                                  context: context,
+                                                  title:
+                                                      'Create Supplier Failed',
+                                                  description:
+                                                      '${err['name']} - ${err['message']}',
+                                                );
+                                              });
                                             } finally {
                                               setState(() {
                                                 isLoading = false;
@@ -3583,10 +3752,28 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                                       ),
                                                       id: id!,
                                                     );
+                                                setState(() {
+                                                  Toast().showSuccessToast(
+                                                    context: context,
+                                                    title:
+                                                        'Edit Supplier Success',
+                                                    description:
+                                                        'Supplier with ID: ${id!} successfully edited',
+                                                  );
+                                                });
                                                 closeEditPanel();
                                               }
-                                            } catch (e) {
-                                              // show snackbar or anything else
+                                            } on ResponseFailure catch (e) {
+                                              final err = e.allError
+                                                  as Map<String, dynamic>;
+                                              setState(() {
+                                                Toast().showErrorToast(
+                                                  context: context,
+                                                  title: 'Edit Supplier Failed',
+                                                  description:
+                                                      '${err['name']} - ${err['message']}',
+                                                );
+                                              });
                                             } finally {
                                               setState(() {
                                                 isLoading = false;
