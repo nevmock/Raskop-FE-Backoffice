@@ -15,6 +15,8 @@ import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/paths.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/shared/toast.dart';
+import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/application/menu_controller.dart';
 import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
@@ -424,11 +426,49 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                   },
                                 );
                               },
-                              error: (error, stackTrace) => Center(
-                                child: Text(
-                                  error.toString() + stackTrace.toString(),
-                                ),
-                              ),
+                              error: (error, stackTrace) {
+                                final err = error as ResponseFailure;
+                                final finalErr =
+                                    err.allError as Map<String, dynamic>;
+                                return Center(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '${finalErr['name']} - ${finalErr['message']}',
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          ref.invalidate(
+                                            menuControllerProvider,
+                                          );
+                                        },
+                                        style: TextButton.styleFrom(
+                                          backgroundColor:
+                                              hexToColor('#1F4940'),
+                                          shape: RoundedRectangleBorder(
+                                            side: BorderSide(
+                                              color: hexToColor('#E1E1E1'),
+                                            ),
+                                            borderRadius:
+                                                const BorderRadius.all(
+                                              Radius.circular(50),
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            'Refresh',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                               loading: () => const Center(
                                 child: CustomLoadingIndicator(),
                               ),
@@ -715,16 +755,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                 isLoading = true;
                                               });
                                               try {
-                                                print(
-                                                  CreateOrderRequestEntity(
-                                                    orderBy: customerName.text,
-                                                    phoneNumber:
-                                                        customerPhone.text,
-                                                    menus: itemList,
-                                                    paymentMethod:
-                                                        paymentMethod!,
-                                                  ),
-                                                );
                                                 final res = await ref
                                                     .read(
                                                       orderControllerProvider
@@ -749,9 +779,18 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                     res.redirectUrl,
                                                   );
                                                 }
-                                              } catch (e) {
-                                                //show snackbar or anything else
-                                                print('create order error: $e');
+                                              } on ResponseFailure catch (e) {
+                                                final err = e.allError
+                                                    as Map<String, dynamic>;
+                                                setState(() {
+                                                  Toast().showErrorToast(
+                                                    context: context,
+                                                    title:
+                                                        'Create Order Failed',
+                                                    description:
+                                                        '${err['name']} - ${err['message']}',
+                                                  );
+                                                });
                                               } finally {
                                                 setState(() {
                                                   isLoading = false;
@@ -760,7 +799,18 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                               }
                                             }
                                           }
-                                    : setLastStep,
+                                    : itemList.isEmpty
+                                        ? () {
+                                            setState(() {
+                                              Toast().showErrorToast(
+                                                context: context,
+                                                title: 'Validation Error',
+                                                description:
+                                                    'Menu Must Be Min. 1 Item!',
+                                              );
+                                            });
+                                          }
+                                        : setLastStep,
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 15.w,
@@ -991,11 +1041,49 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                 loading: () => const Center(
                                   child: CustomLoadingIndicator(),
                                 ),
-                                error: (error, stackTrace) => Center(
-                                  child: Text(
-                                    error.toString() + stackTrace.toString(),
-                                  ),
-                                ),
+                                error: (error, stackTrace) {
+                                  final err = error as ResponseFailure;
+                                  final finalErr =
+                                      err.allError as Map<String, dynamic>;
+                                  return Center(
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          '${finalErr['name']} - ${finalErr['message']}',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            ref.invalidate(
+                                              menuControllerProvider,
+                                            );
+                                          },
+                                          style: TextButton.styleFrom(
+                                            backgroundColor:
+                                                hexToColor('#1F4940'),
+                                            shape: RoundedRectangleBorder(
+                                              side: BorderSide(
+                                                color: hexToColor('#E1E1E1'),
+                                              ),
+                                              borderRadius:
+                                                  const BorderRadius.all(
+                                                Radius.circular(50),
+                                              ),
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: Text(
+                                              'Refresh',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                                 data: (data) {
                                   if (isExpanded.isEmpty ||
                                       isExpanded.length !=
@@ -1491,19 +1579,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                             isLoading = true;
                                                           });
                                                           try {
-                                                            print(
-                                                              CreateOrderRequestEntity(
-                                                                orderBy:
-                                                                    customerName
-                                                                        .text,
-                                                                phoneNumber:
-                                                                    customerPhone
-                                                                        .text,
-                                                                menus: itemList,
-                                                                paymentMethod:
-                                                                    paymentMethod!,
-                                                              ),
-                                                            );
                                                             final res =
                                                                 await ref
                                                                     .read(
@@ -1527,18 +1602,26 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                                     .isNotEmpty &&
                                                                 res.redirectUrl
                                                                     .isNotEmpty) {
-                                                              print(
-                                                                '${res.token} and ${res.redirectUrl}',
-                                                              );
                                                               await redirectToMidtransWebView(
                                                                 res.redirectUrl,
                                                               );
                                                             }
-                                                          } catch (e) {
-                                                            //show snackbar or anything else
-                                                            print(
-                                                              'create order error: $e',
-                                                            );
+                                                          } on ResponseFailure catch (e) {
+                                                            final err = e
+                                                                    .allError
+                                                                as Map<String,
+                                                                    dynamic>;
+                                                            setState(() {
+                                                              Toast()
+                                                                  .showErrorToast(
+                                                                context:
+                                                                    context,
+                                                                title:
+                                                                    'Create Order Failed',
+                                                                description:
+                                                                    '${err['name']} - ${err['message']}}',
+                                                              );
+                                                            });
                                                           } finally {
                                                             setState(() {
                                                               isLoading = false;
@@ -1547,7 +1630,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                           }
                                                         }
                                                       }
-                                                : setLastStep,
+                                                : itemList.isEmpty
+                                                    ? () {
+                                                        setState(() {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title:
+                                                                'Validation Error',
+                                                            description:
+                                                                'Menu Must Be Min. 1 Item!',
+                                                          );
+                                                        });
+                                                      }
+                                                    : setLastStep,
                                             child: Padding(
                                               padding: EdgeInsets.symmetric(
                                                 horizontal: 15.w,
