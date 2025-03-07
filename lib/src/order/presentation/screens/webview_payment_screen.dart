@@ -27,7 +27,7 @@ class WebviewPaymentScreen extends ConsumerStatefulWidget {
 }
 
 class _WebviewPaymentScreenState extends ConsumerState<WebviewPaymentScreen> {
-  Future<void> _showResultDialog(String message) {
+  Future<void> _showResultDialog(String message, String status) {
     return showDialog(
       context: context,
       builder: (context) {
@@ -42,11 +42,25 @@ class _WebviewPaymentScreenState extends ConsumerState<WebviewPaymentScreen> {
                   ..pop()
                   ..pop();
                 setState(() {
-                  Toast().showSuccessToast(
-                    context: context,
-                    title: 'Status Pembayaran',
-                    description: message,
-                  );
+                  if (status == 'success') {
+                    Toast().showSuccessToast(
+                      context: context,
+                      title: 'Status Pembayaran',
+                      description: message,
+                    );
+                  } else if (status == 'pending') {
+                    Toast().showWarningToast(
+                      context: context,
+                      title: 'Pembayaran Tertunda',
+                      description: message,
+                    );
+                  } else {
+                    Toast().showErrorToast(
+                      context: context,
+                      title: 'Pembayaran Gagal',
+                      description: message,
+                    );
+                  }
                 });
               },
               child: const Text('OK'),
@@ -102,17 +116,19 @@ class _WebviewPaymentScreenState extends ConsumerState<WebviewPaymentScreen> {
             NavigationDelegate(
               onNavigationRequest: (request) {
                 final url = request.url;
-                print('Navigating to: $url');
                 if (url.contains('status_code=200') ||
                     url.contains('transaction_status=success')) {
-                  _showResultDialog('Pembayaran Berhasil!');
+                  _showResultDialog('Pembayaran Berhasil!', 'success');
                   return NavigationDecision.prevent;
                 } else if (url.contains('transaction_status=pending')) {
-                  _showResultDialog('Pembayaran Pending.');
+                  _showResultDialog('Pembayaran Pending.', 'pending');
                   return NavigationDecision.prevent;
                 } else if (url.contains('transaction_status=failure') ||
                     url.contains('status_code=400')) {
-                  _showResultDialog('Pembayaran Gagal.');
+                  _showResultDialog('Pembayaran Gagal.', 'failure');
+                  return NavigationDecision.prevent;
+                } else if (url.contains('transaction_status=expire')) {
+                  _showResultDialog('Pembayaran Kadaluarsa', 'expire');
                   return NavigationDecision.prevent;
                 }
 

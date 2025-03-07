@@ -43,7 +43,7 @@ class OrderRepository implements OrderRepositoryInterface {
         else
           'advSearch': jsonEncode(
             {
-              'withDeleted': true,
+              'withDeleted': false,
               'withRelation': true,
               'withReservasi': true,
             },
@@ -68,7 +68,6 @@ class OrderRepository implements OrderRepositoryInterface {
   FutureEither<CreateOrderResponseEntity> createNewOrder({
     required CreateOrderRequestEntity orderRequest,
   }) {
-    print(orderRequest.toJson());
     return client.request<CreateOrderResponseEntity>(
       endpoint: endpoint,
       action: 'create',

@@ -748,9 +748,17 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                     ? isLoading
                                         ? () {}
                                         : () async {
+                                            if (paymentMethod == null) {
+                                              Toast().showErrorToast(
+                                                context: context,
+                                                title: 'Validation Error',
+                                                description:
+                                                    'Please Choose Metode Pembayaran',
+                                              );
+                                              return;
+                                            }
                                             if (formKey.currentState!
-                                                    .validate() &&
-                                                paymentMethod != null) {
+                                                .validate()) {
                                               setState(() {
                                                 isLoading = true;
                                               });
@@ -1092,17 +1100,16 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                 (element) => element.isActive!,
                                               )
                                               .length) {
-                                    isExpanded = List<bool>.filled(
+                                    isExpanded = List<bool>.generate(
                                       data
                                           .where(
                                             (element) => element.isActive!,
                                           )
                                           .length,
-                                      false,
+                                      (_) => false,
                                     );
                                   }
                                   return DynamicHeightGridView(
-                                    shrinkWrap: true,
                                     physics:
                                         const AlwaysScrollableScrollPhysics(),
                                     itemCount: data
@@ -1201,7 +1208,9 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                   notes: notes,
                                                   context: context,
                                                   isWideScreen: false,
-                                                  onNotesTap: () {},
+                                                  onNotesTap: () {
+                                                    setState(() {});
+                                                  },
                                                 )
                                               : buildCollapsedMenuItem(
                                                   index: idx,
@@ -1570,11 +1579,21 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                 ? isLoading
                                                     ? () {}
                                                     : () async {
+                                                        if (paymentMethod ==
+                                                            null) {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title:
+                                                                'Validation Error',
+                                                            description:
+                                                                'Please Choose Metode Pembayaran',
+                                                          );
+                                                          return;
+                                                        }
                                                         if (formKey
-                                                                .currentState!
-                                                                .validate() &&
-                                                            paymentMethod !=
-                                                                null) {
+                                                            .currentState!
+                                                            .validate()) {
                                                           setState(() {
                                                             isLoading = true;
                                                           });
