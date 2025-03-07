@@ -54,4 +54,29 @@ class Toast {
       autoDismiss: false,
     ).show(context);
   }
+
+  ///
+  void showWarningToast({
+    required BuildContext context,
+    required String title,
+    String description = '',
+  }) {
+    CherryToast.warning(
+      animationType: AnimationType.fromRight,
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      description: Text(
+        description,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      animationCurve: Curves.easeInOut,
+      autoDismiss: false,
+    ).show(context);
+  }
 }

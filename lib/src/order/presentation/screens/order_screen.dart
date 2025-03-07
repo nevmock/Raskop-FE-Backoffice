@@ -51,7 +51,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void onReservasi() {
     ref.read(orderControllerProvider.notifier).onSearch(
       advSearch: {
-        'withDeleted': true,
+        'withDeleted': false,
         'withReservasi': true,
         'withRelation': true,
       },
@@ -61,7 +61,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void onReguler() {
     ref.read(orderControllerProvider.notifier).onSearch(
       advSearch: {
-        'withDeleted': true,
+        'withDeleted': false,
         'withReservasi': false,
         'withRelation': true,
       },
@@ -1701,16 +1701,6 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                 isLoading = true;
                                               });
                                               try {
-                                                print(
-                                                  UpdateStatusOrderRequestEntity(
-                                                    id: idDetail.text,
-                                                    status:
-                                                        statusPhoneController
-                                                            .selectedItems
-                                                            .first
-                                                            .value,
-                                                  ),
-                                                );
                                                 await ref
                                                     .read(
                                                       orderControllerProvider
