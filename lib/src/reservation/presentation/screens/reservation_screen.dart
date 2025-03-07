@@ -216,6 +216,18 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
           .read(reservationControllerProvider.notifier)
           .getTableSuggestion(request: request);
       setState(() {
+        if (res.isEmpty) {
+          Toast().showWarningToast(
+            context: context,
+            title: 'Empty Data',
+            description:
+                'No Table Are Suggested or All Table Has Been Reserved At Requested Moment!\nPlease Change the Related Data to See Other Table Suggestions',
+          );
+          tableController
+            ..setItems([])
+            ..clearAll();
+          return;
+        }
         tableController.setItems(
           res
               .map(
@@ -277,7 +289,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
       ref.read(reservationControllerProvider.notifier).onSearch(
         advSearch: {
           'withRelation': true,
-          'withDeleted': true,
+          'withDeleted': false,
           for (final item in advSearchPhoneController.selectedItems)
             item.value: search.text,
         },
@@ -288,7 +300,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
       ref.read(reservationControllerProvider.notifier).onSearch(
         advSearch: {
           'withRelation': true,
-          'withDeleted': true,
+          'withDeleted': false,
           for (final item in advSearchPhoneController.selectedItems)
             item.value: search.text,
         },
@@ -2545,10 +2557,29 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               onPressed: isLoading
                                                   ? () {}
                                                   : () async {
+                                                      if (paymentMethod ==
+                                                          null) {
+                                                        Toast().showErrorToast(
+                                                          context: context,
+                                                          title:
+                                                              'Validation Error',
+                                                          description:
+                                                              'Please Choose Metode Pembayaran',
+                                                        );
+                                                        return;
+                                                      }
+                                                      if (orderList.isEmpty) {
+                                                        Toast().showErrorToast(
+                                                          context: context,
+                                                          title:
+                                                              'Validation Error',
+                                                          description:
+                                                              'Please Choose Menu!',
+                                                        );
+                                                        return;
+                                                      }
                                                       if (_formKey.currentState!
-                                                              .validate() &&
-                                                          paymentMethod !=
-                                                              null) {
+                                                          .validate()) {
                                                         setState(() {
                                                           isLoading = true;
                                                         });
@@ -4874,10 +4905,29 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               onPressed: isLoading
                                                   ? () {}
                                                   : () async {
+                                                      if (paymentMethod ==
+                                                          null) {
+                                                        Toast().showErrorToast(
+                                                          context: context,
+                                                          title:
+                                                              'Validation Error',
+                                                          description:
+                                                              'Please Choose Metode Pembayaran',
+                                                        );
+                                                        return;
+                                                      }
+                                                      if (orderList.isEmpty) {
+                                                        Toast().showErrorToast(
+                                                          context: context,
+                                                          title:
+                                                              'Validation Error',
+                                                          description:
+                                                              'Please Choose Menu!',
+                                                        );
+                                                        return;
+                                                      }
                                                       if (_formKey.currentState!
-                                                              .validate() &&
-                                                          paymentMethod !=
-                                                              null) {
+                                                          .validate()) {
                                                         setState(() {
                                                           isLoading = true;
                                                         });

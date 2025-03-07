@@ -43,7 +43,7 @@ class ReservationRepository implements ReservationRepositoryInterface {
           'advSearch': jsonEncode(
             {
               'withRelation': true,
-              'withDeleted': true,
+              'withDeleted': false,
             },
           ),
         if (order != null) 'order': jsonEncode(order),
@@ -65,7 +65,6 @@ class ReservationRepository implements ReservationRepositoryInterface {
   FutureEither<CreateOrderResponseEntity> createNewReservation({
     required CreateReservationRequestEntity request,
   }) {
-    print(request.toJson());
     return client.request<CreateOrderResponseEntity>(
       endpoint: endpoint,
       action: 'create',
