@@ -71,7 +71,8 @@ class TableRepository implements TableRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
@@ -105,7 +106,8 @@ class TableRepository implements TableRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
@@ -140,7 +142,8 @@ class TableRepository implements TableRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
@@ -175,7 +178,8 @@ class TableRepository implements TableRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {

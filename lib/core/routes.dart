@@ -6,6 +6,7 @@ import 'package:raskop_fe_backoffice/src/common/home_screen.dart';
 import 'package:raskop_fe_backoffice/src/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:raskop_fe_backoffice/src/menu/presentation/screens/menu_screen.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/screens/order_screen.dart';
+import 'package:raskop_fe_backoffice/src/order/presentation/screens/webview_payment_screen.dart';
 import 'package:raskop_fe_backoffice/src/reservation/presentation/screens/reservation_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 import 'package:raskop_fe_backoffice/src/table/presentation/screens/table_screen.dart';
@@ -37,6 +38,15 @@ final router = GoRouter(
               path: '/${OrderScreen.route}',
               name: OrderScreen.route,
               builder: (context, state) => const OrderScreen(),
+              routes: [
+                GoRoute(
+                  path: WebviewPaymentScreen.route,
+                  name: WebviewPaymentScreen.route,
+                  builder: (context, state) => WebviewPaymentScreen(
+                    redirectUrl: state.extra! as String,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -55,6 +65,15 @@ final router = GoRouter(
               path: '/${ReservationScreen.route}',
               name: ReservationScreen.route,
               builder: (context, state) => const ReservationScreen(),
+              routes: [
+                GoRoute(
+                  path: WebviewPaymentScreen.route,
+                  name: '${WebviewPaymentScreen.route}-reserve',
+                  builder: (context, state) => WebviewPaymentScreen(
+                    redirectUrl: state.extra! as String,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
