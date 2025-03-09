@@ -27,5 +27,5 @@ class Endpoints {
   static const menuFavorites = '/menu_favorites/';
 
   /// Dashboard Sales
-  static const salesPerformance = '/sales_performance';
+  static const salesPerformance = '/sales_performance/';
 }
