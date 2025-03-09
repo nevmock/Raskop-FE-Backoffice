@@ -11,6 +11,6 @@ part 'table_provider.g.dart';
 ///
 TableRepository tableRepository(Ref ref) {
   final client = http.Client();
-  final baseClient = ref.watch(apiClientProvider);
+  final baseClient = ref.watch(apiClientProvider());
   return TableRepository(client: client, baseClient: baseClient);
 }
