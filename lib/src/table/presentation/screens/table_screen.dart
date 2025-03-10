@@ -474,27 +474,22 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                   ? Row(
                                                       children: [
                                                         SizedBox(
-                                                          width: 95,
+                                                          width: 70,
                                                           height: 50,
-                                                          child:
-                                                              TableLocationSwitch(
-                                                            isOutdoor:
-                                                                e.isOutdoor!,
-                                                            onSwitch:
-                                                                (val) async {
-                                                              return ref
-                                                                  .read(
-                                                                    tableControllerProvider
-                                                                        .notifier,
-                                                                  )
-                                                                  .toggleTableLocation(
-                                                                    request: e,
-                                                                    id: e.id!,
-                                                                    currentLocation:
-                                                                        e.isOutdoor!,
-                                                                  );
-                                                            },
-                                                          ),
+                                                          child: e.isOutdoor
+                                                              ? Iconify(
+                                                                  IconParkSolid
+                                                                      .outdoor,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                )
+                                                              : Iconify(
+                                                                  Bxs.home_alt_2,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                ),
                                                         ),
                                                         SizedBox(width: 5.w),
                                                         SizedBox(
@@ -524,27 +519,22 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                   : Column(
                                                       children: [
                                                         SizedBox(
-                                                          width: 95,
+                                                          width: 70,
                                                           height: 50,
-                                                          child:
-                                                              TableLocationSwitch(
-                                                            isOutdoor:
-                                                                e.isOutdoor!,
-                                                            onSwitch:
-                                                                (val) async {
-                                                              return ref
-                                                                  .read(
-                                                                    tableControllerProvider
-                                                                        .notifier,
-                                                                  )
-                                                                  .toggleTableLocation(
-                                                                    request: e,
-                                                                    id: e.id!,
-                                                                    currentLocation:
-                                                                        e.isOutdoor!,
-                                                                  );
-                                                            },
-                                                          ),
+                                                          child: e.isOutdoor
+                                                              ? Iconify(
+                                                                  IconParkSolid
+                                                                      .outdoor,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                )
+                                                              : Iconify(
+                                                                  Bxs.home_alt_2,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                ),
                                                         ),
                                                         SizedBox(height: 5.h),
                                                         SizedBox(
@@ -1053,342 +1043,345 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                       ),
                                       table.when(
                                         data: (data) {
-                                          return ListView(
-                                            padding: EdgeInsets.zero,
-                                            shrinkWrap: true,
-                                            children: data.map(
-                                              (e) {
-                                                if (!_controllers
-                                                    .containsKey(e.id)) {
-                                                  _controllers[e.id!] =
-                                                      TextEditingController(
-                                                    text: e.description,
-                                                  );
-                                                }
-                                                return Card(
-                                                  shape: RoundedRectangleBorder(
-                                                    side: BorderSide(
-                                                        color: hexToColor(
-                                                            '#E1E1E1')),
-                                                    borderRadius:
-                                                        const BorderRadius.all(
-                                                            Radius.circular(
-                                                                20)),
-                                                  ),
-                                                  color: Colors.white,
-                                                  child: Padding(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 8.w,
-                                                      vertical: 8.h,
+                                          return SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.85,
+                                            child: ListView(
+                                              padding: EdgeInsets.zero,
+                                              shrinkWrap: true,
+                                              children: data.map(
+                                                (e) {
+                                                  if (!_controllers
+                                                      .containsKey(e.id)) {
+                                                    _controllers[e.id!] =
+                                                        TextEditingController(
+                                                      text: e.description,
+                                                    );
+                                                  }
+                                                  return Card(
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      side: BorderSide(
+                                                          color: hexToColor(
+                                                              '#E1E1E1')),
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .all(
+                                                              Radius.circular(
+                                                                  20)),
                                                     ),
-                                                    child: Column(
-                                                      children: [
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Text(
-                                                              'MEJA ${e.noTable}',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 18,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                              ),
-                                                            ),
-                                                            Row(
-                                                              children: [
-                                                                SizedBox(
-                                                                  width: 95,
-                                                                  height: 50,
-                                                                  child:
-                                                                      TableLocationSwitch(
-                                                                    isOutdoor: e
-                                                                        .isOutdoor!,
-                                                                    onSwitch:
-                                                                        (val) async {
-                                                                      return ref
-                                                                          .read(
-                                                                            tableControllerProvider.notifier,
-                                                                          )
-                                                                          .toggleTableLocation(
-                                                                            request:
-                                                                                e,
-                                                                            id: e.id!,
-                                                                            currentLocation:
-                                                                                e.isOutdoor!,
-                                                                          );
-                                                                    },
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                    width: 5.w),
-                                                                SizedBox(
-                                                                  width: 95,
-                                                                  height: 50,
-                                                                  child:
-                                                                      TableActiveSwitchWidget(
-                                                                    isON: e
-                                                                        .isActive!,
-                                                                    onSwitch:
-                                                                        (val) async {
-                                                                      return ref
-                                                                          .read(
-                                                                            tableControllerProvider.notifier,
-                                                                          )
-                                                                          .toggleTableStatus(
-                                                                            request:
-                                                                                e,
-                                                                            id: e.id!,
-                                                                            currentStatus:
-                                                                                e.isActive!,
-                                                                          );
-                                                                    },
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            )
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 5.h),
-                                                        Column(
-                                                          children: [
-                                                            Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              children: [
-                                                                Card(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    side: BorderSide(
-                                                                        color: hexToColor(
-                                                                            '#E1E1E1')),
-                                                                    borderRadius:
-                                                                        const BorderRadius
-                                                                            .all(
-                                                                            Radius.circular(20)),
-                                                                  ),
-                                                                  child:
-                                                                      Padding(
-                                                                    padding: EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            5.w,
-                                                                        vertical:
-                                                                            2.h),
-                                                                    child:
-                                                                        Center(
-                                                                      child:
-                                                                          Text(
-                                                                        '0',
-                                                                        style:
-                                                                            TextStyle(
-                                                                          fontSize:
-                                                                              14.sp,
-                                                                          color:
-                                                                              Colors.black,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                Card(
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    side: BorderSide(
-                                                                        color: hexToColor(
-                                                                            '#E1E1E1')),
-                                                                    borderRadius:
-                                                                        const BorderRadius
-                                                                            .all(
-                                                                            Radius.circular(20)),
-                                                                  ),
-                                                                  color: Colors
-                                                                      .white,
-                                                                  child:
-                                                                      Padding(
-                                                                    padding: EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            5.w,
-                                                                        vertical:
-                                                                            2.h),
-                                                                    child:
-                                                                        Center(
-                                                                      child:
-                                                                          Text(
-                                                                        '20',
-                                                                        style:
-                                                                            TextStyle(
-                                                                          fontSize:
-                                                                              14.sp,
-                                                                          color:
-                                                                              Colors.black,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            Row(
-                                                              children: [
-                                                                CustomRangeSlider(
-                                                                  min: 0,
-                                                                  max: 20,
-                                                                  initialValues:
-                                                                      RangeValues(
-                                                                    e.minCapacity
-                                                                        .toDouble(),
-                                                                    e.maxCapacity
-                                                                        .toDouble(),
-                                                                  ),
-                                                                  onChanged:
-                                                                      (values) {
-                                                                    debounceOnCapacityUpdate(
-                                                                      e,
-                                                                      values
-                                                                          .start
-                                                                          .toInt(),
-                                                                      values.end
-                                                                          .toInt(),
-                                                                      ref,
-                                                                    );
-                                                                  },
-                                                                ),
-                                                              ],
-                                                            )
-                                                          ],
-                                                        ),
-                                                        Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              'Deskripsi',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                fontSize: 14.sp,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height: 5.h,
-                                                            ),
-                                                            TextFormField(
-                                                              style:
-                                                                  const TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 14,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .fade,
-                                                              ),
-                                                              maxLines: 3,
-                                                              controller:
-                                                                  _controllers[
-                                                                      e.id!],
-                                                              decoration:
-                                                                  InputDecoration(
-                                                                hintText:
-                                                                    "Masukkan deskripsi meja",
-                                                                hintStyle:
+                                                    color: Colors.white,
+                                                    child: Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                        horizontal: 8.w,
+                                                        vertical: 8.h,
+                                                      ),
+                                                      child: Column(
+                                                        children: [
+                                                          Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                'MEJA ${e.noTable}',
+                                                                style:
                                                                     TextStyle(
-                                                                  color: Colors
-                                                                      .black
-                                                                      .withOpacity(
-                                                                          0.3),
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .w600,
-                                                                ),
-                                                                filled: true,
-                                                                fillColor:
-                                                                    Colors
-                                                                        .white,
-                                                                focusedBorder:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius.all(
-                                                                          Radius.circular(
-                                                                              15)),
-                                                                ),
-                                                                border:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius.all(
-                                                                          Radius.circular(
-                                                                              15)),
+                                                                          .w700,
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 18,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
                                                                 ),
                                                               ),
-                                                              onChanged:
-                                                                  (value) {
-                                                                debounceOnDescriptionUpdate(
-                                                                    e,
-                                                                    value,
-                                                                    ref);
-                                                              },
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 5.h),
-                                                        Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .end,
-                                                          children: [
-                                                            Text(
-                                                              e.mergedAvailable !=
-                                                                          null &&
-                                                                      e.mergedAvailable!
-                                                                          .isNotEmpty
-                                                                  ? 'Meja ${e.noTable} bisa digabung dengan ${e.mergedAvailable!.map((id) {
-                                                                        final table = data
-                                                                            .where((table) =>
-                                                                                table.id ==
-                                                                                id)
-                                                                            .toList();
-                                                                        return table.isNotEmpty
-                                                                            ? 'meja ${table.first.noTable}'
-                                                                            : null;
-                                                                      }).where((noTable) => noTable != null).join(', ')}*'
-                                                                  : 'Meja ini tidak dapat digabung',
-                                                              style: TextStyle(
+                                                              Row(
+                                                                children: [
+                                                                  SizedBox(
+                                                                    width: 70,
+                                                                    height: 50,
+                                                                    child: e.isOutdoor
+                                                                        ? Iconify(
+                                                                            IconParkSolid.outdoor,
+                                                                            color:
+                                                                                hexToColor('#CACACA'),
+                                                                            size:
+                                                                                30,
+                                                                          )
+                                                                        : Iconify(
+                                                                            Bxs.home_alt_2,
+                                                                            color:
+                                                                                hexToColor('#CACACA'),
+                                                                            size:
+                                                                                30,
+                                                                          ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                      width:
+                                                                          5.w),
+                                                                  SizedBox(
+                                                                    width: 95,
+                                                                    height: 50,
+                                                                    child:
+                                                                        TableActiveSwitchWidget(
+                                                                      isON: e
+                                                                          .isActive!,
+                                                                      onSwitch:
+                                                                          (val) async {
+                                                                        return ref
+                                                                            .read(
+                                                                              tableControllerProvider.notifier,
+                                                                            )
+                                                                            .toggleTableStatus(
+                                                                              request: e,
+                                                                              id: e.id!,
+                                                                              currentStatus: e.isActive!,
+                                                                            );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              )
+                                                            ],
+                                                          ),
+                                                          SizedBox(height: 5.h),
+                                                          Column(
+                                                            children: [
+                                                              Row(
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Card(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      side: BorderSide(
+                                                                          color:
+                                                                              hexToColor('#E1E1E1')),
+                                                                      borderRadius: const BorderRadius
+                                                                          .all(
+                                                                          Radius.circular(
+                                                                              20)),
+                                                                    ),
+                                                                    child:
+                                                                        Padding(
+                                                                      padding: EdgeInsets.symmetric(
+                                                                          horizontal: 5
+                                                                              .w,
+                                                                          vertical:
+                                                                              2.h),
+                                                                      child:
+                                                                          Center(
+                                                                        child:
+                                                                            Text(
+                                                                          '0',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                14.sp,
+                                                                            color:
+                                                                                Colors.black,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  Card(
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      side: BorderSide(
+                                                                          color:
+                                                                              hexToColor('#E1E1E1')),
+                                                                      borderRadius: const BorderRadius
+                                                                          .all(
+                                                                          Radius.circular(
+                                                                              20)),
+                                                                    ),
+                                                                    color: Colors
+                                                                        .white,
+                                                                    child:
+                                                                        Padding(
+                                                                      padding: EdgeInsets.symmetric(
+                                                                          horizontal: 5
+                                                                              .w,
+                                                                          vertical:
+                                                                              2.h),
+                                                                      child:
+                                                                          Center(
+                                                                        child:
+                                                                            Text(
+                                                                          '20',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                14.sp,
+                                                                            color:
+                                                                                Colors.black,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              Row(
+                                                                children: [
+                                                                  CustomRangeSlider(
+                                                                    min: 0,
+                                                                    max: 20,
+                                                                    initialValues:
+                                                                        RangeValues(
+                                                                      e.minCapacity
+                                                                          .toDouble(),
+                                                                      e.maxCapacity
+                                                                          .toDouble(),
+                                                                    ),
+                                                                    onChanged:
+                                                                        (values) {
+                                                                      debounceOnCapacityUpdate(
+                                                                        e,
+                                                                        values
+                                                                            .start
+                                                                            .toInt(),
+                                                                        values
+                                                                            .end
+                                                                            .toInt(),
+                                                                        ref,
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ],
+                                                              )
+                                                            ],
+                                                          ),
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                'Deskripsi',
+                                                                style:
+                                                                    TextStyle(
                                                                   color: Colors
                                                                       .black,
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w600,
                                                                   fontSize:
-                                                                      12.sp,
+                                                                      14.sp,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 5.h,
+                                                              ),
+                                                              TextFormField(
+                                                                style:
+                                                                    const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 14,
                                                                   overflow:
                                                                       TextOverflow
-                                                                          .clip),
-                                                            ),
-                                                          ],
-                                                        )
-                                                      ],
+                                                                          .fade,
+                                                                ),
+                                                                maxLines: 3,
+                                                                controller:
+                                                                    _controllers[
+                                                                        e.id!],
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  hintText:
+                                                                      "Masukkan deskripsi meja",
+                                                                  hintStyle:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black
+                                                                        .withOpacity(
+                                                                            0.3),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                  ),
+                                                                  filled: true,
+                                                                  fillColor:
+                                                                      Colors
+                                                                          .white,
+                                                                  focusedBorder:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.all(
+                                                                            Radius.circular(15)),
+                                                                  ),
+                                                                  border:
+                                                                      OutlineInputBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.all(
+                                                                            Radius.circular(15)),
+                                                                  ),
+                                                                ),
+                                                                onChanged:
+                                                                    (value) {
+                                                                  debounceOnDescriptionUpdate(
+                                                                      e,
+                                                                      value,
+                                                                      ref);
+                                                                },
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          SizedBox(height: 5.h),
+                                                          Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .end,
+                                                            children: [
+                                                              Text(
+                                                                e.mergedAvailable !=
+                                                                            null &&
+                                                                        e.mergedAvailable!
+                                                                            .isNotEmpty
+                                                                    ? 'Meja ${e.noTable} bisa digabung dengan ${e.mergedAvailable!.map((id) {
+                                                                          final table = data
+                                                                              .where((table) => table.id == id)
+                                                                              .toList();
+                                                                          return table.isNotEmpty
+                                                                              ? 'meja ${table.first.noTable}'
+                                                                              : null;
+                                                                        }).where((noTable) => noTable != null).join(', ')}*'
+                                                                    : 'Meja ini tidak dapat digabung',
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .black,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        12.sp,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .clip),
+                                                              ),
+                                                            ],
+                                                          )
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                );
-                                              },
-                                            ).toList(),
+                                                  );
+                                                },
+                                              ).toList(),
+                                            ),
                                           );
                                         },
                                         loading: () => const Center(

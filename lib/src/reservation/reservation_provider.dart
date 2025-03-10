@@ -9,6 +9,6 @@ part 'reservation_provider.g.dart';
 
 ///
 ReservationRepository reservationRepository(Ref ref) {
-  final client = ref.watch(apiClientProvider);
+  final client = ref.watch(apiClientProvider());
   return ReservationRepository(client: client);
 }
