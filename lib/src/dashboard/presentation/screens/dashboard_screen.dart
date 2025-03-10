@@ -25,7 +25,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  AsyncValue<List<dynamic>> get datas => ref.watch(dashboardControllerProvider);
+  AsyncValue<List<dynamic>> get datas =>
+      ref.watch(dashboardControllerProvider.call());
 
   final statusTabletController = MultiSelectController<String>();
   final statusPhoneController = MultiSelectController<String>();
@@ -888,8 +889,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final end =
                           format.format(DateTime(now.year, now.month, now.day));
                       await ref
-                          .read(dashboardControllerProvider.notifier)
-                          .build(start, end);
+                          .read(dashboardControllerProvider.call(start, end));
                     },
                     child: Center(
                       child: Text(
@@ -929,8 +929,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final end =
                           format.format(DateTime(now.year, now.month + 1, 0));
                       await ref
-                          .read(dashboardControllerProvider.notifier)
-                          .build(start, end);
+                          .read(dashboardControllerProvider.call(start, end));
                     },
                     child: Center(
                       child: Text(
@@ -974,8 +973,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         final start = format.format(date!.start);
                         final end = format.format(date.end);
                         await ref
-                            .read(dashboardControllerProvider.notifier)
-                            .build(start, end);
+                            .read(dashboardControllerProvider.call(start, end));
                       }
                     },
                     child: Center(

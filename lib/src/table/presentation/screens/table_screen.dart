@@ -474,27 +474,22 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                   ? Row(
                                                       children: [
                                                         SizedBox(
-                                                          width: 95,
+                                                          width: 70,
                                                           height: 50,
-                                                          child:
-                                                              TableLocationSwitch(
-                                                            isOutdoor:
-                                                                e.isOutdoor!,
-                                                            onSwitch:
-                                                                (val) async {
-                                                              return ref
-                                                                  .read(
-                                                                    tableControllerProvider
-                                                                        .notifier,
-                                                                  )
-                                                                  .toggleTableLocation(
-                                                                    request: e,
-                                                                    id: e.id!,
-                                                                    currentLocation:
-                                                                        e.isOutdoor!,
-                                                                  );
-                                                            },
-                                                          ),
+                                                          child: e.isOutdoor
+                                                              ? Iconify(
+                                                                  IconParkSolid
+                                                                      .outdoor,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                )
+                                                              : Iconify(
+                                                                  Bxs.home_alt_2,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                ),
                                                         ),
                                                         SizedBox(width: 5.w),
                                                         SizedBox(
@@ -524,27 +519,22 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                   : Column(
                                                       children: [
                                                         SizedBox(
-                                                          width: 95,
+                                                          width: 70,
                                                           height: 50,
-                                                          child:
-                                                              TableLocationSwitch(
-                                                            isOutdoor:
-                                                                e.isOutdoor!,
-                                                            onSwitch:
-                                                                (val) async {
-                                                              return ref
-                                                                  .read(
-                                                                    tableControllerProvider
-                                                                        .notifier,
-                                                                  )
-                                                                  .toggleTableLocation(
-                                                                    request: e,
-                                                                    id: e.id!,
-                                                                    currentLocation:
-                                                                        e.isOutdoor!,
-                                                                  );
-                                                            },
-                                                          ),
+                                                          child: e.isOutdoor
+                                                              ? Iconify(
+                                                                  IconParkSolid
+                                                                      .outdoor,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                )
+                                                              : Iconify(
+                                                                  Bxs.home_alt_2,
+                                                                  color: hexToColor(
+                                                                      '#CACACA'),
+                                                                  size: 30,
+                                                                ),
                                                         ),
                                                         SizedBox(height: 5.h),
                                                         SizedBox(
@@ -1114,25 +1104,23 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                               Row(
                                                                 children: [
                                                                   SizedBox(
-                                                                    width: 95,
+                                                                    width: 70,
                                                                     height: 50,
-                                                                    child:
-                                                                        TableLocationSwitch(
-                                                                      isOutdoor:
-                                                                          e.isOutdoor!,
-                                                                      onSwitch:
-                                                                          (val) async {
-                                                                        return ref
-                                                                            .read(
-                                                                              tableControllerProvider.notifier,
-                                                                            )
-                                                                            .toggleTableLocation(
-                                                                              request: e,
-                                                                              id: e.id!,
-                                                                              currentLocation: e.isOutdoor!,
-                                                                            );
-                                                                      },
-                                                                    ),
+                                                                    child: e.isOutdoor
+                                                                        ? Iconify(
+                                                                            IconParkSolid.outdoor,
+                                                                            color:
+                                                                                hexToColor('#CACACA'),
+                                                                            size:
+                                                                                30,
+                                                                          )
+                                                                        : Iconify(
+                                                                            Bxs.home_alt_2,
+                                                                            color:
+                                                                                hexToColor('#CACACA'),
+                                                                            size:
+                                                                                30,
+                                                                          ),
                                                                   ),
                                                                   SizedBox(
                                                                       width:
