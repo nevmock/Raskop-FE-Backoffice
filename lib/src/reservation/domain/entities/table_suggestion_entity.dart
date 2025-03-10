@@ -2,17 +2,17 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'table_entity.freezed.dart';
-part 'table_entity.g.dart';
+part 'table_suggestion_entity.freezed.dart';
+part 'table_suggestion_entity.g.dart';
 
 @freezed
 
 /// Table Data Models to Entity
-class TableEntity with _$TableEntity {
-  @JsonSerializable(fieldRename: FieldRename.none)
+class TableSuggestionEntity with _$TableSuggestionEntity {
+  @JsonSerializable(fieldRename: FieldRename.snake)
 
   /// fields
-  const factory TableEntity({
+  const factory TableSuggestionEntity({
     required String noTable,
     required int minCapacity,
     required int maxCapacity,
@@ -24,9 +24,9 @@ class TableEntity with _$TableEntity {
     @JsonKey(includeIfNull: false) String? id,
     @JsonKey(includeIfNull: false) List<String>? mergedAvailable,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
-  }) = _TableEntity;
+  }) = _TableSuggestionEntity;
 
   /// from json mapper
-  factory TableEntity.fromJson(Map<String, dynamic> json) =>
-      _$TableEntityFromJson(json);
+  factory TableSuggestionEntity.fromJson(Map<String, dynamic> json) =>
+      _$TableSuggestionEntityFromJson(json);
 }

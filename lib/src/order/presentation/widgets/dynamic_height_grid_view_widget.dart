@@ -40,6 +40,7 @@ class DynamicHeightGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       controller: controller,
       shrinkWrap: shrinkWrap,
       physics: physics,

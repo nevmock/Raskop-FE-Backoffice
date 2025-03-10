@@ -111,7 +111,8 @@ class MenuRepository implements MenuRepositoryInterface {
           json['status'] == 'OK') {
         return right(const ResponseSuccess.created());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e, stackTrace) {
       print('Error: $e');
       print('Stack Trace: $stackTrace');
@@ -172,7 +173,8 @@ class MenuRepository implements MenuRepositoryInterface {
           json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
@@ -223,7 +225,8 @@ class MenuRepository implements MenuRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(const ResponseFailure.internalServerError());
+      return left(ResponseFailure.internalServerError(
+          message: json['errors'].toString()));
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
