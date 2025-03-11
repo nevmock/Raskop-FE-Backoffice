@@ -660,12 +660,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     width: 125,
                                     height: 125,
                                     child: Image.network(
-                                      BasePaths.baseAPIDashboardURL +
-                                          menu.image_uri,
+                                      'https://${BasePaths.baseAPIURL}${menu.image_uri}',
                                       errorBuilder:
-                                          (context, object, stackTrace) {
-                                        return const Text('Error');
-                                      },
+                                          (context, object, stackTrace) =>
+                                              const Text('Error'),
                                     ),
                                   ),
                                   Expanded(
