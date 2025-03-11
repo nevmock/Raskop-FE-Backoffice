@@ -12,7 +12,7 @@ class Toast {
     Duration duration = const Duration(seconds: 5),
   }) {
     CherryToast.success(
-      animationType: AnimationType.fromRight,
+      animationType: AnimationType.fromTop,
       title: Text(
         title,
         style: const TextStyle(
@@ -37,7 +37,7 @@ class Toast {
     String description = '',
   }) {
     CherryToast.error(
-      animationType: AnimationType.fromRight,
+      animationType: AnimationType.fromTop,
       title: Text(
         title,
         style: const TextStyle(
@@ -62,7 +62,7 @@ class Toast {
     String description = '',
   }) {
     CherryToast.warning(
-      animationType: AnimationType.fromRight,
+      animationType: AnimationType.fromTop,
       title: Text(
         title,
         style: const TextStyle(

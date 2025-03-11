@@ -80,10 +80,8 @@ final router = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              // path: '/${TableScreen.route}',
-              // name: TableScreen.route,
-              path: '/table',
-              name: 'table',
+              path: '/${TableScreen.route}',
+              name: TableScreen.route,
               builder: (context, state) => const TableScreen(),
             ),
           ],

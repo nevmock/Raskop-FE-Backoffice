@@ -138,7 +138,7 @@ class SupplierController extends _$SupplierController {
         .read(supplierRepositoryProvider)
         .createNewSupplier(request: request);
     res.fold(
-      (l) => state = AsyncError(l, StackTrace.current),
+      (l) => throw l,
       (r) {
         refresh();
         return r;
@@ -155,7 +155,7 @@ class SupplierController extends _$SupplierController {
         .read(supplierRepositoryProvider)
         .updateCurrentSupplier(request: request, id: id);
     res.fold(
-      (l) => state = AsyncError(l, StackTrace.current),
+      (l) => throw l,
       (r) {
         refresh();
         return r;
@@ -173,7 +173,7 @@ class SupplierController extends _$SupplierController {
           deletePermanent: deletePermanent,
         );
     res.fold(
-      (l) => state = AsyncError(l, StackTrace.current),
+      (l) => throw l,
       (r) {
         refresh();
         return r;

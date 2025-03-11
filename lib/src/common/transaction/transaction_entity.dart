@@ -13,13 +13,13 @@ class TransactionEntity with _$TransactionEntity {
 
   /// fields
   const factory TransactionEntity({
-    required String id,
-    required String trxId,
-    required String orderId,
-    required double grossAmount,
-    required String paymentMethod,
-    required double adminFee,
-    required String status,
+    @JsonKey(includeIfNull: true) String? id,
+    @JsonKey(includeIfNull: true) String? trxId,
+    @JsonKey(includeIfNull: true) String? orderId,
+    @JsonKey(includeIfNull: true) double? grossAmount,
+    @JsonKey(includeIfNull: true) String? paymentMethod,
+    @JsonKey(includeIfNull: true) double? adminFee,
+    @JsonKey(includeIfNull: true) String? status,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _TransactionEntity;
 

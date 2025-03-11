@@ -22,12 +22,10 @@ class ReservationEntity with _$ReservationEntity {
     @DateTimeSerializer() required DateTime start,
     @DateTimeSerializer() required DateTime end,
     required bool halfPayment,
-    @JsonKey(includeIfNull: true) String? community,
+    required List<ReservationDetailEntity> detailReservasis,
+    required List<OrderEntity> orders,
+    required String community,
     @JsonKey(includeIfNull: true) String? note,
-    @JsonKey(includeFromJson: true, includeToJson: false)
-    List<ReservationDetailEntity>? detailReservasis,
-    @JsonKey(includeFromJson: true, includeToJson: false)
-    List<OrderEntity>? orders,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _ReservationEntity;
 

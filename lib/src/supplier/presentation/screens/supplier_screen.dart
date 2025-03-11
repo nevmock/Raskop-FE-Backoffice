@@ -16,6 +16,7 @@ import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/shared/currency_formatter.dart';
+import 'package:raskop_fe_backoffice/shared/refresh_loading_animation.dart';
 import 'package:raskop_fe_backoffice/shared/toast.dart';
 import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
@@ -318,140 +319,124 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
-                        AnimatedContainer(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(
-                              color: hexToColor('#E1E1E1'),
-                            ),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(15),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 15,
-                          ),
-                          duration: const Duration(milliseconds: 100),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 20,
-                                  ),
-                                  child: Image.asset(ImageAssets.raskop),
+                        RefreshLoadingAnimation(
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: AnimatedContainer(
+                                duration: const Duration(
+                                  milliseconds: 100,
                                 ),
-                              ),
-                              const Spacer(),
-                              Expanded(
-                                flex: 5,
-                                child: AnimatedContainer(
-                                  duration: const Duration(
-                                    milliseconds: 100,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 15.w,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: hexToColor('#E1E1E1'),
                                   ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 15.w,
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(30),
                                   ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: hexToColor('#E1E1E1'),
-                                    ),
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(30),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Flexible(
-                                        flex: 3,
-                                        child: TextFormField(
-                                          controller: search,
-                                          onChanged: advSearchTabletController
-                                                  .selectedItems.isEmpty
-                                              ? (value) {}
-                                              : (value) {
-                                                  debounceOnTablet();
-                                                },
-                                          onFieldSubmitted:
-                                              advSearchTabletController
-                                                      .selectedItems.isEmpty
-                                                  ? (value) {}
-                                                  : (value) {
-                                                      onSearchTablet();
-                                                    },
-                                          decoration: InputDecoration(
-                                            filled: false,
-                                            border: InputBorder.none,
-                                            hintText:
-                                                'Temukan nama, kontak, unit...',
-                                            hintStyle: TextStyle(
-                                              color: Colors.black
-                                                  .withValues(alpha: 0.3),
-                                              fontWeight: FontWeight.w400,
-                                            ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      flex: 3,
+                                      child: TextFormField(
+                                        controller: search,
+                                        onChanged: advSearchTabletController
+                                                .selectedItems.isEmpty
+                                            ? (value) {}
+                                            : (value) {
+                                                debounceOnTablet();
+                                              },
+                                        onFieldSubmitted:
+                                            advSearchTabletController
+                                                    .selectedItems.isEmpty
+                                                ? (value) {}
+                                                : (value) {
+                                                    onSearchTablet();
+                                                  },
+                                        decoration: InputDecoration(
+                                          filled: false,
+                                          border: InputBorder.none,
+                                          hintText:
+                                              'Temukan nama, kontak, unit...',
+                                          hintStyle: TextStyle(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.3),
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                       ),
-                                      Flexible(
-                                        flex: 2,
-                                        child: MultiDropdown<String>(
-                                          items: advSearchOptions,
-                                          controller: advSearchTabletController,
-                                          onSelectionChange: (selectedItems) {
-                                            setState(() {});
-                                          },
-                                          fieldDecoration:
-                                              const FieldDecoration(
-                                            border: OutlineInputBorder(
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            hintText: '',
-                                            suffixIcon: Icon(
-                                              Icons.filter_list_alt,
-                                            ),
-                                            animateSuffixIcon: false,
-                                            backgroundColor: Colors.transparent,
-                                            borderRadius: 30,
+                                    ),
+                                    Flexible(
+                                      flex: 2,
+                                      child: MultiDropdown<String>(
+                                        items: advSearchOptions,
+                                        controller: advSearchTabletController,
+                                        onSelectionChange: (selectedItems) {
+                                          setState(() {});
+                                        },
+                                        fieldDecoration: const FieldDecoration(
+                                          border: OutlineInputBorder(
+                                            borderSide: BorderSide.none,
                                           ),
-                                          dropdownItemDecoration:
-                                              DropdownItemDecoration(
-                                            selectedIcon: Icon(
-                                              Icons.check_box,
-                                              color: hexToColor(
-                                                '#0C9D61',
-                                              ),
-                                            ),
+                                          hintText: '',
+                                          suffixIcon: Icon(
+                                            Icons.filter_list_alt,
                                           ),
-                                          dropdownDecoration:
-                                              const DropdownDecoration(
-                                            elevation: 3,
-                                          ),
-                                          chipDecoration: ChipDecoration(
-                                            wrap: false,
-                                            backgroundColor: hexToColor(
-                                              '#E1E1E1',
-                                            ),
-                                            labelStyle: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 12,
+                                          animateSuffixIcon: false,
+                                          backgroundColor: Colors.transparent,
+                                          borderRadius: 30,
+                                        ),
+                                        dropdownItemDecoration:
+                                            DropdownItemDecoration(
+                                          selectedIcon: Icon(
+                                            Icons.check_box,
+                                            color: hexToColor(
+                                              '#0C9D61',
                                             ),
                                           ),
                                         ),
+                                        dropdownDecoration:
+                                            const DropdownDecoration(
+                                          elevation: 3,
+                                        ),
+                                        chipDecoration: ChipDecoration(
+                                          wrap: false,
+                                          backgroundColor: hexToColor(
+                                            '#E1E1E1',
+                                          ),
+                                          labelStyle: const TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                          onRefresh: () async => controller.refresh(),
                         ),
                         const SizedBox(
                           height: 10,
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
+                            const Text(
+                              'Petunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: hexToColor('#1f4940'),
@@ -598,7 +583,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                   flex: 5,
                                   child: Center(
                                     child: Text(
-                                      'UNIT, BIAYA, ALAMAT, PRODUK',
+                                      'DETAIL SUPPLIER',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
@@ -1061,11 +1046,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                       textAlign: TextAlign.center,
                                     ),
                                     TextButton(
-                                      onPressed: () {
-                                        ref.invalidate(
-                                          supplierControllerProvider,
-                                        );
-                                      },
+                                      onPressed: controller.refresh,
                                       style: TextButton.styleFrom(
                                         backgroundColor: hexToColor('#1F4940'),
                                         shape: RoundedRectangleBorder(
@@ -2760,11 +2741,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                       textAlign: TextAlign.center,
                                     ),
                                     TextButton(
-                                      onPressed: () {
-                                        ref.invalidate(
-                                          supplierControllerProvider,
-                                        );
-                                      },
+                                      onPressed: controller.refresh,
                                       style: TextButton.styleFrom(
                                         backgroundColor: hexToColor('#1F4940'),
                                         shape: RoundedRectangleBorder(

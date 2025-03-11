@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/shared/refresh_loading_animation.dart';
 import 'package:raskop_fe_backoffice/shared/toast.dart';
 import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
@@ -18,7 +21,6 @@ import 'package:raskop_fe_backoffice/src/order/domain/entities/order_detail_enti
 import 'package:raskop_fe_backoffice/src/order/domain/entities/order_entity.dart';
 import 'package:raskop_fe_backoffice/src/order/domain/entities/update_status_order_request_entity.dart';
 import 'package:raskop_fe_backoffice/src/order/presentation/screens/create_order_screen.dart';
-import 'package:raskop_fe_backoffice/src/order/presentation/widgets/reservasi_reguler_button_filter_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
 
 ///
@@ -46,27 +48,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   TextEditingController jenis = TextEditingController();
   TextEditingController kontak = TextEditingController();
   TextEditingController grandTotal = TextEditingController();
+  TextEditingController search = TextEditingController();
   String? status;
 
-  void onReservasi() {
-    ref.read(orderControllerProvider.notifier).onSearch(
-      advSearch: {
-        'withDeleted': false,
-        'withReservasi': true,
-        'withRelation': true,
-      },
-    );
-  }
-
-  void onReguler() {
-    ref.read(orderControllerProvider.notifier).onSearch(
-      advSearch: {
-        'withDeleted': false,
-        'withReservasi': false,
-        'withRelation': true,
-      },
-    );
-  }
+  List<DropdownItem<String>> advSearchOptions = [
+    DropdownItem(label: 'Nama', value: 'orderBy'),
+    DropdownItem(label: 'Kontak', value: 'phoneNumber'),
+    DropdownItem(label: 'Nama Produk', value: 'status'),
+  ];
+  final advSearchTabletController = MultiSelectController<String>();
+  final advSearchPhoneController = MultiSelectController<String>();
 
   List<OrderDetailEntity>? details;
 
@@ -102,13 +93,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
         );
         kontak.value = TextEditingValue(text: detailOrder.phoneNumber);
         grandTotal.value = TextEditingValue(
-          text: detailOrder.transaction!.isEmpty
+          text: detailOrder.transaction.isEmpty
               ? 'Trx Not Found'
               : NumberFormat.simpleCurrency(
                   locale: 'id-ID',
                   name: 'Rp',
                   decimalDigits: 2,
-                ).format(detailOrder.transaction!.first.grossAmount),
+                ).format(detailOrder.transaction.first.grossAmount),
         );
         detailOrder.status == 'BELUM_DIBUAT'
             ? statusTabletController
@@ -159,6 +150,31 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       });
     }
 
+    void onSearchTablet() {
+      ref.read(orderControllerProvider.notifier).onSearch(
+        advSearch: {
+          'withDeleted': false,
+          'withRelation': true,
+          'withReservasi': false,
+          for (final item in advSearchTabletController.selectedItems)
+            if (item.value == 'status') ...{
+              for (final i in orderStatus)
+                if (search.text.toLowerCase() == i.label.toLowerCase() ||
+                    search.text.toLowerCase() == i.value.toLowerCase())
+                  item.value: i.value,
+            } else
+              item.value: search.text,
+        },
+      );
+    }
+
+    Timer? debounceTimer;
+
+    void debounceOnTablet() {
+      if (debounceTimer?.isActive ?? false) debounceTimer!.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 500), onSearchTablet);
+    }
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -182,13 +198,120 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                           duration: const Duration(milliseconds: 300),
                           child: Column(
                             children: [
-                              Row(
+                              RefreshLoadingAnimation(
                                 children: [
-                                  ReservasiRegulerButtonFilterWidget(
-                                    onReservasi: onReservasi,
-                                    onReguler: onReguler,
-                                    isWideScreen: true,
+                                  Expanded(
+                                    flex: 5,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 100,
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 15.w,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: hexToColor('#E1E1E1'),
+                                        ),
+                                        borderRadius: const BorderRadius.all(
+                                          Radius.circular(30),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            flex: 3,
+                                            child: TextFormField(
+                                              controller: search,
+                                              onChanged:
+                                                  advSearchTabletController
+                                                          .selectedItems.isEmpty
+                                                      ? (value) {}
+                                                      : (value) {
+                                                          debounceOnTablet();
+                                                        },
+                                              onFieldSubmitted:
+                                                  advSearchTabletController
+                                                          .selectedItems.isEmpty
+                                                      ? (value) {}
+                                                      : (value) {
+                                                          onSearchTablet();
+                                                        },
+                                              decoration: InputDecoration(
+                                                filled: false,
+                                                border: InputBorder.none,
+                                                hintText:
+                                                    'Temukan nama, kontak, status...',
+                                                hintStyle: TextStyle(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.3),
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Flexible(
+                                            flex: 2,
+                                            child: MultiDropdown<String>(
+                                              items: advSearchOptions,
+                                              controller:
+                                                  advSearchTabletController,
+                                              onSelectionChange:
+                                                  (selectedItems) {
+                                                setState(() {});
+                                              },
+                                              fieldDecoration:
+                                                  const FieldDecoration(
+                                                border: OutlineInputBorder(
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                                hintText: '',
+                                                suffixIcon: Icon(
+                                                  Icons.filter_list_alt,
+                                                ),
+                                                animateSuffixIcon: false,
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                borderRadius: 30,
+                                              ),
+                                              dropdownItemDecoration:
+                                                  DropdownItemDecoration(
+                                                selectedIcon: Icon(
+                                                  Icons.check_box,
+                                                  color: hexToColor(
+                                                    '#0C9D61',
+                                                  ),
+                                                ),
+                                              ),
+                                              dropdownDecoration:
+                                                  const DropdownDecoration(
+                                                elevation: 3,
+                                              ),
+                                              chipDecoration: ChipDecoration(
+                                                wrap: false,
+                                                backgroundColor: hexToColor(
+                                                  '#E1E1E1',
+                                                ),
+                                                labelStyle: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
+                                ],
+                                onRefresh: () async => controller.refresh(),
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
                                   const Spacer(),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
@@ -272,7 +395,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 2,
+                                        flex: 4,
                                         child: Center(
                                           child: Text(
                                             'STATUS',
@@ -285,7 +408,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 2,
+                                        flex: 4,
                                         child: Center(
                                           child: Text(
                                             'DETAIL ORDER',
@@ -319,11 +442,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                             textAlign: TextAlign.center,
                                           ),
                                           TextButton(
-                                            onPressed: () {
-                                              ref.invalidate(
-                                                orderControllerProvider,
-                                              );
-                                            },
+                                            onPressed: controller.refresh,
                                             style: TextButton.styleFrom(
                                               backgroundColor:
                                                   hexToColor('#1F4940'),
@@ -454,7 +573,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                       ),
                                                     ),
                                                     Expanded(
-                                                      flex: 2,
+                                                      flex: 4,
                                                       child: Center(
                                                         child: Chip(
                                                           backgroundColor:
@@ -550,7 +669,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                       ),
                                                     ),
                                                     Expanded(
-                                                      flex: 2,
+                                                      flex: 4,
                                                       child: Center(
                                                         child: Padding(
                                                           padding: EdgeInsets
@@ -885,7 +1004,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                       ),
                                                     ),
                                                     TextSpan(
-                                                      text: e.menu!.name,
+                                                      text: e.menu.name,
                                                       style: TextStyle(
                                                         fontWeight:
                                                             FontWeight.w500,
@@ -1088,12 +1207,6 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                             children: [
                               Row(
                                 children: [
-                                  ReservasiRegulerButtonFilterWidget(
-                                    onReservasi: onReservasi,
-                                    onReguler: onReguler,
-                                    isWideScreen: false,
-                                  ),
-                                  const Spacer(),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: hexToColor('#1f4940'),
@@ -1831,7 +1944,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                                       ),
                                                     ),
                                                     TextSpan(
-                                                      text: e.menu!.name,
+                                                      text: e.menu.name,
                                                       style: TextStyle(
                                                         fontWeight:
                                                             FontWeight.w500,

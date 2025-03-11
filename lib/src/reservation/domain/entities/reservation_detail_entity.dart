@@ -17,7 +17,7 @@ class ReservationDetailEntity with _$ReservationDetailEntity {
     required String id,
     required String reservasiId,
     required String tableId,
-    @JsonKey(includeFromJson: true, includeToJson: false) TableEntity? table,
+    required TableEntity table,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _ReservationDetailEntity;
 
