@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:raskop_fe_backoffice/res/paths.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/dashboard/application/fav_menu_controller.dart';
@@ -659,7 +660,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     width: 125,
                                     height: 125,
                                     child: Image.network(
-                                      menu.image_uri.toString(),
+                                      BasePaths.baseAPIDashboardURL +
+                                          menu.image_uri,
                                       errorBuilder:
                                           (context, object, stackTrace) {
                                         return const Text('Error');
