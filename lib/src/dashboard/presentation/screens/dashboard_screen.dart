@@ -1,7 +1,5 @@
 // ignore_for_file: public_member_api_docs, avoid_dynamic_calls
 
-import 'dart:developer';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
-import 'package:raskop_fe_backoffice/src/dashboard/application/dashboard_controller.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/application/fav_menu_controller.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/application/sales_performance_controller.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/domain/entities/fav_menu_entity.dart';
+import 'package:raskop_fe_backoffice/src/dashboard/domain/entities/sales_performance_entity.dart';
 
 ///
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -25,8 +26,10 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  AsyncValue<List<dynamic>> get datas =>
-      ref.watch(dashboardControllerProvider.call());
+  AsyncValue<List<FavMenuEntity>> get favMenu =>
+      ref.watch(favMenuControllerProvider);
+  AsyncValue<List<SalesPerformanceEntity>> get salesPerformance =>
+      ref.watch(salesPerformanceControllerProvider);
 
   final statusTabletController = MultiSelectController<String>();
   final statusPhoneController = MultiSelectController<String>();
@@ -127,21 +130,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           AspectRatio(
             aspectRatio: 1.70,
-            child: datas.when(
+            child: salesPerformance.when(
               data: (data) {
-                // Check if all entries are from the same month
-                if (datas.value?.isEmpty ?? true) {
-                  return const Center(
-                    child: Text(
-                      'Data Kosong',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                      ),
-                    ),
-                  );
-                }
-                final chartData = (datas.value ?? [])[1] as List;
+                final chartData =
+                    (data.isNotEmpty ? data : <SalesPerformanceEntity>[]);
+
                 if (chartData.isEmpty) {
                   return const Center(
                     child: Text(
@@ -156,10 +149,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 var isSameMonth = true;
                 var firstMonth = -1;
 
-                for (final item in dynamicToMaps(chartData)) {
-                  log(item.toString());
-                  final month =
-                      int.parse(item['sales_date'].toString().split('-')[1]);
+                for (final item in chartData) {
+                  final month = int.parse(item.toString().split('-')[1]);
                   if (firstMonth == -1) {
                     firstMonth = month;
                   } else if (month != firstMonth) {
@@ -169,19 +160,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 }
 
                 if (isSameMonth && firstMonth != -1) {
-                  // If all data is from the same month, aggregate by day
-                  return _buildDailyChart(
-                    dynamicToMaps(chartData),
-                    tipe,
-                    data,
-                  );
+                  return _buildDailyChart(chartData, tipe);
                 } else {
-                  // If data spans multiple months, aggregate by month
-                  return _buildMonthlyChart(
-                    dynamicToMaps(chartData),
-                    tipe,
-                    data,
-                  );
+                  return _buildMonthlyChart(chartData, tipe);
                 }
               },
               error: (error, stackTrace) {
@@ -200,26 +181,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  List<Map<String, dynamic>> dynamicToMaps(List<dynamic> list) {
-    return list.map((item) {
-      if (item is Map) {
-        // Cast each map to the correct type
-        return Map<String, dynamic>.from(item);
-      }
-      // Handle non-map items (return empty map, skip, or throw error)
-      return <String, dynamic>{};
-    }).toList();
-  }
-
   Widget _buildMonthlyChart(
-    List<Map<String, dynamic>> datas,
+    List<SalesPerformanceEntity> datas,
     String tipe,
-    dynamic data,
   ) {
-    // Agregasi data per bulan
     final monthlyData = <int, Map<String, dynamic>>{};
 
-    // Create default entries for all 12 months
     for (var month = 1; month <= 12; month++) {
       monthlyData[month] = {
         'month': month,
@@ -230,39 +197,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     for (final item in datas) {
-      // Ekstrak bulan dari tanggal
-      final month = int.parse(item['sales_date'].toString().split('-')[1]);
+      final month = int.parse(item.sales_date.split('-')[1]);
 
-      // Akumulasi data
-      monthlyData[month]!['total_sales'] += item['total_sales'];
-      monthlyData[month]!['total_orders'] += item['total_orders'];
-      monthlyData[month]!['total_items_sold'] += item['total_items_sold'];
+      monthlyData[month]!['total_sales'] += item.total_sales;
+      monthlyData[month]!['total_orders'] += item.total_orders;
+      monthlyData[month]!['total_items_sold'] += item.total_items_sold;
     }
 
-    // Konversi ke List dan urutkan berdasarkan bulan
     final aggregatedData = monthlyData.values.toList()
       ..sort(
         (a, b) => (a['month'] as int).compareTo(b['month'] as int),
       );
 
-    if (data.isNotEmpty == true) {
-      // Hitung nilai maksimum untuk skala sumbu Y
+    if (datas.isNotEmpty == true) {
       var maxY = aggregatedData
           .map(
             (e) => tipe == 'total_sales'
-                ? (e[tipe] as int) /
-                    1000 // Konversi ke ribuan untuk tampilan lebih baik
+                ? (e[tipe] as int) / 1000
                 : (e[tipe] as int).toDouble(),
           )
           .reduce((curr, next) => curr > next ? curr : next);
 
-      // Tambahkan padding 10% pada nilai maksimum Y
       maxY = maxY * 1.1;
 
       return LineChart(
         LineChartData(
           gridData: FlGridData(
-            horizontalInterval: maxY / 5, // Bagi sumbu Y menjadi 5 bagian
+            horizontalInterval: maxY / 5,
             verticalInterval: 1,
             getDrawingHorizontalLine: (value) {
               return const FlLine(
@@ -296,7 +257,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: maxY / 5, // Bagi sumbu Y menjadi 5 bagian
+                interval: maxY / 5,
                 getTitlesWidget: _leftTitleWidgets,
                 reservedSize: 50,
               ),
@@ -304,18 +265,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           borderData: FlBorderData(show: false),
           minX: 0,
-          maxX: aggregatedData.isNotEmpty
-              ? 0 // This is wrong - should be aggregatedData.length - 1.0
-              : aggregatedData.length - 1.0,
+          maxX: aggregatedData.isNotEmpty ? 0 : aggregatedData.length - 1.0,
           minY: 0,
           maxY: maxY,
           lineBarsData: [
             LineChartBarData(
               spots: List.generate(aggregatedData.length, (index) {
-                // Konversi data ke FlSpot
                 final yValue = tipe == 'total_sales'
-                    ? (aggregatedData[index][tipe] as int) /
-                        1000 // Konversi ke ribuan untuk total_sales
+                    ? (aggregatedData[index][tipe] as int) / 1000
                     : (aggregatedData[index][tipe] as int).toDouble();
 
                 return FlSpot(index.toDouble(), yValue);
@@ -326,7 +283,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               isStrokeCapRound: true,
               dotData: FlDotData(
                 getDotPainter: (spot, percent, barData, index) {
-                  // Don't show dots for zero values
                   if (aggregatedData[index][tipe] == 0) {
                     return FlDotCirclePainter(
                       radius: 0,
@@ -368,21 +324,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildDailyChart(
-    List<Map<String, dynamic>> datas,
+    List<SalesPerformanceEntity> datas,
     String tipe,
-    dynamic data,
   ) {
-    // Aggregate data by day
     final dailyData = <String, Map<String, dynamic>>{};
 
-    // Parse and prepare data
     for (final item in datas) {
-      final dateStr = item['sales_date'].toString();
+      final dateStr = item.sales_date;
       final dateParts = dateStr.split('-');
       final day = int.parse(dateParts[2]);
       final month = int.parse(dateParts[1]);
 
-      final dayKey = '$month-$day'; // Format: MM-DD
+      final dayKey = '$month-$day';
 
       if (!dailyData.containsKey(dayKey)) {
         dailyData[dayKey] = {
@@ -395,18 +348,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         };
       }
 
-      // Accumulate data
-      dailyData[dayKey]!['total_sales'] += item['total_sales'];
-      dailyData[dayKey]!['total_orders'] += item['total_orders'];
-      dailyData[dayKey]!['total_items_sold'] += item['total_items_sold'];
+      dailyData[dayKey]!['total_sales'] += item.total_sales;
+      dailyData[dayKey]!['total_orders'] += item.total_orders;
+      dailyData[dayKey]!['total_items_sold'] += item.total_items_sold;
     }
 
-    // Convert to list and sort by day
     final aggregatedData = dailyData.values.toList()
       ..sort((a, b) => (a['day'] as int).compareTo(b['day'] as int));
 
-    if (data.isNotEmpty == true) {
-      // Calculate maximum Y value for scale
+    if (datas.isNotEmpty == true) {
       var maxY = aggregatedData
           .map(
             (e) => tipe == 'total_sales'
@@ -415,10 +365,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           )
           .reduce((curr, next) => curr > next ? curr : next);
 
-      // Add 10% padding to maximum Y
       maxY = maxY * 1.1;
 
-      // Get the month name for the title
       final months = [
         'Januari',
         'Februari',
@@ -564,7 +512,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       color: Colors.white,
     );
 
-    // Nama bulan
     final months = [
       'JAN',
       'FEB',
@@ -580,17 +527,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       'DES',
     ];
 
-    // Hanya tampilkan teks untuk nilai bulat
     if (value.toInt() != value) {
       return const SizedBox.shrink();
     }
 
-    // Pengecekan indeks di dalam rentang
     if (value.toInt() < 0 || value.toInt() >= aggregatedData.length) {
       return const SizedBox.shrink();
     }
 
-    // Ambil bulan dari data yang sudah diagregasi
     final monthIndex = aggregatedData[value.toInt()]['month'] as int;
     final text = Text(months[monthIndex - 1], style: style);
 
@@ -611,17 +555,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       color: Colors.white,
     );
 
-    // Only show text for integer values
     if (value.toInt() != value) {
       return const SizedBox.shrink();
     }
 
-    // Check if index is within range
     if (value.toInt() < 0 || value.toInt() >= aggregatedData.length) {
       return const SizedBox.shrink();
     }
 
-    // Get day from aggregated data
     final day = aggregatedData[value.toInt()]['day'] as int;
     final text = Text(day.toString(), style: style);
 
@@ -638,7 +579,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       color: Colors.white,
     );
 
-    // Format angka besar untuk keterbacaan yang lebih baik
     String formattedValue;
     if (value >= 1000) {
       formattedValue = '${(value / 1000).toStringAsFixed(1)}K';
@@ -686,9 +626,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          datas.when(
+          favMenu.when(
             data: (data) {
-              if (datas.value?.isNotEmpty ?? true) {
+              if (data.isEmpty) {
                 return const Center(
                   child: Text(
                     'Data Kosong',
@@ -697,106 +637,88 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 );
               } else {
-                if (datas.value?.isEmpty ?? true) {
-                  return const Center(
-                    child: Text(
-                      'Data Kosong',
-                      style: TextStyle(color: Colors.white),
-                      textAlign: TextAlign.left,
-                    ),
-                  );
-                }
-                final data = (datas.value ?? [])[0] as List;
                 return Column(
                   children: [
-                    if (data[0].isNotEmpty == true)
-                      for (final menu in datas.value ?? []) ...[
-                        Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(16),
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 16,
-                                  children: [
-                                    SizedBox(
-                                      width: 125,
-                                      height: 125,
-                                      child: Image.network(
-                                        menu.image_uri.toString(),
-                                        errorBuilder:
-                                            (context, object, stackTrace) {
-                                          return const Text('Error');
-                                        },
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            menu.menu_name.toString(),
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Food',
-                                            style: TextStyle(
-                                              color: hexToColor('#CACACA'),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Positioned(
-                                right: 10,
-                                bottom: 10,
-                                child: Text(
-                                  'Terjual ${menu.qty.toInt()} pcs',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: -5,
-                                bottom: -10,
-                                child: Text(
-                                  ((datas.value ?? []).indexOf(menu) + 1)
-                                      .toString(),
-                                  style: TextStyle(
-                                    fontSize: 120,
-                                    height: 1,
-                                    color:
-                                        hexToColor('#1F4940').withOpacity(.25),
-                                  ),
-                                ),
-                              ),
-                            ],
+                    for (final FavMenuEntity menu in favMenu.value ?? []) ...[
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(16),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                      ]
-                    else
-                      const Text(
-                        'Data Kosong',
-                        style: TextStyle(color: Colors.white),
-                        textAlign: TextAlign.left,
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 16,
+                                children: [
+                                  SizedBox(
+                                    width: 125,
+                                    height: 125,
+                                    child: Image.network(
+                                      menu.image_uri.toString(),
+                                      errorBuilder:
+                                          (context, object, stackTrace) {
+                                        return const Text('Error');
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          menu.menu_name.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Food',
+                                          style: TextStyle(
+                                            color: hexToColor('#CACACA'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              right: 10,
+                              bottom: 10,
+                              child: Text(
+                                'Terjual ${menu.qty.toInt()} pcs',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: -5,
+                              bottom: -10,
+                              child: Text(
+                                ((favMenu.value ?? []).indexOf(menu) + 1)
+                                    .toString(),
+                                style: TextStyle(
+                                  fontSize: 120,
+                                  height: 1,
+                                  color: hexToColor('#1F4940').withOpacity(.25),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 16),
+                    ],
                   ],
                 );
               }
@@ -839,7 +761,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         alignment:
             maxWidth > 500 ? WrapAlignment.spaceBetween : WrapAlignment.center,
         children: [
-          const Row(), // Stretching Widget to max width
+          const Row(),
           Image.asset(
             'assets/img/raskop.png',
             width: 100.w,
@@ -889,7 +811,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final end =
                           format.format(DateTime(now.year, now.month, now.day));
                       await ref
-                          .read(dashboardControllerProvider.call(start, end));
+                          .read(favMenuControllerProvider.notifier)
+                          .getFavouriteMenus(start, end);
+                      await ref
+                          .read(salesPerformanceControllerProvider.notifier)
+                          .getSalesPerformance(start, end);
                     },
                     child: Center(
                       child: Text(
@@ -929,7 +855,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final end =
                           format.format(DateTime(now.year, now.month + 1, 0));
                       await ref
-                          .read(dashboardControllerProvider.call(start, end));
+                          .read(favMenuControllerProvider.notifier)
+                          .getFavouriteMenus(start, end);
+                      await ref
+                          .read(salesPerformanceControllerProvider.notifier)
+                          .getSalesPerformance(start, end);
                     },
                     child: Center(
                       child: Text(
@@ -973,7 +903,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         final start = format.format(date!.start);
                         final end = format.format(date.end);
                         await ref
-                            .read(dashboardControllerProvider.call(start, end));
+                            .read(favMenuControllerProvider.notifier)
+                            .getFavouriteMenus(start, end);
+                        await ref
+                            .read(salesPerformanceControllerProvider.notifier)
+                            .getSalesPerformance(start, end);
                       }
                     },
                     child: Center(
