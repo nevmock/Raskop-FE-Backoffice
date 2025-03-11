@@ -9,7 +9,7 @@ part 'table_suggestion_entity.g.dart';
 
 /// Table Data Models to Entity
 class TableSuggestionEntity with _$TableSuggestionEntity {
-  @JsonSerializable(fieldRename: FieldRename.snake)
+  @JsonSerializable(fieldRename: FieldRename.none)
 
   /// fields
   const factory TableSuggestionEntity({

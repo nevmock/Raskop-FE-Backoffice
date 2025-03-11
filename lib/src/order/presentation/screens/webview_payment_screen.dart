@@ -130,6 +130,14 @@ class _WebviewPaymentScreenState extends ConsumerState<WebviewPaymentScreen> {
                 } else if (url.contains('transaction_status=expire')) {
                   _showResultDialog('Pembayaran Kadaluarsa', 'expire');
                   return NavigationDecision.prevent;
+                } else if (url.contains('blob')) {
+                  Toast().showWarningToast(
+                    context: context,
+                    title: 'Unprocessable',
+                    description:
+                        'Untuk sementara waktu, Download QRIS tidak dapat dilakukan.\nSilakan langsung scan QR yang tersedia!',
+                  );
+                  return NavigationDecision.prevent;
                 }
 
                 return NavigationDecision.navigate;

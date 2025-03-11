@@ -19,10 +19,8 @@ class OrderEntity with _$OrderEntity {
     required String orderBy,
     required String phoneNumber,
     required String status,
-    @JsonKey(includeFromJson: true, includeToJson: false)
-    List<OrderDetailEntity>? orderDetail,
-    @JsonKey(includeFromJson: true, includeToJson: false)
-    List<TransactionEntity>? transaction,
+    required List<OrderDetailEntity> orderDetail,
+    required List<TransactionEntity> transaction,
     @JsonKey(includeIfNull: true) String? reservasiId,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _OrderEntity;

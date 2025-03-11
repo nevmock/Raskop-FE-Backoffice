@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,24 +9,31 @@ import 'package:go_router/go_router.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/eva.dart';
 import 'package:iconify_flutter/icons/zondicons.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/paths.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/shared/currency_formatter.dart';
+import 'package:raskop_fe_backoffice/shared/refresh_loading_animation.dart';
+import 'package:raskop_fe_backoffice/shared/toast.dart';
+import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
+import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/menu/application/menu_controller.dart';
 import 'package:raskop_fe_backoffice/src/menu/domain/entities/menu_entity.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/screens/supplier_screen.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/phone_switch_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/positioned_directional_backdrop_blur_widget.dart';
-import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
 import 'package:raskop_fe_backoffice/src/supplier/presentation/widgets/switch_widget.dart';
-import 'package:image_picker/image_picker.dart';
 
+///
 class MenuScreen extends ConsumerStatefulWidget {
+  ///
   const MenuScreen({super.key});
 
+  ///
   static const String route = 'menu';
 
   @override
@@ -182,21 +188,27 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
     }
 
     void onSearchPhone() {
-      ref.read(menuControllerProvider.notifier).fetchMenus(
-        search: search.text,
+      ref.read(menuControllerProvider.notifier).onSearch(
         advSearch: {
           for (final item in advSearchPhoneController.selectedItems)
-            item.value: search.text,
+            if (item.value == 'price' && search.text.isNotEmpty) ...{
+              item.value: double.parse(search.text),
+            } else
+              item.value: search.text,
+          'withDeleted': false,
         },
       );
     }
 
     void onSearchTablet() {
-      ref.read(menuControllerProvider.notifier).fetchMenus(
-        search: search.text,
+      ref.read(menuControllerProvider.notifier).onSearch(
         advSearch: {
           for (final item in advSearchTabletController.selectedItems)
-            item.value: search.text,
+            if (item.value == 'price' && search.text.isNotEmpty) ...{
+              item.value: double.parse(search.text),
+            } else
+              item.value: search.text,
+          'withDeleted': false,
         },
       );
     }
@@ -231,6 +243,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
       }
     }
 
+    final controller = ref.watch(menuControllerProvider.notifier);
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -249,166 +263,123 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                     duration: const Duration(milliseconds: 300),
                     child: Column(
                       children: [
-                        AnimatedContainer(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(
-                              color: hexToColor('#E1E1E1'),
+                        RefreshLoadingAnimation(
+                          onRefresh: () async => controller.refresh(),
+                          children: [
+                            const Spacer(),
+                            Expanded(
+                              flex: 5,
+                              child: AnimatedContainer(
+                                duration: const Duration(
+                                  milliseconds: 100,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 15.w,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: hexToColor('#E1E1E1'),
+                                  ),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(30),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      flex: 3,
+                                      child: TextFormField(
+                                        controller: search,
+                                        onChanged: advSearchTabletController
+                                                .selectedItems.isEmpty
+                                            ? (value) {}
+                                            : (value) {
+                                                debounceOnTablet();
+                                              },
+                                        onFieldSubmitted:
+                                            advSearchTabletController
+                                                    .selectedItems.isEmpty
+                                                ? (value) {}
+                                                : (value) {
+                                                    onSearchTablet();
+                                                  },
+                                        decoration: InputDecoration(
+                                          filled: false,
+                                          border: InputBorder.none,
+                                          hintText: 'Temukan nama, menu...',
+                                          hintStyle: TextStyle(
+                                            color:
+                                                Colors.black.withOpacity(0.3),
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Flexible(
+                                      flex: 2,
+                                      child: MultiDropdown<String>(
+                                        items: advSearchOptions,
+                                        controller: advSearchTabletController,
+                                        onSelectionChange: (selectedItems) {
+                                          setState(() {});
+                                        },
+                                        fieldDecoration: const FieldDecoration(
+                                          border: OutlineInputBorder(
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          hintText: '',
+                                          suffixIcon: Icon(
+                                            Icons.filter_list_alt,
+                                          ),
+                                          animateSuffixIcon: false,
+                                          backgroundColor: Colors.transparent,
+                                          borderRadius: 30,
+                                        ),
+                                        dropdownItemDecoration:
+                                            DropdownItemDecoration(
+                                          selectedIcon: Icon(
+                                            Icons.check_box,
+                                            color: hexToColor(
+                                              '#0C9D61',
+                                            ),
+                                          ),
+                                        ),
+                                        dropdownDecoration:
+                                            const DropdownDecoration(
+                                          elevation: 3,
+                                        ),
+                                        chipDecoration: ChipDecoration(
+                                          wrap: false,
+                                          backgroundColor: hexToColor(
+                                            '#E1E1E1',
+                                          ),
+                                          labelStyle: const TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(15),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 15,
-                          ),
-                          duration: const Duration(milliseconds: 100),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 20,
-                                  ),
-                                  child: Image.asset(ImageAssets.raskop),
-                                ),
-                              ),
-                              const Spacer(),
-                              Expanded(
-                                flex: 5,
-                                child: AnimatedContainer(
-                                  duration: const Duration(
-                                    milliseconds: 100,
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 15.w,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: hexToColor('#E1E1E1'),
-                                    ),
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(30),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Flexible(
-                                        flex: 3,
-                                        child: TextFormField(
-                                          controller: search,
-                                          onChanged: (value) {
-                                            debounceOnTablet();
-                                          },
-                                          onFieldSubmitted: (value) {
-                                            onSearchTablet();
-                                          },
-                                          decoration: InputDecoration(
-                                            filled: false,
-                                            border: InputBorder.none,
-                                            hintText:
-                                                'Temukan nama, menu, kontak...',
-                                            hintStyle: TextStyle(
-                                              color:
-                                                  Colors.black.withOpacity(0.3),
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Flexible(
-                                        flex: 2,
-                                        child: MultiDropdown<String>(
-                                          items: advSearchOptions,
-                                          controller: advSearchTabletController,
-                                          onSelectionChange: (selectedItems) {
-                                            onSearchTablet();
-                                          },
-                                          fieldDecoration:
-                                              const FieldDecoration(
-                                            border: OutlineInputBorder(
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            hintText: '',
-                                            suffixIcon: Icon(
-                                              Icons.filter_list_alt,
-                                            ),
-                                            animateSuffixIcon: false,
-                                            backgroundColor: Colors.transparent,
-                                            borderRadius: 30,
-                                          ),
-                                          dropdownItemDecoration:
-                                              DropdownItemDecoration(
-                                            selectedIcon: Icon(
-                                              Icons.check_box,
-                                              color: hexToColor(
-                                                '#0C9D61',
-                                              ),
-                                            ),
-                                          ),
-                                          dropdownDecoration:
-                                              const DropdownDecoration(
-                                            elevation: 3,
-                                          ),
-                                          chipDecoration: ChipDecoration(
-                                            wrap: false,
-                                            backgroundColor: hexToColor(
-                                              '#E1E1E1',
-                                            ),
-                                            labelStyle: const TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 20,
-                              ),
-                              Flexible(
-                                flex: 2,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: 20,
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {},
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: hexToColor('#1F4940'),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        'Pencarian Lanjutan',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                         const SizedBox(
                           height: 10,
                         ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
+                            const Text(
+                              'Petunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: hexToColor('#1f4940'),
@@ -493,7 +464,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   flex: 2,
                                   child: Center(
                                     child: Text(
-                                      'JUMLAH',
+                                      'STOK',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         color: hexToColor('#202224'),
@@ -506,7 +477,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   flex: 5,
                                   child: Center(
                                     child: Text(
-                                      'DESKRIPSI, GAMBAR',
+                                      'DETAIL MENU',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         color: hexToColor('#202224'),
@@ -548,14 +519,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           ),
                         ),
                         Expanded(
-                            child: menu.when(
-                          data: (data) {
-                            return ListView(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              children: data
-                                  .map(
-                                    (e) => Container(
+                          child: menu.when(
+                            data: (data) {
+                              return ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                controller: controller.controller,
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: [
+                                  for (final e in data)
+                                    Container(
                                       margin: EdgeInsets.only(bottom: 7.h),
                                       decoration: BoxDecoration(
                                         border: Border.all(color: Colors.grey),
@@ -579,25 +552,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           const BorderRadius
                                                               .only(
                                                         topLeft:
-                                                            Radius.circular(18),
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                         bottomLeft:
-                                                            Radius.circular(18),
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                       ),
-                                                      color:
-                                                          hexToColor('#E1E1E1'),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
                                                     ),
                                                     child: ClipOval(
                                                       child: Center(
                                                         child: Container(
                                                           width: MediaQuery.of(
-                                                                      context)
-                                                                  .size
-                                                                  .width *
+                                                                context,
+                                                              ).size.width *
                                                               0.05,
                                                           height: MediaQuery.of(
-                                                                      context)
-                                                                  .size
-                                                                  .width *
+                                                                context,
+                                                              ).size.width *
                                                               0.05,
                                                           padding:
                                                               const EdgeInsets
@@ -610,10 +586,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                 const BorderRadius
                                                                     .all(
                                                               Radius.circular(
-                                                                  30),
+                                                                30,
+                                                              ),
                                                             ),
                                                             color: hexToColor(
-                                                                '#FFAD0D'),
+                                                              '#FFAD0D',
+                                                            ),
                                                           ),
                                                           child: const Iconify(
                                                             Zondicons
@@ -658,11 +636,34 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                                       deletePermanent:
                                                                           false,
                                                                     );
-                                                              } catch (e) {
-                                                                // show snackbar or anything else
-                                                                print(
-                                                                  'delete failed : $e',
-                                                                );
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showSuccessToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Menu Success',
+                                                                    description:
+                                                                        'Successfully Delete Menu!',
+                                                                  );
+                                                                });
+                                                              } on ResponseFailure catch (e) {
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Menu Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
                                                               } finally {
                                                                 setState(() {
                                                                   isLoading =
@@ -686,24 +687,27 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           const BorderRadius
                                                               .only(
                                                         topRight:
-                                                            Radius.circular(18),
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                         bottomRight:
-                                                            Radius.circular(18),
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                       ),
-                                                      color:
-                                                          hexToColor('#E1E1E1'),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
                                                     ),
                                                     child: Center(
                                                       child: Container(
                                                         width: MediaQuery.of(
-                                                                    context)
-                                                                .size
-                                                                .width *
+                                                              context,
+                                                            ).size.width *
                                                             0.05,
                                                         height: MediaQuery.of(
-                                                                    context)
-                                                                .size
-                                                                .width *
+                                                              context,
+                                                            ).size.width *
                                                             0.05,
                                                         padding:
                                                             const EdgeInsets
@@ -713,10 +717,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           borderRadius:
                                                               const BorderRadius
                                                                   .all(
-                                                            Radius.circular(30),
+                                                            Radius.circular(
+                                                              30,
+                                                            ),
                                                           ),
                                                           color: hexToColor(
-                                                              '#F64C4C'),
+                                                            '#F64C4C',
+                                                          ),
                                                         ),
                                                         child: const Iconify(
                                                           Eva.trash_fill,
@@ -732,8 +739,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         ),
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            border:
-                                                Border.all(color: Colors.grey),
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                            ),
                                             borderRadius:
                                                 BorderRadius.circular(18),
                                             color: Colors.white,
@@ -819,8 +827,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w500,
-                                                      color:
-                                                          hexToColor('#202224'),
+                                                      color: hexToColor(
+                                                        '#202224',
+                                                      ),
                                                       fontSize: 14,
                                                       overflow:
                                                           TextOverflow.ellipsis,
@@ -860,7 +869,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           TextButton.styleFrom(
                                                         backgroundColor:
                                                             hexToColor(
-                                                                '#f6e9e0'),
+                                                          '#f6e9e0',
+                                                        ),
                                                         minimumSize: const Size(
                                                           double.infinity,
                                                           40,
@@ -872,7 +882,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           fontWeight:
                                                               FontWeight.w700,
                                                           color: hexToColor(
-                                                              '#E38D5D'),
+                                                            '#E38D5D',
+                                                          ),
                                                           fontSize: 14,
                                                         ),
                                                       ),
@@ -906,19 +917,58 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         ),
                                       ),
                                     ),
-                                  )
-                                  .toList(),
-                            );
-                          },
-                          loading: () => const Center(
-                            child: CustomLoadingIndicator(),
-                          ),
-                          error: (error, stackTrace) => Center(
-                            child: Text(
-                              error.toString() + stackTrace.toString(),
+                                  if (controller.hasMore)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 16),
+                                      child: Center(
+                                        child: CustomLoadingIndicator(),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                            loading: () => const Center(
+                              child: CustomLoadingIndicator(),
                             ),
+                            error: (error, stackTrace) {
+                              final err = error as ResponseFailure;
+                              final finalErr =
+                                  err.allError as Map<String, dynamic>;
+                              return Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${finalErr['name']} - ${finalErr['message']}',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed: controller.refresh,
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: hexToColor('#1F4940'),
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                            color: hexToColor('#E1E1E1'),
+                                          ),
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(50),
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Refresh',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -947,10 +997,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                       SizedBox(
                         height: 20.h,
                       ),
-                      Container(
+                      SizedBox(
                         height: 320,
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
@@ -959,7 +1009,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 color: Colors.grey.withOpacity(0.2),
                                 spreadRadius: 2,
                                 blurRadius: 5,
-                                offset: Offset(0, 3),
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
@@ -977,16 +1027,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: imageUri == null
-                                      ? Center(
-                                          child: Text('Gambar Belum Diunggah'))
+                                      ? const Center(
+                                          child: Text('Gambar Belum Diunggah'),
+                                        )
                                       : Image.network(
                                           'https://${BasePaths.baseAPIURL}/${imageUri}',
                                           fit: BoxFit
                                               .cover, // Menggunakan BoxFit.cover
-                                          loadingBuilder: (BuildContext context,
-                                              Widget child,
-                                              ImageChunkEvent?
-                                                  loadingProgress) {
+                                          loadingBuilder: (
+                                            BuildContext context,
+                                            Widget child,
+                                            ImageChunkEvent? loadingProgress,
+                                          ) {
                                             if (loadingProgress == null)
                                               return child;
                                             return Center(
@@ -1003,12 +1055,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               ),
                                             );
                                           },
-                                          errorBuilder: (BuildContext context,
-                                              Object error,
-                                              StackTrace? stackTrace) {
-                                            return Center(
-                                                child: Text(
-                                                    'Failed to load image'));
+                                          errorBuilder: (
+                                            BuildContext context,
+                                            Object error,
+                                            StackTrace? stackTrace,
+                                          ) {
+                                            return const Center(
+                                              child: Text(
+                                                'Failed to load image',
+                                              ),
+                                            );
                                           },
                                         ),
                                 ),
@@ -1022,16 +1078,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     child: Text(
                                       getFileName(imageUri),
                                       maxLines: 1,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontWeight: FontWeight.w500,
                                         fontSize: 14,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                  )
+                                  ),
                                 ],
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -1154,8 +1210,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             SizedBox(
                                               width: itemWidth.w - 8,
                                               child: _buildTextField(
-                                                'Jumlah',
-                                                'Masukkan jumlah saat ini',
+                                                'Stok',
+                                                'Masukkan jumlah stok saat ini',
                                                 jumlah,
                                                 TextInputType.number,
                                                 16,
@@ -1180,7 +1236,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   Expanded(
                                     flex: 2,
                                     child: Container(
-                                      padding: EdgeInsets.all(12),
+                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(16),
@@ -1189,7 +1245,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             color: Colors.grey.withOpacity(0.2),
                                             spreadRadius: 2,
                                             blurRadius: 5,
-                                            offset: Offset(0, 3),
+                                            offset: const Offset(0, 3),
                                           ),
                                         ],
                                       ),
@@ -1210,26 +1266,32 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               ),
                                               clipBehavior: Clip.hardEdge,
                                               child: imageFile == null
-                                                  ? Center(
+                                                  ? const Center(
                                                       child: Text(
-                                                          'Gambar Belum Diunggah'))
+                                                        'Gambar Belum Diunggah',
+                                                      ),
+                                                    )
                                                   : FutureBuilder<File>(
                                                       future: Future.value(
-                                                          File(imageFile!)),
+                                                        File(imageFile!),
+                                                      ),
                                                       builder:
                                                           (context, snapshot) {
                                                         if (snapshot
                                                                 .connectionState ==
                                                             ConnectionState
                                                                 .waiting) {
-                                                          return Center(
-                                                              child:
-                                                                  CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                          return const Center(
+                                                            child:
+                                                                CircularProgressIndicator(),
+                                                          ); // Tampilkan indikator pemuatan
                                                         } else if (snapshot
                                                             .hasError) {
-                                                          return Center(
-                                                              child: Text(
-                                                                  'Failed to load image')); // Tampilkan pesan kesalahan
+                                                          return const Center(
+                                                            child: Text(
+                                                              'Failed to load image',
+                                                            ),
+                                                          ); // Tampilkan pesan kesalahan
                                                         } else {
                                                           return Image.file(
                                                             snapshot.data!,
@@ -1250,7 +1312,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                   imageFile != null
                                                       ? getFileName(imageFile)
                                                       : 'Unknown.jpg',
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontFamily: 'Inter',
                                                     fontWeight: FontWeight.w500,
                                                     fontSize: 14,
@@ -1269,15 +1331,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                     size: 32,
                                                   ),
                                                   padding: EdgeInsets.zero,
-                                                  constraints: BoxConstraints(),
+                                                  constraints:
+                                                      const BoxConstraints(),
                                                 ),
                                               ),
                                             ],
-                                          )
+                                          ),
                                         ],
                                       ),
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
                             );
@@ -1308,7 +1371,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 price: double.parse(
                                                   harga.text,
                                                 ),
-                                                qty: double.parse(
+                                                qty: int.parse(
                                                   jumlah.text,
                                                 ),
                                                 category: kategori.text,
@@ -1317,11 +1380,27 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               ),
                                               imageFile: imageFile,
                                             );
+                                        setState(() {
+                                          Toast().showSuccessToast(
+                                            context: context,
+                                            title: 'Create Menu Success',
+                                            description:
+                                                'Successfully Created New Menu!',
+                                          );
+                                        });
                                         closeCreatePanel();
                                       }
-                                    } catch (e) {
-                                      //show snackbar or anything else
-                                      print("Error occurred: $e");
+                                    } on ResponseFailure catch (e) {
+                                      final err =
+                                          e.allError as Map<String, dynamic>;
+                                      setState(() {
+                                        Toast().showErrorToast(
+                                          context: context,
+                                          title: 'Create Menu Failed',
+                                          description:
+                                              '${err['name']} - ${err['message']}',
+                                        );
+                                      });
                                     } finally {
                                       setState(() {
                                         isLoading = false;
@@ -1342,9 +1421,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 horizontal: 8.w,
                               ),
                               child: isLoading
-                                  ? const LinearProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
+                                  ? const CustomLoadingIndicator(
+                                      color: Colors.white,
                                     )
                                   : const Text(
                                       AppStrings.tambahBtn,
@@ -1440,8 +1518,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             SizedBox(
                                               width: itemWidth.w - 8,
                                               child: _buildTextField(
-                                                'Jumlah',
-                                                'Masukkan jumlah saat ini',
+                                                'Stok',
+                                                'Masukkan jumlah stok saat ini',
                                                 jumlah,
                                                 TextInputType.number,
                                                 16,
@@ -1466,7 +1544,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   Expanded(
                                     flex: 2,
                                     child: Container(
-                                      padding: EdgeInsets.all(12),
+                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(16),
@@ -1475,7 +1553,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                             color: Colors.grey.withOpacity(0.2),
                                             spreadRadius: 2,
                                             blurRadius: 5,
-                                            offset: Offset(0, 3),
+                                            offset: const Offset(0, 3),
                                           ),
                                         ],
                                       ),
@@ -1498,21 +1576,25 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               child: imageFile != null
                                                   ? FutureBuilder<File>(
                                                       future: Future.value(
-                                                          File(imageFile!)),
+                                                        File(imageFile!),
+                                                      ),
                                                       builder:
                                                           (context, snapshot) {
                                                         if (snapshot
                                                                 .connectionState ==
                                                             ConnectionState
                                                                 .waiting) {
-                                                          return Center(
-                                                              child:
-                                                                  CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                          return const Center(
+                                                            child:
+                                                                CircularProgressIndicator(),
+                                                          ); // Tampilkan indikator pemuatan
                                                         } else if (snapshot
                                                             .hasError) {
-                                                          return Center(
-                                                              child: Text(
-                                                                  'Failed to load image')); // Tampilkan pesan kesalahan
+                                                          return const Center(
+                                                            child: Text(
+                                                              'Failed to load image',
+                                                            ),
+                                                          ); // Tampilkan pesan kesalahan
                                                         } else {
                                                           return Image.file(
                                                             snapshot.data!,
@@ -1526,12 +1608,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           'https://${BasePaths.baseAPIURL}/$imageUri',
                                                           fit: BoxFit
                                                               .cover, // Menggunakan BoxFit.cover
-                                                          loadingBuilder:
-                                                              (BuildContext
-                                                                      context,
-                                                                  Widget child,
-                                                                  ImageChunkEvent?
-                                                                      loadingProgress) {
+                                                          loadingBuilder: (
+                                                            BuildContext
+                                                                context,
+                                                            Widget child,
+                                                            ImageChunkEvent?
+                                                                loadingProgress,
+                                                          ) {
                                                             if (loadingProgress ==
                                                                 null)
                                                               return child;
@@ -1549,20 +1632,24 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                               ),
                                                             );
                                                           },
-                                                          errorBuilder:
-                                                              (BuildContext
-                                                                      context,
-                                                                  Object error,
-                                                                  StackTrace?
-                                                                      stackTrace) {
-                                                            return Center(
-                                                                child: Text(
-                                                                    'Failed to load image'));
+                                                          errorBuilder: (
+                                                            BuildContext
+                                                                context,
+                                                            Object error,
+                                                            StackTrace?
+                                                                stackTrace,
+                                                          ) {
+                                                            return const Center(
+                                                              child: Text(
+                                                                'Failed to load image',
+                                                              ),
+                                                            );
                                                           },
                                                         )
-                                                      : Center(
+                                                      : const Center(
                                                           child: Text(
-                                                              'Gambar Belum Diunggah'),
+                                                            'Gambar Belum Diunggah',
+                                                          ),
                                                         ),
                                             ),
                                           ),
@@ -1577,10 +1664,11 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                       ? getFileName(imageFile)
                                                       : imageUri != null
                                                           ? getFileName(
-                                                              imageUri)
+                                                              imageUri,
+                                                            )
                                                           : "Unknown.jpg",
                                                   maxLines: 1,
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontFamily: 'Inter',
                                                     fontWeight: FontWeight.w500,
                                                     fontSize: 14,
@@ -1601,15 +1689,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                     size: 32,
                                                   ),
                                                   padding: EdgeInsets.zero,
-                                                  constraints: BoxConstraints(),
+                                                  constraints:
+                                                      const BoxConstraints(),
                                                 ),
                                               ),
                                             ],
-                                          )
+                                          ),
                                         ],
                                       ),
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
                             );
@@ -1639,7 +1728,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 price: double.parse(
                                                   harga.text,
                                                 ),
-                                                qty: double.parse(
+                                                qty: int.parse(
                                                   jumlah.text,
                                                 ),
                                                 category: kategori.text,
@@ -1649,11 +1738,27 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               id: id!,
                                               imageFile: imageFile,
                                             );
+                                        setState(() {
+                                          Toast().showSuccessToast(
+                                            context: context,
+                                            title: 'Edit Menu Success',
+                                            description:
+                                                'Successfully Edit Menu!',
+                                          );
+                                        });
                                         closeEditPanel();
                                       }
-                                    } catch (e) {
-                                      // show snackbar or anything else
-                                      print("Error occurred: $e");
+                                    } on ResponseFailure catch (e) {
+                                      final err =
+                                          e.allError as Map<String, dynamic>;
+                                      setState(() {
+                                        Toast().showErrorToast(
+                                          context: context,
+                                          title: 'Edit Menu Failed',
+                                          description:
+                                              '${err['name']} - ${err['message']}',
+                                        );
+                                      });
                                     } finally {
                                       setState(() {
                                         isLoading = false;
@@ -1674,9 +1779,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 horizontal: 8.w,
                               ),
                               child: isLoading
-                                  ? const LinearProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
+                                  ? const CustomLoadingIndicator(
+                                      color: Colors.white,
                                     )
                                   : const Text(
                                       'Edit',
@@ -1762,12 +1866,19 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           ),
                                           child: TextFormField(
                                             controller: search,
-                                            onChanged: (value) {
-                                              debounceOnPhone(); // Debounce biar nggak spam API
-                                            },
-                                            onFieldSubmitted: (value) {
-                                              onSearchPhone();
-                                            },
+                                            onChanged: advSearchPhoneController
+                                                    .selectedItems.isEmpty
+                                                ? (value) {}
+                                                : (value) {
+                                                    debounceOnPhone();
+                                                  },
+                                            onFieldSubmitted:
+                                                advSearchPhoneController
+                                                        .selectedItems.isEmpty
+                                                    ? (value) {}
+                                                    : (value) {
+                                                        onSearchPhone();
+                                                      },
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -1791,7 +1902,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           controller: advSearchPhoneController,
                                           items: advSearchOptions,
                                           onSelectionChange: (selectedItems) {
-                                            onSearchPhone();
+                                            setState(() {});
                                           },
                                           fieldDecoration:
                                               const FieldDecoration(
@@ -1983,78 +2094,81 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           ),
                         ),
                         Expanded(
-                            child: menu.when(
-                          data: (data) {
-                            return ListView(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              children: data
-                                  .map((e) => Container(
-                                        margin: EdgeInsets.only(bottom: 7.h),
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(18),
-                                          color: hexToColor('#E1E1E1'),
-                                        ),
-                                        child: Slidable(
-                                          startActionPane: ActionPane(
-                                            extentRatio: 0.2,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      openEditPanel(request: e);
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topLeft:
-                                                              Radius.circular(
-                                                                  18),
-                                                          bottomLeft:
-                                                              Radius.circular(
-                                                                  18),
+                          child: menu.when(
+                            data: (data) {
+                              return ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                controller: controller.controller,
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: [
+                                  for (final e in data)
+                                    Container(
+                                      margin: EdgeInsets.only(bottom: 7.h),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(18),
+                                        color: hexToColor('#E1E1E1'),
+                                      ),
+                                      child: Slidable(
+                                        startActionPane: ActionPane(
+                                          extentRatio: 0.2,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    openEditPanel(request: e);
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
-                                                        color: hexToColor(
-                                                            '#E1E1E1'),
+                                                        bottomLeft:
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                       ),
-                                                      child: ClipOval(
-                                                        child: Center(
-                                                          child: Container(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 10.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  const BorderRadius
-                                                                      .all(
-                                                                Radius.circular(
-                                                                    30),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
+                                                    ),
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          margin: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 10.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
                                                               ),
-                                                              color: hexToColor(
-                                                                  '#FFAD0D'),
                                                             ),
-                                                            child:
-                                                                const Iconify(
-                                                              Zondicons
-                                                                  .edit_pencil,
-                                                              color:
-                                                                  Colors.white,
+                                                            color: hexToColor(
+                                                              '#FFAD0D',
                                                             ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Zondicons
+                                                                .edit_pencil,
+                                                            color: Colors.white,
                                                           ),
                                                         ),
                                                       ),
@@ -2062,107 +2176,130 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                   ),
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                          endActionPane: ActionPane(
-                                            extentRatio: 0.2,
-                                            motion: const BehindMotion(),
-                                            children: [
-                                              Expanded(
-                                                child: SizedBox.expand(
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      showConfirmationDialog(
-                                                        context: context,
-                                                        title: 'Hapus Menu?',
-                                                        onDelete: isLoading
-                                                            ? () {}
-                                                            : () async {
+                                            ),
+                                          ],
+                                        ),
+                                        endActionPane: ActionPane(
+                                          extentRatio: 0.2,
+                                          motion: const BehindMotion(),
+                                          children: [
+                                            Expanded(
+                                              child: SizedBox.expand(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    showConfirmationDialog(
+                                                      context: context,
+                                                      title: 'Hapus Menu?',
+                                                      onDelete: isLoading
+                                                          ? () {}
+                                                          : () async {
+                                                              setState(() {
+                                                                isLoading =
+                                                                    true;
+                                                              });
+                                                              try {
+                                                                await ref
+                                                                    .read(
+                                                                      menuControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                    .deleteData(
+                                                                      id: e.id!,
+                                                                      deletePermanent:
+                                                                          false,
+                                                                    );
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showSuccessToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Menu Success',
+                                                                    description:
+                                                                        'Successfully Delete Menu!',
+                                                                  );
+                                                                });
+                                                              } on ResponseFailure catch (e) {
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Menu Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
+                                                              } finally {
                                                                 setState(() {
                                                                   isLoading =
-                                                                      true;
+                                                                      false;
+                                                                  context.pop();
+                                                                  FocusScope.of(
+                                                                    context,
+                                                                  ).unfocus();
                                                                 });
-                                                                try {
-                                                                  await ref
-                                                                      .read(
-                                                                        menuControllerProvider
-                                                                            .notifier,
-                                                                      )
-                                                                      .deleteData(
-                                                                        id: e
-                                                                            .id!,
-                                                                        deletePermanent:
-                                                                            false,
-                                                                      );
-                                                                } catch (e) {
-                                                                  // show snackbar or anything else
-                                                                  print(
-                                                                    'delete failed : $e',
-                                                                  );
-                                                                } finally {
-                                                                  setState(() {
-                                                                    isLoading =
-                                                                        false;
-                                                                    context
-                                                                        .pop();
-                                                                    FocusScope
-                                                                        .of(
-                                                                      context,
-                                                                    ).unfocus();
-                                                                  });
-                                                                }
-                                                              },
-                                                        content:
-                                                            'Menu ini akan terhapus dari halaman ini.',
-                                                        isWideScreen: false,
-                                                        isLoading: isLoading,
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            const BorderRadius
-                                                                .only(
-                                                          topRight:
-                                                              Radius.circular(
-                                                                  18),
-                                                          bottomRight:
-                                                              Radius.circular(
-                                                                  18),
+                                                              }
+                                                            },
+                                                      content:
+                                                          'Menu ini akan terhapus dari halaman ini.',
+                                                      isWideScreen: false,
+                                                      isLoading: isLoading,
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topRight:
+                                                            Radius.circular(
+                                                          18,
                                                         ),
-                                                        color: hexToColor(
-                                                            '#E1E1E1'),
+                                                        bottomRight:
+                                                            Radius.circular(
+                                                          18,
+                                                        ),
                                                       ),
-                                                      child: ClipOval(
-                                                        child: Center(
-                                                          child: Container(
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            margin: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 10.w,
-                                                              vertical: 8.h,
-                                                            ),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  const BorderRadius
-                                                                      .all(
-                                                                Radius.circular(
-                                                                    30),
+                                                      color: hexToColor(
+                                                        '#E1E1E1',
+                                                      ),
+                                                    ),
+                                                    child: ClipOval(
+                                                      child: Center(
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          margin: EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 10.w,
+                                                            vertical: 8.h,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                30,
                                                               ),
-                                                              color: hexToColor(
-                                                                  '#F64C4C'),
                                                             ),
-                                                            child:
-                                                                const Iconify(
-                                                              Eva.trash_fill,
-                                                              color:
-                                                                  Colors.white,
+                                                            color: hexToColor(
+                                                              '#F64C4C',
                                                             ),
+                                                          ),
+                                                          child: const Iconify(
+                                                            Eva.trash_fill,
+                                                            color: Colors.white,
                                                           ),
                                                         ),
                                                       ),
@@ -2170,161 +2307,200 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                   ),
                                                 ),
                                               ),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.grey,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: Colors.white,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 8.h,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                flex: 3,
+                                                child: Text(
+                                                  e.id!,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 4,
+                                                child: Text(
+                                                  e.name,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 4,
+                                                child: Text(
+                                                  e.category,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        hexToColor('#202224'),
+                                                    fontSize: 12,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 5.h,
+                                                    ),
+                                                    child: TextButton(
+                                                      onPressed: () {
+                                                        openDetailPanel(
+                                                          detailMenu:
+                                                              MenuEntity(
+                                                            id: e.id,
+                                                            name: e.name,
+                                                            price: e.price,
+                                                            category:
+                                                                e.category,
+                                                            qty: e.qty,
+                                                            description:
+                                                                e.description,
+                                                            isActive:
+                                                                e.isActive,
+                                                            imageUri:
+                                                                e.imageUri,
+                                                          ),
+                                                        );
+                                                      },
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                          '#f6e9e0',
+                                                        ),
+                                                        minimumSize: const Size(
+                                                          double.infinity,
+                                                          40,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Lihat',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: hexToColor(
+                                                            '#E38D5D',
+                                                          ),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Center(
+                                                  child: PhoneSwitchWidget(
+                                                    isON: e.isActive!,
+                                                    onSwitch: (val) async {
+                                                      return ref
+                                                          .read(
+                                                            menuControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .toggleMenuStatus(
+                                                            request: e,
+                                                            id: e.id!,
+                                                            currentStatus:
+                                                                e.isActive!,
+                                                          );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.grey),
-                                              borderRadius:
-                                                  BorderRadius.circular(18),
-                                              color: Colors.white,
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 10.w,
-                                              vertical: 8.h,
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Text(
-                                                    e.id!,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 4,
-                                                  child: Text(
-                                                    e.name,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 4,
-                                                  child: Text(
-                                                    e.category,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color:
-                                                          hexToColor('#202224'),
-                                                      fontSize: 12,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Center(
-                                                    child: Padding(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                        horizontal: 5.h,
-                                                      ),
-                                                      child: TextButton(
-                                                        onPressed: () {
-                                                          openDetailPanel(
-                                                            detailMenu:
-                                                                MenuEntity(
-                                                              id: e.id,
-                                                              name: e.name,
-                                                              price: e.price,
-                                                              category:
-                                                                  e.category,
-                                                              qty: e.qty,
-                                                              description:
-                                                                  e.description,
-                                                              isActive:
-                                                                  e.isActive,
-                                                              imageUri:
-                                                                  e.imageUri,
-                                                            ),
-                                                          );
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              hexToColor(
-                                                                  '#f6e9e0'),
-                                                          minimumSize:
-                                                              const Size(
-                                                            double.infinity,
-                                                            40,
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'Lihat',
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: hexToColor(
-                                                                '#E38D5D'),
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Center(
-                                                    child: PhoneSwitchWidget(
-                                                      isON: e.isActive!,
-                                                      onSwitch: (val) async {
-                                                        return ref
-                                                            .read(
-                                                              menuControllerProvider
-                                                                  .notifier,
-                                                            )
-                                                            .toggleMenuStatus(
-                                                              request: e,
-                                                              id: e.id!,
-                                                              currentStatus:
-                                                                  e.isActive!,
-                                                            );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (controller.hasMore)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 16),
+                                      child: Center(
+                                        child: CustomLoadingIndicator(),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                            loading: () => const Center(
+                              child: CustomLoadingIndicator(),
+                            ),
+                            error: (error, stackTrace) {
+                              final err = error as ResponseFailure;
+                              final finalErr =
+                                  err.allError as Map<String, dynamic>;
+                              return Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${finalErr['name']} - ${finalErr['message']}',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed: controller.refresh,
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: hexToColor('#1F4940'),
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                            color: hexToColor('#E1E1E1'),
+                                          ),
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(50),
                                           ),
                                         ),
-                                      ))
-                                  .toList(),
-                            );
-                          },
-                          loading: () => const Center(
-                            child: CustomLoadingIndicator(),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Refresh',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                          error: (error, stackTrace) => Center(
-                            child: Text(
-                              error.toString() + stackTrace.toString(),
-                            ),
-                          ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -2353,10 +2529,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                       SizedBox(
                         height: 20.h,
                       ),
-                      Container(
+                      SizedBox(
                         height: 320,
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
@@ -2365,7 +2541,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 color: Colors.grey.withOpacity(0.2),
                                 spreadRadius: 2,
                                 blurRadius: 5,
-                                offset: Offset(0, 3),
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
@@ -2383,16 +2559,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: imageUri == null
-                                      ? Center(
-                                          child: Text('Gambar Belum Diunggah'))
+                                      ? const Center(
+                                          child: Text('Gambar Belum Diunggah'),
+                                        )
                                       : Image.network(
                                           'https://${BasePaths.baseAPIURL}/${imageUri}',
                                           fit: BoxFit
                                               .cover, // Menggunakan BoxFit.cover
-                                          loadingBuilder: (BuildContext context,
-                                              Widget child,
-                                              ImageChunkEvent?
-                                                  loadingProgress) {
+                                          loadingBuilder: (
+                                            BuildContext context,
+                                            Widget child,
+                                            ImageChunkEvent? loadingProgress,
+                                          ) {
                                             if (loadingProgress == null)
                                               return child;
                                             return Center(
@@ -2409,12 +2587,16 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               ),
                                             );
                                           },
-                                          errorBuilder: (BuildContext context,
-                                              Object error,
-                                              StackTrace? stackTrace) {
-                                            return Center(
-                                                child: Text(
-                                                    'Failed to load image'));
+                                          errorBuilder: (
+                                            BuildContext context,
+                                            Object error,
+                                            StackTrace? stackTrace,
+                                          ) {
+                                            return const Center(
+                                              child: Text(
+                                                'Failed to load image',
+                                              ),
+                                            );
                                           },
                                         ),
                                 ),
@@ -2428,7 +2610,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     child: Text(
                                       getFileName(imageUri),
                                       maxLines: 1,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontWeight: FontWeight.w500,
                                         fontSize: 14,
@@ -2437,7 +2619,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                     ),
                                   ),
                                 ],
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -2509,7 +2691,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         height: 20.h,
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(0),
+                        padding: EdgeInsets.zero,
                         child: Form(
                           key: createKey,
                           child: Column(
@@ -2536,8 +2718,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 12.sp,
                               ),
                               _buildTextField(
-                                'Jumlah',
-                                'Masukkan jumlah saat ini',
+                                'Stok',
+                                'Masukkan jumlah stok saat ini',
                                 jumlah,
                                 TextInputType.number,
                                 12.sp,
@@ -2566,25 +2748,31 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           borderRadius:
                                               BorderRadius.circular(16),
                                           child: imageFile == null
-                                              ? Center(
+                                              ? const Center(
                                                   child: Text(
-                                                      'Gambar Belum Diunggah'))
+                                                    'Gambar Belum Diunggah',
+                                                  ),
+                                                )
                                               : FutureBuilder<File>(
                                                   future: Future.value(
-                                                      File(imageFile!)),
+                                                    File(imageFile!),
+                                                  ),
                                                   builder: (context, snapshot) {
                                                     if (snapshot
                                                             .connectionState ==
                                                         ConnectionState
                                                             .waiting) {
-                                                      return Center(
-                                                          child:
-                                                              CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                      return const Center(
+                                                        child:
+                                                            CircularProgressIndicator(),
+                                                      ); // Tampilkan indikator pemuatan
                                                     } else if (snapshot
                                                         .hasError) {
-                                                      return Center(
-                                                          child: Text(
-                                                              'Failed to load image')); // Tampilkan pesan kesalahan
+                                                      return const Center(
+                                                        child: Text(
+                                                          'Failed to load image',
+                                                        ),
+                                                      ); // Tampilkan pesan kesalahan
                                                     } else {
                                                       return Image.file(
                                                         snapshot.data!,
@@ -2595,9 +2783,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 ),
                                         ),
                                       ),
-                                      SizedBox(
-                                          height:
-                                              4), // Menggunakan SizedBox untuk jarak
+                                      const SizedBox(
+                                        height: 4,
+                                      ), // Menggunakan SizedBox untuk jarak
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -2607,7 +2795,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               imageFile != null
                                                   ? getFileName(imageFile)
                                                   : 'Unknown.jpg',
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontFamily: 'Inter',
                                                 fontWeight: FontWeight.w500,
                                                 fontSize: 14,
@@ -2626,7 +2814,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 size: 32,
                                               ),
                                               padding: EdgeInsets.zero,
-                                              constraints: BoxConstraints(),
+                                              constraints:
+                                                  const BoxConstraints(),
                                             ),
                                           ),
                                         ],
@@ -2663,7 +2852,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                         price: double.parse(
                                                           harga.text,
                                                         ),
-                                                        qty: double.parse(
+                                                        qty: int.parse(
                                                           jumlah.text,
                                                         ),
                                                         category: kategori.text,
@@ -2673,11 +2862,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                       ),
                                                       imageFile: imageFile,
                                                     );
+                                                setState(() {
+                                                  Toast().showSuccessToast(
+                                                    context: context,
+                                                    title:
+                                                        'Create Menu Success',
+                                                    description:
+                                                        'Successfully Created New Menu!',
+                                                  );
+                                                });
                                                 closeCreatePanel();
                                               }
-                                            } catch (e) {
-                                              //show snackbar or anything else
-                                              print("Error occurred: $e");
+                                            } on ResponseFailure catch (e) {
+                                              final err = e.allError
+                                                  as Map<String, dynamic>;
+                                              setState(() {
+                                                Toast().showErrorToast(
+                                                  context: context,
+                                                  title: 'Create Menu Failed',
+                                                  description:
+                                                      '${err['name']} - ${err['message']}',
+                                                );
+                                              });
                                             } finally {
                                               setState(() {
                                                 isLoading = false;
@@ -2698,20 +2904,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         horizontal: 8.w,
                                       ),
                                       child: isLoading
-                                          ? Row(
+                                          ? const Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
                                                 SizedBox(
                                                   width: 100,
                                                   height: 20,
-                                                  child:
-                                                      const LinearProgressIndicator(
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                            Color>(
-                                                      Colors.white,
-                                                    ),
+                                                  child: CustomLoadingIndicator(
+                                                    color: Colors.white,
                                                   ),
                                                 ),
                                               ],
@@ -2760,7 +2961,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                         height: 20.h,
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(0),
+                        padding: EdgeInsets.zero,
                         child: Form(
                           key: editKey,
                           child: Column(
@@ -2787,8 +2988,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                 12.sp,
                               ),
                               _buildTextField(
-                                'Jumlah',
-                                'Masukkan jumlah saat ini',
+                                'Stok',
+                                'Masukkan jumlah stok saat ini',
                                 jumlah,
                                 TextInputType.number,
                                 12.sp,
@@ -2819,20 +3020,24 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                           child: imageFile != null
                                               ? FutureBuilder<File>(
                                                   future: Future.value(
-                                                      File(imageFile!)),
+                                                    File(imageFile!),
+                                                  ),
                                                   builder: (context, snapshot) {
                                                     if (snapshot
                                                             .connectionState ==
                                                         ConnectionState
                                                             .waiting) {
-                                                      return Center(
-                                                          child:
-                                                              CircularProgressIndicator()); // Tampilkan indikator pemuatan
+                                                      return const Center(
+                                                        child:
+                                                            CircularProgressIndicator(),
+                                                      ); // Tampilkan indikator pemuatan
                                                     } else if (snapshot
                                                         .hasError) {
-                                                      return Center(
-                                                          child: Text(
-                                                              'Failed to load image')); // Tampilkan pesan kesalahan
+                                                      return const Center(
+                                                        child: Text(
+                                                          'Failed to load image',
+                                                        ),
+                                                      ); // Tampilkan pesan kesalahan
                                                     } else {
                                                       return Image.file(
                                                         snapshot.data!,
@@ -2846,11 +3051,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                       'https://${BasePaths.baseAPIURL}/$imageUri',
                                                       fit: BoxFit
                                                           .cover, // Menggunakan BoxFit.cover
-                                                      loadingBuilder: (BuildContext
-                                                              context,
-                                                          Widget child,
-                                                          ImageChunkEvent?
-                                                              loadingProgress) {
+                                                      loadingBuilder: (
+                                                        BuildContext context,
+                                                        Widget child,
+                                                        ImageChunkEvent?
+                                                            loadingProgress,
+                                                      ) {
                                                         if (loadingProgress ==
                                                             null) return child;
                                                         return Center(
@@ -2868,25 +3074,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                           ),
                                                         );
                                                       },
-                                                      errorBuilder:
-                                                          (BuildContext context,
-                                                              Object error,
-                                                              StackTrace?
-                                                                  stackTrace) {
-                                                        return Center(
-                                                            child: Text(
-                                                                'Failed to load image'));
+                                                      errorBuilder: (
+                                                        BuildContext context,
+                                                        Object error,
+                                                        StackTrace? stackTrace,
+                                                      ) {
+                                                        return const Center(
+                                                          child: Text(
+                                                            'Failed to load image',
+                                                          ),
+                                                        );
                                                       },
                                                     )
-                                                  : Center(
+                                                  : const Center(
                                                       child: Text(
-                                                          'Gambar Belum Diunggah'),
+                                                        'Gambar Belum Diunggah',
+                                                      ),
                                                     ),
                                         ),
                                       ),
-                                      SizedBox(
-                                          height:
-                                              4), // Menggunakan SizedBox untuk jarak
+                                      const SizedBox(
+                                        height: 4,
+                                      ), // Menggunakan SizedBox untuk jarak
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -2899,7 +3108,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                       ? getFileName(imageUri)
                                                       : "Unknown.jpg",
                                               maxLines: 1,
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontFamily: 'Inter',
                                                 fontWeight: FontWeight.w500,
                                                 fontSize: 14,
@@ -2918,7 +3127,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 size: 32,
                                               ),
                                               padding: EdgeInsets.zero,
-                                              constraints: BoxConstraints(),
+                                              constraints:
+                                                  const BoxConstraints(),
                                             ),
                                           ),
                                         ],
@@ -2954,7 +3164,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                         price: double.parse(
                                                           harga.text,
                                                         ),
-                                                        qty: double.parse(
+                                                        qty: int.parse(
                                                           jumlah.text,
                                                         ),
                                                         category: kategori.text,
@@ -2968,9 +3178,17 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                     );
                                                 closeEditPanel();
                                               }
-                                            } catch (e) {
-                                              // show snackbar or anything else
-                                              print("Error occurred: $e");
+                                            } on ResponseFailure catch (e) {
+                                              final err = e.allError
+                                                  as Map<String, dynamic>;
+                                              setState(() {
+                                                Toast().showErrorToast(
+                                                  context: context,
+                                                  title: 'Edit Menu Failed',
+                                                  description:
+                                                      '${err['name']} - ${err['message']}',
+                                                );
+                                              });
                                             } finally {
                                               setState(() {
                                                 isLoading = false;
@@ -2991,20 +3209,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                         horizontal: 8.w,
                                       ),
                                       child: isLoading
-                                          ? Row(
+                                          ? const Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
                                                 SizedBox(
                                                   width: 100,
                                                   height: 20,
-                                                  child:
-                                                      const LinearProgressIndicator(
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                            Color>(
-                                                      Colors.white,
-                                                    ),
+                                                  child: CustomLoadingIndicator(
+                                                    color: Colors.white,
                                                   ),
                                                 ),
                                               ],
@@ -3061,6 +3274,12 @@ Widget _buildTextField(
           height: 5.h,
         ),
         TextFormField(
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Required Field';
+            }
+            return null;
+          },
           keyboardType: keytype,
           controller: controller,
           style: const TextStyle(
@@ -3084,6 +3303,11 @@ Widget _buildTextField(
               borderRadius: BorderRadius.all(Radius.circular(15)),
             ),
           ),
+          inputFormatters: label == 'Harga'
+              ? [
+                  CurrencyInputFormatter(),
+                ]
+              : [],
         ),
       ],
     ),

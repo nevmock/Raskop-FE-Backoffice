@@ -94,8 +94,7 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
   }
 
   void onSearch() {
-    ref.read(menuControllerProvider.notifier).fetchMenus(
-      // search: search.text,
+    ref.read(menuControllerProvider.notifier).onSearch(
       advSearch: {
         'withDeleted': false,
         'isActive': true,
@@ -232,7 +231,7 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                     MenuType.all) {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'withDeleted': false,
                                       'isActive': true,
@@ -241,7 +240,7 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                 } else {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'category':
                                           menuTypeOptions.elementAt(idx).$2,
@@ -372,22 +371,97 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                                     },
                                                     onAdd: () {
                                                       setState(() {
-                                                        widget.orderMenu.add(
-                                                          (
+                                                        // if (widget.orderMenu.isNotEmpty && widget.orderList.isNotEmpty) {
+                                                        //   // widget.orderList.where((e) => );
+                                                        // }
+                                                        // widget.orderMenu.add(
+                                                        //   (
+                                                        //     menu.name,
+                                                        //     menu.price,
+                                                        //     qty,
+                                                        //     notes.text
+                                                        //   ),
+                                                        // );
+                                                        // widget.orderList.add({
+                                                        //   'id': menu.id,
+                                                        //   'quantity': qty,
+                                                        //   if (notes
+                                                        //       .text.isNotEmpty)
+                                                        //     'note': notes.text,
+                                                        // });
+
+                                                        // 1. Cek apakah menu sudah ada di orderMenu berdasarkan nama menu
+                                                        final menuIndex = widget
+                                                            .orderMenu
+                                                            .indexWhere(
+                                                          (e) =>
+                                                              e.$1 == menu.name,
+                                                        );
+
+                                                        if (menuIndex != -1) {
+                                                          // Jika menu sudah ada, update quantity dan notes
+                                                          widget.orderMenu[
+                                                              menuIndex] = (
                                                             menu.name,
                                                             menu.price,
-                                                            qty,
+                                                            widget
+                                                                    .orderMenu[
+                                                                        menuIndex]
+                                                                    .$3 +
+                                                                qty, // Tambahkan qty lama dengan yang baru
                                                             notes.text
-                                                          ),
-                                                        );
-                                                        widget.orderList.add({
-                                                          'id': menu.id,
-                                                          'quantity': qty,
-                                                          if (notes
-                                                              .text.isNotEmpty)
-                                                            'note': notes.text,
-                                                        });
+                                                                    .isNotEmpty
+                                                                ? notes.text
+                                                                : widget
+                                                                    .orderMenu[
+                                                                        menuIndex]
+                                                                    .$4
+                                                          );
+                                                        } else {
+                                                          // Jika belum ada, tambahkan menu baru
+                                                          widget.orderMenu.add(
+                                                            (
+                                                              menu.name,
+                                                              menu.price,
+                                                              qty,
+                                                              notes.text
+                                                            ),
+                                                          );
+                                                        }
 
+                                                        // 2. Cek apakah menu sudah ada di orderList berdasarkan id
+                                                        final orderIndex =
+                                                            widget.orderList
+                                                                .indexWhere(
+                                                          (e) =>
+                                                              e['id'] ==
+                                                              menu.id,
+                                                        );
+
+                                                        if (orderIndex != -1) {
+                                                          // Jika menu sudah ada, update quantity dan notes
+                                                          // ignore: avoid_dynamic_calls
+                                                          widget.orderList[
+                                                                  orderIndex][
+                                                              'quantity'] += qty;
+                                                          if (notes.text
+                                                              .isNotEmpty) {
+                                                            widget.orderList[
+                                                                        orderIndex]
+                                                                    ['note'] =
+                                                                notes.text;
+                                                          }
+                                                        } else {
+                                                          // Jika belum ada, tambahkan menu baru
+                                                          widget.orderList.add({
+                                                            'id': menu.id,
+                                                            'quantity': qty,
+                                                            if (notes.text
+                                                                .isNotEmpty)
+                                                              'note':
+                                                                  notes.text,
+                                                          });
+                                                        }
                                                         grandTotal = widget
                                                             .orderMenu
                                                             .fold(
@@ -721,7 +795,7 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                     MenuType.all) {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'withDeleted': false,
                                       'isActive': true,
@@ -730,7 +804,7 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                 } else {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'category':
                                           menuTypeOptions.elementAt(idx).$2,

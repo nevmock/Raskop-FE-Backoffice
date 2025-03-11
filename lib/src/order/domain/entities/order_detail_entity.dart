@@ -19,8 +19,8 @@ class OrderDetailEntity with _$OrderDetailEntity {
     required String menuId,
     required int qty,
     required double price,
+    required MenuEntity menu,
     @JsonKey(includeIfNull: true) String? note,
-    @JsonKey(includeFromJson: true, includeToJson: false) MenuEntity? menu,
     @JsonKey(includeFromJson: true, includeToJson: false) String? deletedAt,
   }) = _OrderDetailEntity;
 

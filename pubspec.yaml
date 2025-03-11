@@ -39,7 +39,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
 
   # for time and local management
-  intl: ^0.19.0
+  intl: any
 
   # for functional programming
   fpdart: ^1.1.1
@@ -90,6 +90,8 @@ dependencies:
   webview_flutter: ^4.10.0
   webview_flutter_android: ^4.3.2
   webview_flutter_wkwebview: ^3.18.2
+
+  # for displaying temporary message
   cherry_toast: ^1.12.0
 
 dev_dependencies:
