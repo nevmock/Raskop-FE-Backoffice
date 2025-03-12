@@ -45,7 +45,7 @@ class OrderRepository implements OrderRepositoryInterface {
             {
               'withDeleted': false,
               'withRelation': true,
-              'withReservasi': true,
+              'withReservasi': false,
             },
           ),
         if (order != null) 'order': jsonEncode(order),

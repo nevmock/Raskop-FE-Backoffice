@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
+import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
-import 'package:http/http.dart' as http;
 import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/endpoints.dart';
 import 'package:raskop_fe_backoffice/res/paths.dart';
@@ -20,6 +20,8 @@ class MenuRepository implements MenuRepositoryInterface {
 
   ///
   final http.Client client;
+
+  ///
   final ApiClient baseClient;
 
   /// Base API URL
@@ -30,6 +32,7 @@ class MenuRepository implements MenuRepositoryInterface {
 
   @override
   FutureEither<List<MenuEntity>> getAllMenuData({
+    int? start,
     int? length,
     String? search,
     Map<String, dynamic>? advSearch,
@@ -42,6 +45,7 @@ class MenuRepository implements MenuRepositoryInterface {
           .map((e) => MenuEntity.fromJson(e as Map<String, dynamic>))
           .toList(),
       queryParameters: {
+        if (start != null) 'start': start.toString(),
         if (length != null) 'length': length.toString(),
         if (search != null) 'search': search,
         if (advSearch != null)
@@ -63,8 +67,10 @@ class MenuRepository implements MenuRepositoryInterface {
   }
 
   @override
-  FutureEitherVoid createNewMenu(
-      {required MenuEntity request, String? imageFile}) async {
+  FutureEitherVoid createNewMenu({
+    required MenuEntity request,
+    String? imageFile,
+  }) async {
     try {
       final formData = http.MultipartRequest('POST', Uri.https(url, endpoint))
         ..headers.addAll({'Content-Type': 'multipart/form-data'});
@@ -79,11 +85,14 @@ class MenuRepository implements MenuRepositoryInterface {
       });
 
       if (imageFile != null) {
-        final mimeType = lookupMimeType(imageFile!);
+        final mimeType = lookupMimeType(imageFile);
         final file = File(imageFile);
         if (!await file.exists()) {
-          return left(ResponseFailure.unprocessableEntity(
-              message: 'File does not exist!'));
+          return left(
+            const ResponseFailure.unprocessableEntity(
+              message: 'File does not exist!',
+            ),
+          );
         } else {
           final stream = http.ByteStream(file.openRead());
           final length = await file.length();
@@ -101,7 +110,7 @@ class MenuRepository implements MenuRepositoryInterface {
       }
 
       final response =
-          await client.send(formData).timeout(Duration(seconds: 60));
+          await client.send(formData).timeout(const Duration(seconds: 60));
       final jsonResponse = await http.Response.fromStream(response);
       final json = jsonDecode(jsonResponse.body) as Map<String, dynamic>;
 
@@ -111,8 +120,11 @@ class MenuRepository implements MenuRepositoryInterface {
           json['status'] == 'OK') {
         return right(const ResponseSuccess.created());
       }
-      return left(ResponseFailure.internalServerError(
-          message: json['errors'].toString()));
+      return left(
+        ResponseFailure.internalServerError(
+          message: json['errors'].toString(),
+        ),
+      );
     } catch (e, stackTrace) {
       print('Error: $e');
       print('Stack Trace: $stackTrace');
@@ -123,10 +135,11 @@ class MenuRepository implements MenuRepositoryInterface {
   }
 
   @override
-  FutureEitherVoid updateCurrentMenu(
-      {required MenuEntity request,
-      required String id,
-      String? imageFile}) async {
+  FutureEitherVoid updateCurrentMenu({
+    required MenuEntity request,
+    required String id,
+    String? imageFile,
+  }) async {
     try {
       final formData = http.MultipartRequest('POST', Uri.https(url, endpoint))
         ..headers.addAll({'Content-Type': 'multipart/form-data'});
@@ -142,11 +155,14 @@ class MenuRepository implements MenuRepositoryInterface {
       });
 
       if (imageFile != null) {
-        final mimeType = lookupMimeType(imageFile!);
+        final mimeType = lookupMimeType(imageFile);
         final file = File(imageFile);
         if (!await file.exists()) {
-          return left(ResponseFailure.unprocessableEntity(
-              message: 'File does not exist!'));
+          return left(
+            const ResponseFailure.unprocessableEntity(
+              message: 'File does not exist!',
+            ),
+          );
         } else {
           final stream = http.ByteStream(file.openRead());
           final length = await file.length();
@@ -164,7 +180,7 @@ class MenuRepository implements MenuRepositoryInterface {
       }
 
       final response =
-          await client.send(formData).timeout(Duration(seconds: 60));
+          await client.send(formData).timeout(const Duration(seconds: 60));
       final jsonResponse = await http.Response.fromStream(response);
       final json = jsonDecode(jsonResponse.body) as Map<String, dynamic>;
       if (json['code'] == 201 ||
@@ -173,8 +189,11 @@ class MenuRepository implements MenuRepositoryInterface {
           json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(ResponseFailure.internalServerError(
-          message: json['errors'].toString()));
+      return left(
+        ResponseFailure.internalServerError(
+          message: json['errors'].toString(),
+        ),
+      );
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {
@@ -225,8 +244,11 @@ class MenuRepository implements MenuRepositoryInterface {
       if (json['code'] == 200 || json['status'] == 'OK') {
         return right(const ResponseSuccess.edited());
       }
-      return left(ResponseFailure.internalServerError(
-          message: json['errors'].toString()));
+      return left(
+        ResponseFailure.internalServerError(
+          message: json['errors'].toString(),
+        ),
+      );
     } catch (e) {
       return left(ResponseFailure.unprocessableEntity(message: e.toString()));
     } finally {

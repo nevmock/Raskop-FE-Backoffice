@@ -15,9 +15,11 @@ import 'package:raskop_fe_backoffice/core/core.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/res/strings.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
+import 'package:raskop_fe_backoffice/shared/refresh_loading_animation.dart';
 import 'package:raskop_fe_backoffice/shared/toast.dart';
 import 'package:raskop_fe_backoffice/src/common/failure/response_failure.dart';
 import 'package:raskop_fe_backoffice/src/common/widgets/custom_loading_indicator_widget.dart';
+import 'package:raskop_fe_backoffice/src/order/domain/entities/update_status_order_request_entity.dart';
 import 'package:raskop_fe_backoffice/src/reservation/application/reservation_controller.dart';
 import 'package:raskop_fe_backoffice/src/reservation/domain/entities/create_reservation_request_entity.dart';
 import 'package:raskop_fe_backoffice/src/reservation/domain/entities/reservation_entity.dart';
@@ -63,19 +65,17 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
   String? paymentMethod;
   String? orderId;
   bool? isOutdoor;
+  String? status;
 
   List<String> reservedTable = [];
 
-  Map<String, String> paymentInfo = {
-    'method': 'other_qris',
-    'status': 'DP',
-  };
+  Map<String, String> paymentInfo = {};
 
   List<DropdownItem<String>> tableData = [];
 
   List<DropdownItem<String>> paymentStatus = [
     DropdownItem(label: 'DP', value: 'DP'),
-    DropdownItem(label: 'Settlement', value: 'Settlement'),
+    DropdownItem(label: 'Lunas', value: 'Settlement'),
   ];
 
   List<DropdownItem<String>> advSearchOptions = [
@@ -96,6 +96,11 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
   final _formKey = GlobalKey<FormState>();
 
   List<Map<String, dynamic>> orderList = [];
+
+  List<DropdownItem<String>> updateOrderStatus = [];
+
+  final statusTabletController = MultiSelectController<String>();
+  final statusPhoneController = MultiSelectController<String>();
 
   List<DropdownItem<String>> orderStatus = [
     DropdownItem(label: 'Belum Dibuat', value: 'BELUM_DIBUAT'),
@@ -121,38 +126,36 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
     final controller = ref.watch(reservationControllerProvider.notifier);
     void openDetailPanel({required ReservationEntity detail}) {
       setState(() {
-        detail.orders!.isEmpty || detail.orders == null
+        detail.orders.isEmpty
             ? itemList.addAll([])
-            : detail.orders!.first.orderDetail!.isEmpty ||
-                    detail.orders!.first.orderDetail == null
+            : detail.orders.first.orderDetail.isEmpty
                 ? itemList.addAll([])
                 : itemList.addAll(
-                    detail.orders!.first.orderDetail!
+                    detail.orders.first.orderDetail
                         .map(
                           (e) => (
-                            e.menu?.name ?? '',
-                            e.menu?.price ?? 0,
+                            e.menu.name,
+                            e.menu.price,
                             e.qty,
                             e.note ?? '',
                           ),
                         )
                         .toList(),
                   );
-        detail.detailReservasis == null || detail.detailReservasis!.isEmpty
+        detail.detailReservasis.isEmpty
             ? reservedTable.add('No Table Reserved')
             : reservedTable.addAll(
-                detail.detailReservasis!.map((e) => e.table!.noTable).toList(),
+                detail.detailReservasis.map((e) => e.table.noTable).toList(),
               );
         tables.value = TextEditingValue(text: reservedTable.join(', '));
 
-        final jumlahByMinCapacity =
-            detail.detailReservasis == null || detail.detailReservasis!.isEmpty
-                ? 0
-                : detail.detailReservasis!.fold(
-                    0,
-                    (previousValue, element) =>
-                        previousValue + element.table!.minCapacity,
-                  );
+        final jumlahByMinCapacity = detail.detailReservasis.isEmpty
+            ? 0
+            : detail.detailReservasis.fold(
+                0,
+                (previousValue, element) =>
+                    previousValue + element.table.maxCapacity,
+              );
         idDetail.value = TextEditingValue(text: detail.id);
         nama.value = TextEditingValue(text: detail.reserveBy);
         startText.value = TextEditingValue(
@@ -170,14 +173,16 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
           ),
         );
         catatan.value = TextEditingValue(text: detail.note ?? '');
-        komunitas.value = TextEditingValue(text: detail.community ?? '');
+        komunitas.value = TextEditingValue(text: detail.community);
         jumlah.value = TextEditingValue(text: '$jumlahByMinCapacity Orang');
-        paymentInfo = {
-          'method': detail.orders?.first.transaction?.first.paymentMethod ??
-              'unknown',
-          'status': detail.halfPayment ? 'DP' : 'Settlement',
+        paymentInfo = <String, String>{
+          'method': detail.orders.first.transaction.isEmpty
+              ? 'unknown'
+              : detail.orders.first.transaction.first.paymentMethod.toString(),
+          'status': detail.halfPayment ? 'DP' : 'Lunas',
+          'isOutdoor': detail.detailReservasis.first.table.isOutdoor.toString(),
         };
-        orderId = detail.orders!.first.id;
+        orderId = detail.orders.first.id;
         kontak.value = TextEditingValue(text: detail.phoneNumber);
         isDetailPanelVisible = true;
       });
@@ -301,7 +306,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         advSearch: {
           'withRelation': true,
           'withDeleted': false,
-          for (final item in advSearchPhoneController.selectedItems)
+          for (final item in advSearchTabletController.selectedItems)
             item.value: search.text,
         },
       );
@@ -354,147 +359,119 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                               duration: const Duration(milliseconds: 300),
                               child: Column(
                                 children: [
-                                  AnimatedContainer(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: hexToColor('#E1E1E1'),
-                                      ),
-                                      borderRadius: const BorderRadius.all(
-                                        Radius.circular(15),
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 5,
-                                      vertical: 15,
-                                    ),
-                                    duration: const Duration(milliseconds: 100),
-                                    child: Row(
-                                      children: [
-                                        Flexible(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              left: 20,
-                                            ),
-                                            child:
-                                                Image.asset(ImageAssets.raskop),
+                                  RefreshLoadingAnimation(
+                                    children: [
+                                      Expanded(
+                                        flex: 5,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 100,
                                           ),
-                                        ),
-                                        const Spacer(),
-                                        Expanded(
-                                          flex: 5,
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 100,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 15.w,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: hexToColor('#E1E1E1'),
                                             ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 15.w,
+                                            borderRadius:
+                                                const BorderRadius.all(
+                                              Radius.circular(30),
                                             ),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: hexToColor('#E1E1E1'),
-                                              ),
-                                              borderRadius:
-                                                  const BorderRadius.all(
-                                                Radius.circular(30),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Flexible(
-                                                  flex: 3,
-                                                  child: TextFormField(
-                                                    controller: search,
-                                                    onChanged:
-                                                        advSearchTabletController
-                                                                .selectedItems
-                                                                .isEmpty
-                                                            ? (value) {}
-                                                            : (value) {
-                                                                debounceOnTablet();
-                                                              },
-                                                    onFieldSubmitted:
-                                                        advSearchTabletController
-                                                                .selectedItems
-                                                                .isEmpty
-                                                            ? (value) {}
-                                                            : (value) {
-                                                                onSearchTablet();
-                                                              },
-                                                    decoration: InputDecoration(
-                                                      filled: false,
-                                                      border: InputBorder.none,
-                                                      hintText:
-                                                          'Temukan nama, kontak, komunitas...',
-                                                      hintStyle: TextStyle(
-                                                        color: Colors.black
-                                                            .withOpacity(0.3),
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Flexible(
+                                                flex: 3,
+                                                child: TextFormField(
+                                                  controller: search,
+                                                  onChanged:
+                                                      advSearchTabletController
+                                                              .selectedItems
+                                                              .isEmpty
+                                                          ? (value) {}
+                                                          : (value) {
+                                                              debounceOnTablet();
+                                                            },
+                                                  onFieldSubmitted:
+                                                      advSearchTabletController
+                                                              .selectedItems
+                                                              .isEmpty
+                                                          ? (value) {}
+                                                          : (value) {
+                                                              onSearchTablet();
+                                                            },
+                                                  decoration: InputDecoration(
+                                                    filled: false,
+                                                    border: InputBorder.none,
+                                                    hintText:
+                                                        'Temukan nama, kontak, komunitas...',
+                                                    hintStyle: TextStyle(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      fontWeight:
+                                                          FontWeight.w400,
                                                     ),
                                                   ),
                                                 ),
-                                                Flexible(
-                                                  flex: 2,
-                                                  child: MultiDropdown<String>(
-                                                    items: advSearchOptions,
-                                                    controller:
-                                                        advSearchTabletController,
-                                                    onSelectionChange:
-                                                        (selectedItems) {
-                                                      setState(() {});
-                                                    },
-                                                    fieldDecoration:
-                                                        const FieldDecoration(
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderSide:
-                                                            BorderSide.none,
-                                                      ),
-                                                      hintText: '',
-                                                      suffixIcon: Icon(
-                                                        Icons.filter_list_alt,
-                                                      ),
-                                                      animateSuffixIcon: false,
-                                                      backgroundColor:
-                                                          Colors.transparent,
-                                                      borderRadius: 30,
+                                              ),
+                                              Flexible(
+                                                flex: 2,
+                                                child: MultiDropdown<String>(
+                                                  items: advSearchOptions,
+                                                  controller:
+                                                      advSearchTabletController,
+                                                  onSelectionChange:
+                                                      (selectedItems) {
+                                                    setState(() {});
+                                                  },
+                                                  fieldDecoration:
+                                                      const FieldDecoration(
+                                                    border: OutlineInputBorder(
+                                                      borderSide:
+                                                          BorderSide.none,
                                                     ),
-                                                    dropdownItemDecoration:
-                                                        DropdownItemDecoration(
-                                                      selectedIcon: Icon(
-                                                        Icons.check_box,
-                                                        color: hexToColor(
-                                                          '#0C9D61',
-                                                        ),
-                                                      ),
+                                                    hintText: '',
+                                                    suffixIcon: Icon(
+                                                      Icons.filter_list_alt,
                                                     ),
-                                                    dropdownDecoration:
-                                                        const DropdownDecoration(
-                                                      elevation: 3,
-                                                    ),
-                                                    chipDecoration:
-                                                        ChipDecoration(
-                                                      wrap: false,
-                                                      backgroundColor:
-                                                          hexToColor(
-                                                        '#E1E1E1',
-                                                      ),
-                                                      labelStyle:
-                                                          const TextStyle(
-                                                        color: Colors.black,
-                                                        fontSize: 12,
+                                                    animateSuffixIcon: false,
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    borderRadius: 30,
+                                                  ),
+                                                  dropdownItemDecoration:
+                                                      DropdownItemDecoration(
+                                                    selectedIcon: Icon(
+                                                      Icons.check_box,
+                                                      color: hexToColor(
+                                                        '#0C9D61',
                                                       ),
                                                     ),
                                                   ),
+                                                  dropdownDecoration:
+                                                      const DropdownDecoration(
+                                                    elevation: 3,
+                                                  ),
+                                                  chipDecoration:
+                                                      ChipDecoration(
+                                                    wrap: false,
+                                                    backgroundColor: hexToColor(
+                                                      '#E1E1E1',
+                                                    ),
+                                                    labelStyle: const TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
+                                    onRefresh: () async => controller.refresh(),
                                   ),
                                   const SizedBox(
                                     height: 10,
@@ -588,10 +565,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                             ),
                                           ),
                                           Expanded(
-                                            flex: 3,
+                                            flex: 4,
                                             child: Center(
                                               child: Text(
-                                                'END',
+                                                'STATUS',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w600,
                                                   color: hexToColor('#202224'),
@@ -604,7 +581,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                             flex: 5,
                                             child: Center(
                                               child: Text(
-                                                'CATT, KOMUNITAS, PYMT',
+                                                'DETAIL RESERVASI',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w600,
@@ -635,11 +612,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 textAlign: TextAlign.center,
                                               ),
                                               TextButton(
-                                                onPressed: () {
-                                                  ref.invalidate(
-                                                    reservationControllerProvider,
-                                                  );
-                                                },
+                                                onPressed: controller.refresh,
                                                 style: TextButton.styleFrom(
                                                   backgroundColor:
                                                       hexToColor('#1F4940'),
@@ -939,23 +912,101 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                           ),
                                                         ),
                                                         Expanded(
-                                                          flex: 3,
+                                                          flex: 4,
                                                           child: Center(
-                                                            child: Text(
-                                                              DateFormat(
-                                                                'dd/MM/yy; hh:mm a',
-                                                              ).format(
-                                                                e.end,
-                                                              ),
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color:
-                                                                    hexToColor(
-                                                                  '#202224',
+                                                            child: Chip(
+                                                              backgroundColor:
+                                                                  Colors.white,
+                                                              shape:
+                                                                  const RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .all(
+                                                                  Radius
+                                                                      .circular(
+                                                                    30,
+                                                                  ),
                                                                 ),
-                                                                fontSize: 14,
+                                                              ),
+                                                              side: BorderSide(
+                                                                width: 3,
+                                                                color: e.orders.first
+                                                                            .status ==
+                                                                        orderStatus
+                                                                            .elementAt(
+                                                                              0,
+                                                                            )
+                                                                            .value
+                                                                    ? hexToColor(
+                                                                        '#FFDD82',
+                                                                      )
+                                                                    : e.orders.first
+                                                                                .status ==
+                                                                            orderStatus
+                                                                                .elementAt(
+                                                                                  1,
+                                                                                )
+                                                                                .value
+                                                                        ? hexToColor(
+                                                                            '#1F4940',
+                                                                          )
+                                                                        : e.orders.first.status ==
+                                                                                orderStatus.elementAt(2).value
+                                                                            ? hexToColor(
+                                                                                '#47B881',
+                                                                              )
+                                                                            : e.orders.first.status == orderStatus.elementAt(3).value
+                                                                                ? hexToColor(
+                                                                                    '#F64C4C',
+                                                                                  )
+                                                                                : hexToColor(
+                                                                                    '#4287F5',
+                                                                                  ),
+                                                              ),
+                                                              label: Center(
+                                                                child: Text(
+                                                                  orderStatus
+                                                                      .firstWhere(
+                                                                        (element) =>
+                                                                            element.value ==
+                                                                            e.orders.first.status,
+                                                                      )
+                                                                      .label,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w700,
+                                                                    color: e.orders.first
+                                                                                .status ==
+                                                                            orderStatus
+                                                                                .elementAt(
+                                                                                  0,
+                                                                                )
+                                                                                .value
+                                                                        ? hexToColor(
+                                                                            '#FFDD82',
+                                                                          )
+                                                                        : e.orders.first.status ==
+                                                                                orderStatus.elementAt(1).value
+                                                                            ? hexToColor(
+                                                                                '#1F4940',
+                                                                              )
+                                                                            : e.orders.first.status == orderStatus.elementAt(2).value
+                                                                                ? hexToColor(
+                                                                                    '#47B881',
+                                                                                  )
+                                                                                : e.orders.first.status == orderStatus.elementAt(3).value
+                                                                                    ? hexToColor(
+                                                                                        '#F64C4C',
+                                                                                      )
+                                                                                    : hexToColor(
+                                                                                        '#4287F5',
+                                                                                      ),
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
@@ -1051,6 +1102,212 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                SizedBox(
+                                  height: 20.h,
+                                ),
+                                Text(
+                                  status == null
+                                      ? 'Status'
+                                      : 'Status: ${status!}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 5.h,
+                                ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: MultiDropdown<String>(
+                                        singleSelect: true,
+                                        items: updateOrderStatus,
+                                        controller: statusTabletController,
+                                        onSelectionChange: (selectedItems) {
+                                          setState(() {});
+                                        },
+                                        fieldDecoration: FieldDecoration(
+                                          backgroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                            horizontal: 12,
+                                          ),
+                                          hintText:
+                                              'Pilih Status Order terkini',
+                                          hintStyle: TextStyle(
+                                            fontSize: 14.sp,
+                                            overflow: TextOverflow.ellipsis,
+                                            color:
+                                                Colors.black.withOpacity(0.3),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          suffixIcon: const Padding(
+                                            padding: EdgeInsets.all(
+                                              12,
+                                            ),
+                                            child: Iconify(
+                                              Zondicons.cheveron_down,
+                                            ),
+                                          ),
+                                          showClearIcon: false,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              15,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                        itemSeparator: const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          child: Divider(),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: 5,
+                                    ),
+                                    Flexible(
+                                      child: ElevatedButton(
+                                        onPressed: isLoading
+                                            ? () {}
+                                            : () async {
+                                                if (statusTabletController
+                                                        .selectedItems
+                                                        .isNotEmpty &&
+                                                    statusTabletController
+                                                            .selectedItems
+                                                            .first
+                                                            .value !=
+                                                        status) {
+                                                  setState(() {
+                                                    isLoading = true;
+                                                  });
+                                                  try {
+                                                    await ref
+                                                        .read(
+                                                          reservationControllerProvider
+                                                              .notifier,
+                                                        )
+                                                        .updateStatus(
+                                                          request:
+                                                              UpdateStatusOrderRequestEntity(
+                                                            id: idDetail.text,
+                                                            status:
+                                                                statusTabletController
+                                                                    .selectedItems
+                                                                    .first
+                                                                    .value,
+                                                          ),
+                                                        );
+                                                    setState(() {
+                                                      Toast().showSuccessToast(
+                                                        context: context,
+                                                        title:
+                                                            'Update Status Success',
+                                                        description:
+                                                            'Reservation with ID: ${idDetail.text} has been successfully updated',
+                                                      );
+                                                    });
+                                                  } on ResponseFailure catch (e) {
+                                                    final err = e.allError
+                                                        as Map<String, dynamic>;
+                                                    setState(() {
+                                                      Toast().showErrorToast(
+                                                        context: context,
+                                                        title:
+                                                            'Update Status Failed',
+                                                        description:
+                                                            '${err['name']} - ${err['message']}}',
+                                                      );
+                                                    });
+                                                  } finally {
+                                                    setState(() {
+                                                      isLoading = false;
+                                                    });
+                                                    closeDetailPanel();
+                                                  }
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              hexToColor('#1F4940'),
+                                          shape: const RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(15),
+                                            ),
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 6,
+                                          ),
+                                          child: isLoading
+                                              ? const Center(
+                                                  child: CustomLoadingIndicator(
+                                                    boxWidth: 5,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const Center(
+                                                  child: Text(
+                                                    'Update Status',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 20.h,
+                                ),
+                                Text(
+                                  'End',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 5.h,
+                                ),
+                                TextFormField(
+                                  readOnly: true,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    overflow: TextOverflow.fade,
+                                  ),
+                                  controller: endText,
+                                  decoration: const InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(15)),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(15)),
+                                    ),
+                                  ),
                                 ),
                                 SizedBox(
                                   height: 20.h,
@@ -1401,7 +1658,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                       fontSize: 14,
                                       overflow: TextOverflow.fade,
                                     ),
-                                    initialValue: 'Settlement',
+                                    initialValue: 'Lunas',
                                     decoration: const InputDecoration(
                                       filled: true,
                                       fillColor: Colors.white,
@@ -1527,11 +1784,14 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 ),
                                               ],
                                             )
-                                          : const Text(
-                                              'Unknown Payment',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
+                                          : const Center(
+                                              child: Text(
+                                                'Unknown Payment',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 14,
+                                                ),
                                               ),
                                             ),
                                   color: Colors.white,
@@ -1583,6 +1843,79 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(15)),
                                     ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10.h,
+                                ),
+                                Text(
+                                  'Ruangan',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 5.h,
+                                ),
+                                _customButton(
+                                  child: paymentInfo['isOutdoor'] == 'true'
+                                      ? const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Iconify(
+                                              IconAssets.outdoorIcon,
+                                              color: Colors.black,
+                                              size: 20,
+                                            ),
+                                            SizedBox(
+                                              width: 5,
+                                            ),
+                                            Text(
+                                              'Outdoor',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Iconify(
+                                              IconAssets.indoorIcon,
+                                              color: Colors.black,
+                                              size: 20,
+                                            ),
+                                            SizedBox(
+                                              width: 5,
+                                            ),
+                                            Text(
+                                              'Indoor',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                  color: Colors.white,
+                                  onTap: () {},
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(15),
+                                  ),
+                                  isWideScreen: true,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                    horizontal: 10,
+                                  ),
+                                  margin: EdgeInsets.only(
+                                    right: MediaQuery.of(context).size.width *
+                                        0.15,
                                   ),
                                 ),
                               ],
@@ -1656,6 +1989,18 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                             ),
                                             SizedBox(
                                               width: itemWidth.w,
+                                              child: _buildTextField(
+                                                'Komunitas',
+                                                'Masukkan komunitas',
+                                                komunitas,
+                                                TextInputType.text,
+                                                (val) {},
+                                                [],
+                                                12.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: itemWidth.w,
                                               child: _buildDateTimePickerField(
                                                 label: 'Start',
                                                 hint: 'Masukkan waktu mulai',
@@ -1683,24 +2028,12 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               ),
                                             ),
                                             SizedBox(
-                                              width: (itemWidth * 2 + 5).w,
-                                              child: _buildTextField(
-                                                'Catatan',
-                                                'Masukkan catatan',
-                                                catatan,
-                                                TextInputType.text,
-                                                (val) {},
-                                                [],
-                                                12.sp,
-                                              ),
-                                            ),
-                                            SizedBox(
                                               width: itemWidth.w,
                                               child: _buildTextField(
-                                                'Komunitas',
-                                                'Masukkan komunitas',
-                                                komunitas,
-                                                TextInputType.text,
+                                                'Jumlah Orang',
+                                                'Masukkan jumlah orang',
+                                                jumlah,
+                                                TextInputType.number,
                                                 (val) {},
                                                 [],
                                                 12.sp,
@@ -1717,98 +2050,349 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      'Status Pembayaran',
+                                                      'Ruangan',
                                                       style: TextStyle(
                                                         color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontSize: 12.sp,
+                                                        fontSize: 14.sp,
                                                       ),
                                                     ),
-                                                    SizedBox(
-                                                      height: 5.h,
+                                                    const SizedBox(
+                                                      height: 5,
                                                     ),
-                                                    MultiDropdown(
-                                                      autovalidateMode:
-                                                          AutovalidateMode
-                                                              .onUnfocus,
-                                                      validator:
-                                                          (selectedOptions) {
-                                                        if (selectedOptions ==
-                                                                null ||
-                                                            statusController
-                                                                .selectedItems
-                                                                .isEmpty) {
-                                                          return 'Required Field';
-                                                        }
-                                                        return null;
-                                                      },
-                                                      controller:
-                                                          statusController,
-                                                      singleSelect: true,
-                                                      items: paymentStatus,
-                                                      chipDecoration:
-                                                          ChipDecoration(
-                                                        backgroundColor:
-                                                            hexToColor(
-                                                          '#E1E1E1',
-                                                        ),
-                                                        runSpacing: 2,
-                                                        spacing: 10,
-                                                      ),
-                                                      fieldDecoration:
-                                                          FieldDecoration(
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        padding:
-                                                            const EdgeInsets
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: _customButton(
+                                                            child: const Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Iconify(
+                                                                  IconAssets
+                                                                      .outdoorIcon,
+                                                                  color: Colors
+                                                                      .black,
+                                                                  size: 20,
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 5,
+                                                                ),
+                                                                Text(
+                                                                  'Outdoor',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            color: Colors.white,
+                                                            onTap: () async {
+                                                              if (jumlah.text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Jumlah Orang is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (startText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Start Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (endText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field End Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              try {
+                                                                setState(() {
+                                                                  isOutdoor =
+                                                                      true;
+                                                                  isFetchingTable =
+                                                                      true;
+                                                                });
+
+                                                                await tableSuggest(
+                                                                  request:
+                                                                      TableSuggestionRequestEntity(
+                                                                    capacity: int
+                                                                        .parse(
+                                                                      jumlah
+                                                                          .text,
+                                                                    ),
+                                                                    isOutdoor:
+                                                                        true,
+                                                                    date:
+                                                                        DateFormat(
+                                                                      'yyyy-MM-dd',
+                                                                    ).format(
+                                                                      start,
+                                                                    ),
+                                                                    startTime: DateFormat
+                                                                            .Hms()
+                                                                        .format(
+                                                                      start,
+                                                                    ),
+                                                                    endTime: DateFormat
+                                                                            .Hms()
+                                                                        .format(
+                                                                      end!,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              } on ResponseFailure catch (e) {
+                                                                print(e);
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Get Table Suggestion Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
+                                                              } finally {
+                                                                setState(() {
+                                                                  isFetchingTable =
+                                                                      false;
+                                                                });
+                                                              }
+                                                            },
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                15,
+                                                              ),
+                                                            ),
+                                                            isWideScreen:
+                                                                isWideScreen,
+                                                            padding: EdgeInsets
                                                                 .symmetric(
-                                                          vertical: 16,
-                                                          horizontal: 12,
-                                                        ),
-                                                        hintText:
-                                                            'Pilih DP atau Settlement',
-                                                        hintStyle: TextStyle(
-                                                          fontSize: 14.sp,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          color: Colors.black
-                                                              .withOpacity(0.3),
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                        suffixIcon:
-                                                            const Padding(
-                                                          padding:
-                                                              EdgeInsets.all(
-                                                            12,
-                                                          ),
-                                                          child: Iconify(
-                                                            Zondicons
-                                                                .cheveron_down,
+                                                              vertical: MediaQuery
+                                                                          .of(
+                                                                    context,
+                                                                  )
+                                                                      .size
+                                                                      .height *
+                                                                  0.018,
+                                                            ),
+                                                            borderColor: isOutdoor ==
+                                                                        null ||
+                                                                    !isOutdoor!
+                                                                ? Colors
+                                                                    .transparent
+                                                                : Colors.black,
+                                                            borderWidth: isOutdoor ==
+                                                                        null ||
+                                                                    !isOutdoor!
+                                                                ? 0
+                                                                : 2,
                                                           ),
                                                         ),
-                                                        showClearIcon: false,
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(15),
-                                                          borderSide:
-                                                              const BorderSide(
-                                                            color:
-                                                                Colors.black87,
+                                                        const SizedBox(
+                                                          width: 5,
+                                                        ),
+                                                        Expanded(
+                                                          child: _customButton(
+                                                            child: const Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Iconify(
+                                                                  IconAssets
+                                                                      .indoorIcon,
+                                                                  color: Colors
+                                                                      .black,
+                                                                  size: 20,
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 5,
+                                                                ),
+                                                                Text(
+                                                                  'Indoor',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            color: Colors.white,
+                                                            onTap: () async {
+                                                              if (jumlah.text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Jumlah Orang is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (startText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Start Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (endText
+                                                                      .text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field End Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              try {
+                                                                setState(() {
+                                                                  isOutdoor =
+                                                                      false;
+                                                                  isFetchingTable =
+                                                                      true;
+                                                                });
+                                                                await tableSuggest(
+                                                                  request:
+                                                                      TableSuggestionRequestEntity(
+                                                                    capacity: int
+                                                                        .parse(
+                                                                      jumlah
+                                                                          .text,
+                                                                    ),
+                                                                    isOutdoor:
+                                                                        false,
+                                                                    date:
+                                                                        DateFormat(
+                                                                      'yyyy-MM-dd',
+                                                                    ).format(
+                                                                      start,
+                                                                    ),
+                                                                    startTime: DateFormat
+                                                                            .Hms()
+                                                                        .format(
+                                                                      start,
+                                                                    ),
+                                                                    endTime: DateFormat
+                                                                            .Hms()
+                                                                        .format(
+                                                                      end!,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              } on ResponseFailure catch (e) {
+                                                                final err = e
+                                                                        .allError
+                                                                    as Map<
+                                                                        String,
+                                                                        dynamic>;
+                                                                setState(() {
+                                                                  Toast()
+                                                                      .showErrorToast(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Get Table Suggestion Failed',
+                                                                    description:
+                                                                        '${err['name']} - ${err['message']}',
+                                                                  );
+                                                                });
+                                                              } finally {
+                                                                setState(() {
+                                                                  isFetchingTable =
+                                                                      false;
+                                                                });
+                                                              }
+                                                            },
+                                                            borderRadius:
+                                                                const BorderRadius
+                                                                    .all(
+                                                              Radius.circular(
+                                                                15,
+                                                              ),
+                                                            ),
+                                                            isWideScreen:
+                                                                isWideScreen,
+                                                            padding: EdgeInsets
+                                                                .symmetric(
+                                                              vertical: MediaQuery
+                                                                          .of(
+                                                                    context,
+                                                                  )
+                                                                      .size
+                                                                      .height *
+                                                                  0.018,
+                                                            ),
+                                                            borderColor: isOutdoor ==
+                                                                        null ||
+                                                                    isOutdoor!
+                                                                ? Colors
+                                                                    .transparent
+                                                                : Colors.black,
+                                                            borderWidth: isOutdoor ==
+                                                                        null ||
+                                                                    isOutdoor!
+                                                                ? 0
+                                                                : 2,
                                                           ),
                                                         ),
-                                                      ),
-                                                      itemSeparator:
-                                                          const Padding(
-                                                        padding: EdgeInsets
-                                                            .symmetric(
-                                                          horizontal: 12,
-                                                        ),
-                                                        child: Divider(),
-                                                      ),
+                                                      ],
                                                     ),
                                                   ],
                                                 ),
@@ -1837,7 +2421,13 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                       height: 5.h,
                                                     ),
                                                     if (isFetchingTable)
-                                                      const CustomLoadingIndicator()
+                                                      const Center(
+                                                        child:
+                                                            CustomLoadingIndicator(
+                                                          boxHeight: 50,
+                                                          color: Colors.white,
+                                                        ),
+                                                      )
                                                     else
                                                       MultiDropdown(
                                                         autovalidateMode:
@@ -2032,6 +2622,129 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               ),
                                             ),
                                             SizedBox(
+                                              width: (itemWidth * 2 + 5).w,
+                                              child: _buildTextField(
+                                                'Catatan',
+                                                'Masukkan catatan',
+                                                catatan,
+                                                TextInputType.text,
+                                                (val) {},
+                                                [],
+                                                12.sp,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: itemWidth.w,
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 16,
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Status Pembayaran',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 12.sp,
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: 5.h,
+                                                    ),
+                                                    MultiDropdown(
+                                                      autovalidateMode:
+                                                          AutovalidateMode
+                                                              .onUnfocus,
+                                                      validator:
+                                                          (selectedOptions) {
+                                                        if (selectedOptions ==
+                                                                null ||
+                                                            statusController
+                                                                .selectedItems
+                                                                .isEmpty) {
+                                                          return 'Required Field';
+                                                        }
+                                                        return null;
+                                                      },
+                                                      controller:
+                                                          statusController,
+                                                      singleSelect: true,
+                                                      items: paymentStatus,
+                                                      chipDecoration:
+                                                          ChipDecoration(
+                                                        backgroundColor:
+                                                            hexToColor(
+                                                          '#E1E1E1',
+                                                        ),
+                                                        runSpacing: 2,
+                                                        spacing: 10,
+                                                      ),
+                                                      fieldDecoration:
+                                                          FieldDecoration(
+                                                        backgroundColor:
+                                                            Colors.white,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          vertical: 16,
+                                                          horizontal: 12,
+                                                        ),
+                                                        hintText:
+                                                            'Pilih DP atau Lunas',
+                                                        hintStyle: TextStyle(
+                                                          fontSize: 14.sp,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          color: Colors.black
+                                                              .withOpacity(0.3),
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                        suffixIcon:
+                                                            const Padding(
+                                                          padding:
+                                                              EdgeInsets.all(
+                                                            12,
+                                                          ),
+                                                          child: Iconify(
+                                                            Zondicons
+                                                                .cheveron_down,
+                                                          ),
+                                                        ),
+                                                        showClearIcon: false,
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(15),
+                                                          borderSide:
+                                                              const BorderSide(
+                                                            color:
+                                                                Colors.black87,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      itemSeparator:
+                                                          const Padding(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 12,
+                                                        ),
+                                                        child: Divider(),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: (itemWidth * 2).w,
+                                            ),
+                                            SizedBox(
                                               width: itemWidth.w,
                                               child: Padding(
                                                 padding: const EdgeInsets.only(
@@ -2180,520 +2893,155 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                               ),
                                             ),
                                             SizedBox(
-                                              width: itemWidth.w,
-                                              child: _buildTextField(
-                                                'Jumlah Orang',
-                                                'Masukkan jumlah orang',
-                                                jumlah,
-                                                TextInputType.number,
-                                                (val) {},
-                                                [],
-                                                12.sp,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              width: itemWidth.w,
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                  bottom: 16,
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Ruangan',
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 14.sp,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(
-                                                      height: 5,
-                                                    ),
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: _customButton(
-                                                            child: const Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Iconify(
-                                                                  IconAssets
-                                                                      .outdoorIcon,
-                                                                  color: Colors
-                                                                      .black,
-                                                                  size: 20,
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 5,
-                                                                ),
-                                                                Text(
-                                                                  'Outdoor',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    color: Colors
-                                                                        .black,
-                                                                    fontSize:
-                                                                        14,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            color: Colors.white,
-                                                            onTap: () {
-                                                              if (jumlah.text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field Jumlah Orang is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              if (startText
-                                                                      .text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field Start Time is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              if (endText
-                                                                      .text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field End Time is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              try {
-                                                                setState(() {
-                                                                  isOutdoor =
-                                                                      true;
-                                                                  isFetchingTable =
-                                                                      true;
-                                                                });
-                                                                tableSuggest(
-                                                                  request:
-                                                                      TableSuggestionRequestEntity(
-                                                                    capacity: int
-                                                                        .parse(
-                                                                      jumlah
-                                                                          .text,
-                                                                    ),
-                                                                    isOutdoor:
-                                                                        true,
-                                                                    date:
-                                                                        DateFormat(
-                                                                      'yyyy-MM-dd',
-                                                                    ).format(
-                                                                      start,
-                                                                    ),
-                                                                    startTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      start,
-                                                                    ),
-                                                                    endTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      end!,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              } on ResponseFailure catch (e) {
-                                                                setState(() {
-                                                                  final err = e
-                                                                          .allError
-                                                                      as Map<
-                                                                          String,
-                                                                          dynamic>;
-
-                                                                  Toast()
-                                                                      .showErrorToast(
-                                                                    context:
-                                                                        context,
-                                                                    title:
-                                                                        'Get Table Suggestion Failed',
-                                                                    description:
-                                                                        '${err['name']} - ${err['message']}',
-                                                                  );
-                                                                });
-                                                              } finally {
-                                                                setState(() {
-                                                                  isFetchingTable =
-                                                                      false;
-                                                                });
-                                                              }
-                                                            },
-                                                            borderRadius:
-                                                                const BorderRadius
-                                                                    .all(
-                                                              Radius.circular(
-                                                                15,
-                                                              ),
-                                                            ),
-                                                            isWideScreen:
-                                                                isWideScreen,
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              vertical: MediaQuery
-                                                                          .of(
-                                                                    context,
-                                                                  )
-                                                                      .size
-                                                                      .height *
-                                                                  0.018,
-                                                            ),
-                                                            borderColor: isOutdoor ==
-                                                                        null ||
-                                                                    !isOutdoor!
-                                                                ? Colors
-                                                                    .transparent
-                                                                : Colors.black,
-                                                            borderWidth: isOutdoor ==
-                                                                        null ||
-                                                                    !isOutdoor!
-                                                                ? 0
-                                                                : 2,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 5,
-                                                        ),
-                                                        Expanded(
-                                                          child: _customButton(
-                                                            child: const Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Iconify(
-                                                                  IconAssets
-                                                                      .indoorIcon,
-                                                                  color: Colors
-                                                                      .black,
-                                                                  size: 20,
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 5,
-                                                                ),
-                                                                Text(
-                                                                  'Indoor',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    color: Colors
-                                                                        .black,
-                                                                    fontSize:
-                                                                        14,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            color: Colors.white,
-                                                            onTap: () {
-                                                              if (jumlah.text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field Jumlah Orang is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              if (startText
-                                                                      .text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field Start Time is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              if (endText
-                                                                      .text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field End Time is Required!',
-                                                                );
-                                                                return;
-                                                              }
-                                                              try {
-                                                                setState(() {
-                                                                  isOutdoor =
-                                                                      false;
-                                                                  isFetchingTable =
-                                                                      true;
-                                                                });
-                                                                tableSuggest(
-                                                                  request:
-                                                                      TableSuggestionRequestEntity(
-                                                                    capacity: int
-                                                                        .parse(
-                                                                      jumlah
-                                                                          .text,
-                                                                    ),
-                                                                    isOutdoor:
-                                                                        false,
-                                                                    date:
-                                                                        DateFormat(
-                                                                      'yyyy-MM-dd',
-                                                                    ).format(
-                                                                      start,
-                                                                    ),
-                                                                    startTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      start,
-                                                                    ),
-                                                                    endTime: DateFormat
-                                                                            .Hms()
-                                                                        .format(
-                                                                      end!,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              } on ResponseFailure catch (e) {
-                                                                setState(() {
-                                                                  final err = e
-                                                                          .allError
-                                                                      as Map<
-                                                                          String,
-                                                                          dynamic>;
-
-                                                                  Toast()
-                                                                      .showErrorToast(
-                                                                    context:
-                                                                        context,
-                                                                    title:
-                                                                        'Get Table Suggestion Failed',
-                                                                    description:
-                                                                        '${err['name']} - ${err['message']}',
-                                                                  );
-                                                                });
-                                                              } finally {
-                                                                setState(() {
-                                                                  isFetchingTable =
-                                                                      false;
-                                                                });
-                                                              }
-                                                            },
-                                                            borderRadius:
-                                                                const BorderRadius
-                                                                    .all(
-                                                              Radius.circular(
-                                                                15,
-                                                              ),
-                                                            ),
-                                                            isWideScreen:
-                                                                isWideScreen,
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              vertical: MediaQuery
-                                                                          .of(
-                                                                    context,
-                                                                  )
-                                                                      .size
-                                                                      .height *
-                                                                  0.018,
-                                                            ),
-                                                            borderColor: isOutdoor ==
-                                                                        null ||
-                                                                    isOutdoor!
-                                                                ? Colors
-                                                                    .transparent
-                                                                : Colors.black,
-                                                            borderWidth: isOutdoor ==
-                                                                        null ||
-                                                                    isOutdoor!
-                                                                ? 0
-                                                                : 2,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(
                                               width: (itemWidth * 2.5 + 30).w,
                                             ),
-                                            ElevatedButton(
-                                              onPressed: isLoading
-                                                  ? () {}
-                                                  : () async {
-                                                      if (paymentMethod ==
-                                                          null) {
-                                                        Toast().showErrorToast(
-                                                          context: context,
-                                                          title:
-                                                              'Validation Error',
-                                                          description:
-                                                              'Please Choose Metode Pembayaran',
-                                                        );
-                                                        return;
-                                                      }
-                                                      if (orderList.isEmpty) {
-                                                        Toast().showErrorToast(
-                                                          context: context,
-                                                          title:
-                                                              'Validation Error',
-                                                          description:
-                                                              'Please Choose Menu!',
-                                                        );
-                                                        return;
-                                                      }
-                                                      if (_formKey.currentState!
-                                                          .validate()) {
-                                                        setState(() {
-                                                          isLoading = true;
-                                                        });
-                                                        try {
-                                                          final res = await ref
-                                                              .read(
-                                                                reservationControllerProvider
-                                                                    .notifier,
-                                                              )
-                                                              .createNew(
-                                                                request:
-                                                                    CreateReservationRequestEntity(
-                                                                  reserveBy:
-                                                                      nama.text,
-                                                                  community:
-                                                                      komunitas
-                                                                          .text,
-                                                                  phoneNumber:
-                                                                      kontak
-                                                                          .text,
-                                                                  note: catatan
-                                                                      .text,
-                                                                  start:
-                                                                      '${DateFormat(
-                                                                    'yyyy-MM-dd',
-                                                                  ).format(
-                                                                    start,
-                                                                  )} ${DateFormat.Hm().format(start)}',
-                                                                  end:
-                                                                      '${DateFormat(
-                                                                    'yyyy-MM-dd',
-                                                                  ).format(
-                                                                    end!,
-                                                                  )} ${DateFormat.Hm().format(end!)}',
-                                                                  menus:
-                                                                      orderList,
-                                                                  tables: tableController
-                                                                      .selectedItems
-                                                                      .map(
-                                                                        (e) => e
-                                                                            .value,
-                                                                      )
-                                                                      .toList(),
-                                                                  paymentMethod:
-                                                                      paymentMethod!,
-                                                                  halfPayment: statusController
-                                                                          .selectedItems
-                                                                          .first
-                                                                          .value ==
-                                                                      'DP',
-                                                                ),
-                                                              );
-                                                          if (res.token
-                                                                  .isNotEmpty &&
-                                                              res.redirectUrl
-                                                                  .isNotEmpty) {
-                                                            await redirectToMidtransWebView(
-                                                              res.redirectUrl,
-                                                            );
-                                                          }
-                                                        } on ResponseFailure catch (e) {
-                                                          final err = e.allError
-                                                              as Map<String,
-                                                                  dynamic>;
-                                                          setState(() {
-                                                            Toast()
-                                                                .showErrorToast(
-                                                              context: context,
-                                                              title:
-                                                                  'Create Reservasi Failed',
-                                                              description:
-                                                                  '${err['name']} - ${err['message']}',
-                                                            );
-                                                          });
-                                                        } finally {
-                                                          setState(() {
-                                                            isLoading = false;
-                                                          });
-                                                          closeCreatePanel();
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 19,
+                                              ),
+                                              child: ElevatedButton(
+                                                onPressed: isLoading
+                                                    ? () {}
+                                                    : () async {
+                                                        if (paymentMethod ==
+                                                            null) {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title:
+                                                                'Validation Error',
+                                                            description:
+                                                                'Please Choose Metode Pembayaran',
+                                                          );
+                                                          return;
                                                         }
-                                                      }
-                                                    },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    hexToColor('#1F4940'),
-                                                shape:
-                                                    const RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.all(
-                                                    Radius.circular(30),
+                                                        if (orderList.isEmpty) {
+                                                          Toast()
+                                                              .showErrorToast(
+                                                            context: context,
+                                                            title:
+                                                                'Validation Error',
+                                                            description:
+                                                                'Please Choose Menu!',
+                                                          );
+                                                          return;
+                                                        }
+                                                        if (_formKey
+                                                            .currentState!
+                                                            .validate()) {
+                                                          setState(() {
+                                                            isLoading = true;
+                                                          });
+                                                          try {
+                                                            final res =
+                                                                await ref
+                                                                    .read(
+                                                                      reservationControllerProvider
+                                                                          .notifier,
+                                                                    )
+                                                                    .createNew(
+                                                                      request:
+                                                                          CreateReservationRequestEntity(
+                                                                        reserveBy:
+                                                                            nama.text,
+                                                                        community:
+                                                                            komunitas.text,
+                                                                        phoneNumber:
+                                                                            kontak.text,
+                                                                        note: catatan
+                                                                            .text,
+                                                                        start:
+                                                                            '${DateFormat(
+                                                                          'yyyy-MM-dd',
+                                                                        ).format(
+                                                                          start,
+                                                                        )} ${DateFormat.Hm().format(start)}',
+                                                                        end:
+                                                                            '${DateFormat(
+                                                                          'yyyy-MM-dd',
+                                                                        ).format(
+                                                                          end!,
+                                                                        )} ${DateFormat.Hm().format(end!)}',
+                                                                        menus:
+                                                                            orderList,
+                                                                        tables: tableController
+                                                                            .selectedItems
+                                                                            .map(
+                                                                              (e) => e.value,
+                                                                            )
+                                                                            .toList(),
+                                                                        paymentMethod:
+                                                                            paymentMethod!,
+                                                                        halfPayment:
+                                                                            statusController.selectedItems.first.value ==
+                                                                                'DP',
+                                                                      ),
+                                                                    );
+                                                            if (res.token
+                                                                    .isNotEmpty &&
+                                                                res.redirectUrl
+                                                                    .isNotEmpty) {
+                                                              await redirectToMidtransWebView(
+                                                                res.redirectUrl,
+                                                              );
+                                                            }
+                                                          } on ResponseFailure catch (e) {
+                                                            final err = e
+                                                                    .allError
+                                                                as Map<String,
+                                                                    dynamic>;
+                                                            setState(() {
+                                                              Toast()
+                                                                  .showErrorToast(
+                                                                context:
+                                                                    context,
+                                                                title:
+                                                                    'Create Reservasi Failed',
+                                                                description:
+                                                                    '${err['name']} - ${err['message']}',
+                                                              );
+                                                            });
+                                                          } finally {
+                                                            setState(() {
+                                                              isLoading = false;
+                                                            });
+                                                            closeCreatePanel();
+                                                          }
+                                                        }
+                                                      },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      hexToColor('#1F4940'),
+                                                  shape:
+                                                      const RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                      Radius.circular(30),
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: 18.h,
-                                                  horizontal: 15.w,
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: 18.h,
+                                                    horizontal: 15.w,
+                                                  ),
+                                                  child: isLoading
+                                                      ? const Center(
+                                                          child:
+                                                              CustomLoadingIndicator(
+                                                            color: Colors.white,
+                                                          ),
+                                                        )
+                                                      : const Text(
+                                                          AppStrings.tambahBtn,
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
                                                 ),
-                                                child: isLoading
-                                                    ? const Center(
-                                                        child:
-                                                            CustomLoadingIndicator(
-                                                          color: Colors.white,
-                                                        ),
-                                                      )
-                                                    : const Text(
-                                                        AppStrings.tambahBtn,
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
                                               ),
                                             ),
                                           ],
@@ -3329,11 +3677,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 textAlign: TextAlign.center,
                                               ),
                                               TextButton(
-                                                onPressed: () {
-                                                  ref.invalidate(
-                                                    reservationControllerProvider,
-                                                  );
-                                                },
+                                                onPressed: controller.refresh,
                                                 style: TextButton.styleFrom(
                                                   backgroundColor:
                                                       hexToColor('#1F4940'),
@@ -4273,7 +4617,12 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 height: 5.h,
                                               ),
                                               if (isFetchingTable)
-                                                const CustomLoadingIndicator()
+                                                const Center(
+                                                  child: CustomLoadingIndicator(
+                                                    boxHeight: 40,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
                                               else
                                                 MultiDropdown(
                                                   autovalidateMode:
@@ -4631,7 +4980,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                         ],
                                                       ),
                                                       color: Colors.white,
-                                                      onTap: () {
+                                                      onTap: () async {
                                                         if (jumlah.text == '') {
                                                           Toast()
                                                               .showErrorToast(
@@ -4670,7 +5019,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             isFetchingTable =
                                                                 true;
                                                           });
-                                                          tableSuggest(
+                                                          await tableSuggest(
                                                             request:
                                                                 TableSuggestionRequestEntity(
                                                               capacity:
@@ -4698,12 +5047,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             ),
                                                           );
                                                         } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
-                                                            final err = e
-                                                                    .allError
-                                                                as Map<String,
-                                                                    dynamic>;
-
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
@@ -4777,7 +5124,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                         ],
                                                       ),
                                                       color: Colors.white,
-                                                      onTap: () {
+                                                      onTap: () async {
                                                         if (jumlah.text == '') {
                                                           Toast()
                                                               .showErrorToast(
@@ -4816,7 +5163,7 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             isFetchingTable =
                                                                 true;
                                                           });
-                                                          tableSuggest(
+                                                          await tableSuggest(
                                                             request:
                                                                 TableSuggestionRequestEntity(
                                                               capacity:
@@ -4844,12 +5191,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             ),
                                                           );
                                                         } on ResponseFailure catch (e) {
+                                                          final err = e.allError
+                                                              as Map<String,
+                                                                  dynamic>;
                                                           setState(() {
-                                                            final err = e
-                                                                    .allError
-                                                                as Map<String,
-                                                                    dynamic>;
-
                                                             Toast()
                                                                 .showErrorToast(
                                                               context: context,
@@ -5144,6 +5489,9 @@ Widget _buildDateTimePickerField({
             if (value == null || value == '') {
               return 'Required Field';
             }
+            if (label == 'Jumlah Orang' && (int.parse(value) < 10)) {
+              return 'Must Be at least 10 person!';
+            }
             return null;
           },
           onTap: onTap,
@@ -5209,9 +5557,12 @@ Widget _buildTextField(
             if (label == 'Kontak' && (value!.length < 3 || value.length > 12)) {
               return 'Must be min 3 char. and max 12 char.';
             }
-            if ((label == 'Nama' || label == 'Komunitas') &&
-                (value!.length < 3 || value.length > 150)) {
+            if (label == 'Nama' && (value!.length < 3 || value.length > 150)) {
               return 'Must be min 3 char. and max 150 char.';
+            }
+            if (label == 'Komunitas' &&
+                (value!.isEmpty || value.length > 150)) {
+              return 'Must be min 1 char. and max 150 char.';
             }
             if (label == 'Catatan' && value!.length > 1500) {
               return 'Must be max 1500 char.';

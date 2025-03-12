@@ -88,8 +88,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   }
 
   void onSearch() {
-    ref.read(menuControllerProvider.notifier).fetchMenus(
-      // search: search.text,
+    ref.read(menuControllerProvider.notifier).onSearch(
       advSearch: {
         'withDeleted': false,
         'isActive': true,
@@ -243,7 +242,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                     MenuType.all) {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'withDeleted': false,
                                       'isActive': true,
@@ -252,7 +251,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                 } else {
                                   ref
                                       .read(menuControllerProvider.notifier)
-                                      .fetchMenus(
+                                      .onSearch(
                                     advSearch: {
                                       'category':
                                           menuTypeOptions.elementAt(idx).$2,
@@ -997,7 +996,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                       MenuType.all) {
                                     ref
                                         .read(menuControllerProvider.notifier)
-                                        .fetchMenus(
+                                        .onSearch(
                                       advSearch: {
                                         'withDeleted': false,
                                         'isActive': true,
@@ -1006,7 +1005,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                   } else {
                                     ref
                                         .read(menuControllerProvider.notifier)
-                                        .fetchMenus(
+                                        .onSearch(
                                       advSearch: {
                                         'category':
                                             menuTypeOptions.elementAt(idx).$2,

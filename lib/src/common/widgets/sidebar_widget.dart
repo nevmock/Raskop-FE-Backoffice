@@ -60,222 +60,258 @@ class _SidebarWidgetState extends State<SidebarWidget> {
             SizedBox(
               height: 20.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[0],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.dashboardIcon,
-                  color: iconColor[0],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Dashboard',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = hexToColor('#1f4940');
-                    isSelected[0] = true;
-                    iconColor[1] = Colors.white;
-                    isSelected[1] = false;
-                    iconColor[2] = Colors.white;
-                    isSelected[2] = false;
-                    iconColor[3] = Colors.white;
-                    isSelected[3] = false;
-                    iconColor[4] = Colors.white;
-                    isSelected[4] = false;
-                    iconColor[5] = Colors.white;
-                    isSelected[5] = false;
-                  });
-                  widget.changeIndex(0);
-                },
+                child: ListTile(
+                  selected: isSelected[0],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.dashboardIcon,
+                    color: iconColor[0],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = hexToColor('#1f4940');
+                      isSelected[0] = true;
+                      iconColor[1] = Colors.white;
+                      isSelected[1] = false;
+                      iconColor[2] = Colors.white;
+                      isSelected[2] = false;
+                      iconColor[3] = Colors.white;
+                      isSelected[3] = false;
+                      iconColor[4] = Colors.white;
+                      isSelected[4] = false;
+                      iconColor[5] = Colors.white;
+                      isSelected[5] = false;
+                    });
+                    widget.changeIndex(0);
+                  },
+                ),
               ),
             ),
             SizedBox(
               height: 10.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[1],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.orderIcon,
-                  color: iconColor[1],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Order',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                iconColor: iconColor[1],
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = Colors.white;
-                    isSelected[0] = false;
-                    iconColor[1] = hexToColor('#1f4940');
-                    isSelected[1] = true;
-                    iconColor[2] = Colors.white;
-                    isSelected[2] = false;
-                    iconColor[3] = Colors.white;
-                    isSelected[3] = false;
-                    iconColor[4] = Colors.white;
-                    isSelected[4] = false;
-                    iconColor[5] = Colors.white;
-                    isSelected[5] = false;
-                  });
-                  widget.changeIndex(1);
-                },
+                child: ListTile(
+                  selected: isSelected[1],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.orderIcon,
+                    color: iconColor[1],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  iconColor: iconColor[1],
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = Colors.white;
+                      isSelected[0] = false;
+                      iconColor[1] = hexToColor('#1f4940');
+                      isSelected[1] = true;
+                      iconColor[2] = Colors.white;
+                      isSelected[2] = false;
+                      iconColor[3] = Colors.white;
+                      isSelected[3] = false;
+                      iconColor[4] = Colors.white;
+                      isSelected[4] = false;
+                      iconColor[5] = Colors.white;
+                      isSelected[5] = false;
+                    });
+                    widget.changeIndex(1);
+                  },
+                ),
               ),
             ),
             SizedBox(
               height: 10.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[2],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.menuIcon,
-                  color: iconColor[2],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Menu',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                iconColor: iconColor[2],
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = Colors.white;
-                    isSelected[0] = false;
-                    iconColor[1] = Colors.white;
-                    isSelected[1] = false;
-                    iconColor[2] = hexToColor('#1f4940');
-                    isSelected[2] = true;
-                    iconColor[3] = Colors.white;
-                    isSelected[3] = false;
-                    iconColor[4] = Colors.white;
-                    isSelected[4] = false;
-                    iconColor[5] = Colors.white;
-                    isSelected[5] = false;
-                  });
-                  widget.changeIndex(2);
-                },
+                child: ListTile(
+                  selected: isSelected[2],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.menuIcon,
+                    color: iconColor[2],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  iconColor: iconColor[2],
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = Colors.white;
+                      isSelected[0] = false;
+                      iconColor[1] = Colors.white;
+                      isSelected[1] = false;
+                      iconColor[2] = hexToColor('#1f4940');
+                      isSelected[2] = true;
+                      iconColor[3] = Colors.white;
+                      isSelected[3] = false;
+                      iconColor[4] = Colors.white;
+                      isSelected[4] = false;
+                      iconColor[5] = Colors.white;
+                      isSelected[5] = false;
+                    });
+                    widget.changeIndex(2);
+                  },
+                ),
               ),
             ),
             SizedBox(
               height: 10.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[3],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.reservasiIcon,
-                  color: iconColor[3],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Reservation',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                iconColor: iconColor[3],
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = Colors.white;
-                    isSelected[0] = false;
-                    iconColor[1] = Colors.white;
-                    isSelected[1] = false;
-                    iconColor[2] = Colors.white;
-                    isSelected[2] = false;
-                    iconColor[3] = hexToColor('#1f4940');
-                    isSelected[3] = true;
-                    iconColor[4] = Colors.white;
-                    isSelected[4] = false;
-                    iconColor[5] = Colors.white;
-                    isSelected[5] = false;
-                  });
-                  widget.changeIndex(3);
-                },
+                child: ListTile(
+                  selected: isSelected[3],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.reservasiIcon,
+                    color: iconColor[3],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  iconColor: iconColor[3],
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = Colors.white;
+                      isSelected[0] = false;
+                      iconColor[1] = Colors.white;
+                      isSelected[1] = false;
+                      iconColor[2] = Colors.white;
+                      isSelected[2] = false;
+                      iconColor[3] = hexToColor('#1f4940');
+                      isSelected[3] = true;
+                      iconColor[4] = Colors.white;
+                      isSelected[4] = false;
+                      iconColor[5] = Colors.white;
+                      isSelected[5] = false;
+                    });
+                    widget.changeIndex(3);
+                  },
+                ),
               ),
             ),
             SizedBox(
               height: 10.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[4],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.tableIcon,
-                  color: iconColor[4],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Table',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                iconColor: iconColor[4],
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = Colors.white;
-                    isSelected[0] = false;
-                    iconColor[1] = Colors.white;
-                    isSelected[1] = false;
-                    iconColor[2] = Colors.white;
-                    isSelected[2] = false;
-                    iconColor[3] = Colors.white;
-                    isSelected[3] = false;
-                    iconColor[4] = hexToColor('#1f4940');
-                    isSelected[4] = true;
-                    iconColor[5] = Colors.white;
-                    isSelected[5] = false;
-                  });
-                  widget.changeIndex(4);
-                },
+                child: ListTile(
+                  selected: isSelected[4],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.tableIcon,
+                    color: iconColor[4],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  iconColor: iconColor[4],
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = Colors.white;
+                      isSelected[0] = false;
+                      iconColor[1] = Colors.white;
+                      isSelected[1] = false;
+                      iconColor[2] = Colors.white;
+                      isSelected[2] = false;
+                      iconColor[3] = Colors.white;
+                      isSelected[3] = false;
+                      iconColor[4] = hexToColor('#1f4940');
+                      isSelected[4] = true;
+                      iconColor[5] = Colors.white;
+                      isSelected[5] = false;
+                    });
+                    widget.changeIndex(4);
+                  },
+                ),
               ),
             ),
             SizedBox(
               height: 10.h,
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.isWideScreen ? 10.w : 5.w,
-              ),
-              child: ListTile(
-                selected: isSelected[5],
-                selectedTileColor: Colors.white,
-                contentPadding: EdgeInsets.all(3.h),
-                title: Iconify(
-                  IconAssets.supplierIcon,
-                  color: iconColor[5],
-                  size: widget.isWideScreen ? 25 : 20,
+            Tooltip(
+              triggerMode: TooltipTriggerMode.longPress,
+              message: 'Supplier',
+              verticalOffset: -15,
+              margin: const EdgeInsets.only(left: 100),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.isWideScreen ? 10.w : 5.w,
                 ),
-                shape: const CircleBorder(),
-                iconColor: iconColor[5],
-                onTap: () {
-                  setState(() {
-                    iconColor[0] = Colors.white;
-                    isSelected[0] = false;
-                    iconColor[1] = Colors.white;
-                    isSelected[1] = false;
-                    iconColor[2] = Colors.white;
-                    isSelected[2] = false;
-                    iconColor[3] = Colors.white;
-                    isSelected[3] = false;
-                    iconColor[4] = Colors.white;
-                    isSelected[4] = false;
-                    iconColor[5] = hexToColor('#1f4940');
-                    isSelected[5] = true;
-                  });
-                  widget.changeIndex(5);
-                },
+                child: ListTile(
+                  selected: isSelected[5],
+                  selectedTileColor: Colors.white,
+                  contentPadding: EdgeInsets.all(3.h),
+                  title: Iconify(
+                    IconAssets.supplierIcon,
+                    color: iconColor[5],
+                    size: widget.isWideScreen ? 25 : 20,
+                  ),
+                  shape: const CircleBorder(),
+                  iconColor: iconColor[5],
+                  onTap: () {
+                    setState(() {
+                      iconColor[0] = Colors.white;
+                      isSelected[0] = false;
+                      iconColor[1] = Colors.white;
+                      isSelected[1] = false;
+                      iconColor[2] = Colors.white;
+                      isSelected[2] = false;
+                      iconColor[3] = Colors.white;
+                      isSelected[3] = false;
+                      iconColor[4] = Colors.white;
+                      isSelected[4] = false;
+                      iconColor[5] = hexToColor('#1f4940');
+                      isSelected[5] = true;
+                    });
+                    widget.changeIndex(5);
+                  },
+                ),
               ),
             ),
           ],
