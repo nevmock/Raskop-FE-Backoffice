@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, avoid_dynamic_calls
 
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,10 +121,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           Text(
             tipe == 'total_sales'
-                ? 'Total Sales'
+                ? 'Penjualan'
                 : tipe == 'total_orders'
-                    ? 'Total Orders'
-                    : 'Total Items Sold',
+                    ? 'Pesanan'
+                    : 'Terjual',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -228,9 +230,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             verticalInterval: 1,
             getDrawingHorizontalLine: (value) {
               return const FlLine(
-                color: Colors.white24,
-                strokeWidth: .5,
-                dashArray: [8],
+                color: Colors.white,
+                strokeWidth: 1,
+                dashArray: [15],
               );
             },
             getDrawingVerticalLine: (value) {
@@ -259,7 +261,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               sideTitles: SideTitles(
                 showTitles: true,
                 interval: maxY / 5,
-                getTitlesWidget: _leftTitleWidgets,
+                getTitlesWidget: (value, meta) =>
+                    _leftTitleWidgets(tipe, value, meta),
                 reservedSize: 50,
               ),
             ),
@@ -280,32 +283,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }),
               isCurved: true,
               color: Colors.white,
-              barWidth: 3,
+              barWidth: 5,
               isStrokeCapRound: true,
-              dotData: FlDotData(
-                getDotPainter: (spot, percent, barData, index) {
-                  if (aggregatedData[index][tipe] == 0) {
-                    return FlDotCirclePainter(
-                      radius: 0,
-                      color: Colors.transparent,
-                    );
-                  }
-                  return FlDotCirclePainter(
-                    radius: 4,
-                    color: Colors.white,
-                    strokeWidth: 2,
-                    strokeColor: hexToColor('#1F4940'),
-                  );
-                },
-              ),
+              dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    hexToColor('#FAFAFA').withOpacity(0.5),
-                    hexToColor('#CACACA').withOpacity(0.1),
+                    hexToColor('#FAFAFA'),
+                    hexToColor('#CACACA'),
                   ],
                 ),
               ),
@@ -408,9 +396,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) {
                     return const FlLine(
-                      color: Colors.white24,
-                      strokeWidth: .5,
-                      dashArray: [8],
+                      color: Colors.white,
+                      strokeWidth: 1,
+                      dashArray: [15],
                     );
                   },
                   getDrawingVerticalLine: (value) {
@@ -440,7 +428,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: maxY / 5,
-                      getTitlesWidget: _leftTitleWidgets,
+                      getTitlesWidget: (value, meta) =>
+                          _leftTitleWidgets(tipe, value, meta),
                       reservedSize: 50,
                     ),
                   ),
@@ -461,26 +450,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     }),
                     isCurved: true,
                     color: Colors.white,
-                    barWidth: 3,
+                    barWidth: 5,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: Colors.white,
-                          strokeWidth: 2,
-                          strokeColor: hexToColor('#1F4940'),
-                        );
-                      },
-                    ),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          hexToColor('#FAFAFA').withOpacity(0.5),
-                          hexToColor('#CACACA').withOpacity(0.1),
+                          hexToColor('#FAFAFA'),
+                          hexToColor('#CACACA'),
                         ],
                       ),
                     ),
@@ -573,7 +553,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _leftTitleWidgets(double value, TitleMeta meta) {
+  Widget _leftTitleWidgets(String tipe, double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
       fontSize: 12,
@@ -581,10 +561,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     String formattedValue;
-    if (value >= 1000) {
-      formattedValue = '${(value / 1000).toStringAsFixed(1)}K';
+    if (tipe == 'total_sales') {
+      if (value >= 1000000) {
+        formattedValue = '${(value / 1000000).toStringAsFixed(0)}jt';
+      } else {
+        formattedValue =
+            value.toInt().toString() + (tipe == 'total_sales' ? 'K' : '');
+      }
     } else {
-      formattedValue = value.toInt().toString();
+      if (value >= 1000) {
+        formattedValue = '${(value / 1000).toStringAsFixed(0)}k';
+      } else {
+        formattedValue = value.toInt().toString();
+      }
     }
 
     return Text(formattedValue, style: style, textAlign: TextAlign.left);
@@ -656,14 +645,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 spacing: 16,
                                 children: [
-                                  SizedBox(
+                                  Container(
                                     width: 125,
                                     height: 125,
+                                    decoration: const BoxDecoration(
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(8),
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAliasWithSaveLayer,
                                     child: Image.network(
                                       'https://${BasePaths.baseAPIURL}${menu.image_uri}',
                                       errorBuilder:
                                           (context, object, stackTrace) =>
                                               const Text('Error'),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                   Expanded(
@@ -804,18 +800,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       setState(() {
                         filter = 'Hari ini';
                       });
-                      final now = DateTime.now();
-                      final format = DateFormat('yyyy-MM-dd');
-                      final start = format
-                          .format(DateTime(now.year, now.month, now.day - 1));
-                      final end =
-                          format.format(DateTime(now.year, now.month, now.day));
-                      await ref
-                          .read(favMenuControllerProvider.notifier)
-                          .getFavouriteMenus(start, end);
-                      await ref
-                          .read(salesPerformanceControllerProvider.notifier)
-                          .getSalesPerformance(start, end);
+                      final start = DateFormat('yyyy-MM-dd').format(
+                        DateTime.now(),
+                      );
+                      final end = DateFormat('yyyy-MM-dd').format(
+                        DateTime.now(),
+                      );
+                      unawaited(
+                        ref
+                            .read(favMenuControllerProvider.notifier)
+                            .getFavouriteMenus(start, end),
+                      );
+                      unawaited(
+                        ref
+                            .read(salesPerformanceControllerProvider.notifier)
+                            .getSalesPerformance(start, end),
+                      );
                     },
                     child: Center(
                       child: Text(
@@ -854,12 +854,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           format.format(DateTime(now.year, now.month));
                       final end =
                           format.format(DateTime(now.year, now.month + 1, 0));
-                      await ref
-                          .read(favMenuControllerProvider.notifier)
-                          .getFavouriteMenus(start, end);
-                      await ref
-                          .read(salesPerformanceControllerProvider.notifier)
-                          .getSalesPerformance(start, end);
+                      unawaited(
+                        ref
+                            .read(favMenuControllerProvider.notifier)
+                            .getFavouriteMenus(start, end),
+                      );
+                      unawaited(
+                        ref
+                            .read(salesPerformanceControllerProvider.notifier)
+                            .getSalesPerformance(start, end),
+                      );
                     },
                     child: Center(
                       child: Text(
@@ -902,12 +906,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         final format = DateFormat('yyyy-MM-dd');
                         final start = format.format(date!.start);
                         final end = format.format(date.end);
-                        await ref
-                            .read(favMenuControllerProvider.notifier)
-                            .getFavouriteMenus(start, end);
-                        await ref
-                            .read(salesPerformanceControllerProvider.notifier)
-                            .getSalesPerformance(start, end);
+                        unawaited(
+                          ref
+                              .read(favMenuControllerProvider.notifier)
+                              .getFavouriteMenus(start, end),
+                        );
+                        unawaited(
+                          ref
+                              .read(salesPerformanceControllerProvider.notifier)
+                              .getSalesPerformance(start, end),
+                        );
                       }
                     },
                     child: Center(
