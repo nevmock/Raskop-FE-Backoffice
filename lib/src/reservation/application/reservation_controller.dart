@@ -45,7 +45,7 @@ class ReservationController extends _$ReservationController {
   @override
   FutureOr<List<ReservationEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 3));
+    ref.cacheFor(const Duration(seconds: 5));
     return fetchReservations();
   }
 
@@ -76,8 +76,8 @@ class ReservationController extends _$ReservationController {
             'direction': direction,
           },
         <String, dynamic>{
-          'column': 'createdAt',
-          'direction': 'DESC',
+          'column': 'start',
+          'direction': 'ASC',
         }
       ],
     );

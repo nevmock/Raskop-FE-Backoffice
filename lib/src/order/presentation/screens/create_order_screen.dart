@@ -383,20 +383,63 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                                 },
                                                 onAdd: () {
                                                   setState(() {
-                                                    dummyItemList.add(
-                                                      (
+                                                    final menuIndex =
+                                                        dummyItemList
+                                                            .indexWhere(
+                                                      (e) => e.$1 == menu.name,
+                                                    );
+
+                                                    if (menuIndex != -1) {
+                                                      // Jika menu sudah ada, update quantity dan notes
+                                                      dummyItemList[menuIndex] =
+                                                          (
                                                         menu.name,
                                                         menu.price,
-                                                        qty,
-                                                        notes.text
-                                                      ),
+                                                        dummyItemList[menuIndex]
+                                                                .$3 +
+                                                            qty, // Tambahkan qty lama dengan yang baru
+                                                        notes.text.isNotEmpty
+                                                            ? notes.text
+                                                            : dummyItemList[
+                                                                    menuIndex]
+                                                                .$4
+                                                      );
+                                                    } else {
+                                                      // Jika belum ada, tambahkan menu baru
+                                                      dummyItemList.add(
+                                                        (
+                                                          menu.name,
+                                                          menu.price,
+                                                          qty,
+                                                          notes.text
+                                                        ),
+                                                      );
+                                                    }
+                                                    final orderIndex =
+                                                        itemList.indexWhere(
+                                                      (e) => e['id'] == menu.id,
                                                     );
-                                                    itemList.add({
-                                                      'id': menu.id,
-                                                      'quantity': qty,
-                                                      if (notes.text.isNotEmpty)
-                                                        'note': notes.text,
-                                                    });
+
+                                                    if (orderIndex != -1) {
+                                                      // ignore: avoid_dynamic_calls
+                                                      itemList[orderIndex]
+                                                          ['quantity'] += qty;
+                                                      if (notes
+                                                          .text.isNotEmpty) {
+                                                        itemList[orderIndex]
+                                                                ['note'] =
+                                                            notes.text;
+                                                      }
+                                                    } else {
+                                                      // Jika belum ada, tambahkan menu baru
+                                                      itemList.add({
+                                                        'id': menu.id,
+                                                        'quantity': qty,
+                                                        if (notes
+                                                            .text.isNotEmpty)
+                                                          'note': notes.text,
+                                                      });
+                                                    }
                                                     grandTotal =
                                                         dummyItemList.fold(
                                                       0,

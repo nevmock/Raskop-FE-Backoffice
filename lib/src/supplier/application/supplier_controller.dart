@@ -44,7 +44,7 @@ class SupplierController extends _$SupplierController {
   /// auto build widget when calling the controller
   FutureOr<List<SupplierEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 10));
+    ref.cacheFor(const Duration(minutes: 1));
     return fetchSuppliers();
   }
 

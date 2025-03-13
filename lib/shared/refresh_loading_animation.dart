@@ -1,31 +1,38 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:raskop_fe_backoffice/res/assets.dart';
 import 'package:raskop_fe_backoffice/shared/const.dart';
 
 ///
-class RefreshLoadingAnimation extends StatefulWidget {
+class RefreshLoadingAnimation extends ConsumerStatefulWidget {
   ///
-  const RefreshLoadingAnimation(
-      {required this.children, required this.onRefresh, super.key});
-
-  @override
-  _RefreshLoadingAnimationState createState() =>
-      _RefreshLoadingAnimationState();
+  const RefreshLoadingAnimation({
+    required this.children,
+    required this.onRefresh,
+    required this.provider,
+    super.key,
+  });
 
   ///
   final List<Widget> children;
 
   ///
   final Future<void> Function() onRefresh;
+
+  ///
+  final dynamic provider;
+
+  @override
+  ConsumerState<RefreshLoadingAnimation> createState() =>
+      _RefreshLoadingAnimationState();
 }
 
-class _RefreshLoadingAnimationState extends State<RefreshLoadingAnimation>
+class _RefreshLoadingAnimationState
+    extends ConsumerState<RefreshLoadingAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-
-  bool isRefreshing = false;
 
   @override
   void initState() {
@@ -43,68 +50,100 @@ class _RefreshLoadingAnimationState extends State<RefreshLoadingAnimation>
   }
 
   Future<void> startRefresh() async {
-    setState(() {
-      isRefreshing = true;
-      _controller.repeat();
-    });
     await widget.onRefresh();
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        isRefreshing = false;
-        _controller.stop();
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: isRefreshing
-              ? BorderPainter(_controller.value)
-              : NormalBorderPainter(),
-          child: AnimatedContainer(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 15,
-            ),
-            duration: const Duration(milliseconds: 100),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.all(
-                Radius.circular(15),
-              ),
-            ),
-            child: Row(
-              children: [
-                Flexible(
-                  child: Tooltip(
-                    triggerMode: TooltipTriggerMode.longPress,
-                    message: 'Refresh on Double Tap',
-                    verticalOffset: -15,
-                    margin: const EdgeInsets.only(left: 100),
-                    child: GestureDetector(
-                      onDoubleTap: () async {
-                        await startRefresh();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: 20,
-                        ),
-                        child: Image.asset(ImageAssets.raskop),
+    final controller = widget.provider;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500), // Fade In & Fade Out
+      transitionBuilder: (widget, animation) => FadeTransition(
+        opacity: animation,
+        child: widget,
+      ),
+      child: controller is AsyncLoading
+          ? AnimatedBuilder(
+              animation: _controller..repeat(),
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: BorderPainter(_controller.value),
+                  child: AnimatedContainer(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 15,
+                    ),
+                    duration: const Duration(milliseconds: 100),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(15),
                       ),
                     ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20,
+                            ),
+                            child: Image.asset(ImageAssets.raskop),
+                          ),
+                        ),
+                        const Spacer(),
+                        ...widget.children,
+                      ],
+                    ),
                   ),
-                ),
-                const Spacer(),
-                ...widget.children,
-              ],
+                );
+              },
+            )
+          : AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: NormalBorderPainter(),
+                  child: AnimatedContainer(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 15,
+                    ),
+                    duration: const Duration(milliseconds: 100),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(15),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Tooltip(
+                            triggerMode: TooltipTriggerMode.longPress,
+                            message: 'Refresh on Double Tap',
+                            verticalOffset: -15,
+                            margin: const EdgeInsets.only(left: 100),
+                            child: GestureDetector(
+                              onDoubleTap: () async {
+                                await startRefresh();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                ),
+                                child: Image.asset(ImageAssets.raskop),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        ...widget.children,
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-        );
-      },
     );
   }
 }
