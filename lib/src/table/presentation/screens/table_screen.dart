@@ -386,9 +386,9 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                           hexToColor('#D9D9D9'),
                                                       child: const Center(
                                                         child: Text(
-                                                          '',
+                                                          'Bar',
                                                           style: TextStyle(
-                                                            fontSize: 20,
+                                                            fontSize: 18,
                                                             fontWeight:
                                                                 FontWeight.bold,
                                                             color: Colors.white,
@@ -1038,9 +1038,9 @@ class _TableScreenState extends ConsumerState<TableScreen>
                                                           ),
                                                           child: const Center(
                                                             child: Text(
-                                                              '',
+                                                              'Bar',
                                                               style: TextStyle(
-                                                                fontSize: 20,
+                                                                fontSize: 16,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
