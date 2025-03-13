@@ -264,9 +264,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                     child: Column(
                       children: [
                         RefreshLoadingAnimation(
+                          provider: ref.watch(menuControllerProvider),
                           onRefresh: () async => controller.refresh(),
                           children: [
-                            const Spacer(),
                             Expanded(
                               flex: 5,
                               child: AnimatedContainer(
@@ -373,7 +373,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             const Text(
-                              'Petunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
+                              'Petunjuk: Ketuk logo dua kali untuk menyegarkan halaman*\nPetunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -1221,10 +1221,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               width: (itemWidth * 2 + 5).w - 16,
                                               child: _buildTextField(
                                                 'Deskripsi',
-                                                'Masukkan deskripsi menu',
+                                                'Masukkan deskripsi ',
                                                 deskripsi,
                                                 TextInputType.text,
-                                                0,
+                                                16,
                                               ),
                                             ),
                                           ],
@@ -1532,7 +1532,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                                 'Masukkan deskripsi menu',
                                                 deskripsi,
                                                 TextInputType.text,
-                                                0,
+                                                16,
                                               ),
                                             ),
                                           ],

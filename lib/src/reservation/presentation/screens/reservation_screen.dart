@@ -184,6 +184,31 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         };
         orderId = detail.orders.first.id;
         kontak.value = TextEditingValue(text: detail.phoneNumber);
+        status = orderStatus
+            .firstWhere((e) => e.value == detail.orders.first.status)
+            .label;
+        detail.orders.first.status == 'BELUM_DIBUAT'
+            ? statusTabletController
+                .addItem(DropdownItem(label: 'Diproses', value: 'PROSES'))
+            : detail.orders.first.status == 'PROSES'
+                ? statusTabletController.addItems([
+                    DropdownItem(
+                      label: 'Selesai Dibuat',
+                      value: 'SELESAI_DIBUAT',
+                    ),
+                  ])
+                : statusTabletController.clearAll();
+        detail.orders.first.status == 'BELUM_DIBUAT'
+            ? statusPhoneController
+                .addItem(DropdownItem(label: 'Diproses', value: 'PROSES'))
+            : detail.orders.first.status == 'PROSES'
+                ? statusPhoneController.addItems([
+                    DropdownItem(
+                      label: 'Selesai Dibuat',
+                      value: 'SELESAI_DIBUAT',
+                    ),
+                  ])
+                : statusPhoneController.clearAll();
         isDetailPanelVisible = true;
       });
     }
@@ -203,6 +228,13 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
         kontak.clear();
         orderId = null;
         paymentMethod = null;
+        status = null;
+        statusTabletController
+          ..clearAll()
+          ..setItems([]);
+        statusPhoneController
+          ..clearAll()
+          ..setItems([]);
 
         isDetailPanelVisible = false;
       });
@@ -360,6 +392,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                               child: Column(
                                 children: [
                                   RefreshLoadingAnimation(
+                                    provider: ref
+                                        .watch(reservationControllerProvider),
                                     children: [
                                       Expanded(
                                         flex: 5,
@@ -479,6 +513,14 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
+                                      const Text(
+                                        'Petunjuk: Ketuk logo dua kali untuk menyegarkan halaman*\nPetunjuk: Geser ke kiri item untuk melihat tombol tolak reservasi*',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const Spacer(),
                                       ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
@@ -2092,19 +2134,6 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             ),
                                                             color: Colors.white,
                                                             onTap: () async {
-                                                              if (jumlah.text ==
-                                                                  '') {
-                                                                Toast()
-                                                                    .showErrorToast(
-                                                                  context:
-                                                                      context,
-                                                                  title:
-                                                                      'Error',
-                                                                  description:
-                                                                      'Field Jumlah Orang is Required!',
-                                                                );
-                                                                return;
-                                                              }
                                                               if (startText
                                                                       .text ==
                                                                   '') {
@@ -2130,6 +2159,19 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                       'Error',
                                                                   description:
                                                                       'Field End Time is Required!',
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (jumlah.text ==
+                                                                  '') {
+                                                                Toast()
+                                                                    .showErrorToast(
+                                                                  context:
+                                                                      context,
+                                                                  title:
+                                                                      'Error',
+                                                                  description:
+                                                                      'Field Jumlah Orang is Required!',
                                                                 );
                                                                 return;
                                                               }
@@ -2170,7 +2212,6 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                   ),
                                                                 );
                                                               } on ResponseFailure catch (e) {
-                                                                print(e);
                                                                 final err = e
                                                                         .allError
                                                                     as Map<
@@ -2434,11 +2475,6 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             AutovalidateMode
                                                                 .onUnfocus,
                                                         validator: (option) {
-                                                          if (jumlah.text ==
-                                                              '') {
-                                                            return 'Required Jumlah Orang field';
-                                                          }
-
                                                           if (startText.text ==
                                                               '') {
                                                             return 'Required Start Time field';
@@ -2449,6 +2485,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                             return 'Required End Time field';
                                                           }
 
+                                                          if (jumlah.text ==
+                                                              '') {
+                                                            return 'Required Jumlah Orang field';
+                                                          }
                                                           if (isOutdoor ==
                                                               null) {
                                                             return 'Required To Choose Ruangan field';
@@ -2946,8 +2986,10 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                             nama.text,
                                                                         community:
                                                                             komunitas.text,
-                                                                        phoneNumber:
-                                                                            kontak.text,
+                                                                        phoneNumber: kontak.text.startsWith('+62') &&
+                                                                                kontak.text.length > 3
+                                                                            ? kontak.text
+                                                                            : '+62${kontak.text.replaceFirst(RegExp(r'^\+?62'), '')}',
                                                                         note: catatan
                                                                             .text,
                                                                         start:
@@ -5290,9 +5332,13 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                                   community:
                                                                       komunitas
                                                                           .text,
-                                                                  phoneNumber:
-                                                                      kontak
-                                                                          .text,
+                                                                  phoneNumber: kontak.text.startsWith(
+                                                                              '+62') &&
+                                                                          kontak.text.length >
+                                                                              3
+                                                                      ? kontak
+                                                                          .text
+                                                                      : '+62${kontak.text.replaceFirst(RegExp(r'^\+?62'), '')}',
                                                                   note: catatan
                                                                       .text,
                                                                   start:
@@ -5549,52 +5595,127 @@ Widget _buildTextField(
         SizedBox(
           height: 5.h,
         ),
-        TextFormField(
-          validator: (value) {
-            if ((value == null || value.isEmpty) && label != 'Catatan') {
-              return 'Required Field!';
-            }
-            if (label == 'Kontak' && (value!.length < 3 || value.length > 12)) {
-              return 'Must be min 3 char. and max 12 char.';
-            }
-            if (label == 'Nama' && (value!.length < 3 || value.length > 150)) {
-              return 'Must be min 3 char. and max 150 char.';
-            }
-            if (label == 'Komunitas' &&
-                (value!.isEmpty || value.length > 150)) {
-              return 'Must be min 1 char. and max 150 char.';
-            }
-            if (label == 'Catatan' && value!.length > 1500) {
-              return 'Must be max 1500 char.';
-            }
-            return null;
-          },
-          inputFormatters: inputFormatter,
-          keyboardType: keytype,
-          controller: controller,
-          style: const TextStyle(
-            fontWeight: FontWeight.w400,
-            color: Colors.black,
-            fontSize: 14,
-            overflow: TextOverflow.fade,
+        if (label == 'Kontak')
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  width: 20,
+                  height: 52.5,
+                  decoration: BoxDecoration(
+                    color: hexToColor('#1f4940'),
+                    border: Border.all(),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      bottomLeft: Radius.circular(15),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '+62',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                        fontSize: 14,
+                        overflow: TextOverflow.fade,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 5,
+                child: TextFormField(
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required Field!';
+                    }
+                    if (label == 'Kontak' &&
+                        (value.length < 7 || value.length > 12)) {
+                      return 'Must be min 7 char. and max 12 char.';
+                    }
+                    return null;
+                  },
+                  inputFormatters: inputFormatter,
+                  keyboardType: keytype,
+                  controller: controller,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black,
+                    fontSize: 14,
+                    overflow: TextOverflow.fade,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(
+                      color: Colors.black.withOpacity(0.3),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(15),
+                          bottomRight: Radius.circular(15)),
+                    ),
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(15),
+                          bottomRight: Radius.circular(15)),
+                    ),
+                  ),
+                  onChanged: onChanged,
+                ),
+              ),
+            ],
+          )
+        else
+          TextFormField(
+            validator: (value) {
+              if ((value == null || value.isEmpty) && label != 'Catatan') {
+                return 'Required Field!';
+              }
+              if (label == 'Nama' &&
+                  (value!.length < 3 || value.length > 150)) {
+                return 'Must be min 3 char. and max 150 char.';
+              }
+              if (label == 'Komunitas' &&
+                  (value!.isEmpty || value.length > 150)) {
+                return 'Must be min 1 char. and max 150 char.';
+              }
+              if (label == 'Catatan' && value!.length > 1500) {
+                return 'Must be max 1500 char.';
+              }
+              return null;
+            },
+            inputFormatters: inputFormatter,
+            keyboardType: keytype,
+            controller: controller,
+            style: const TextStyle(
+              fontWeight: FontWeight.w400,
+              color: Colors.black,
+              fontSize: 14,
+              overflow: TextOverflow.fade,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.black.withOpacity(0.3),
+                fontWeight: FontWeight.w600,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(15)),
+              ),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(15)),
+              ),
+            ),
+            onChanged: onChanged,
           ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.black.withOpacity(0.3),
-              fontWeight: FontWeight.w600,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-            border: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-            ),
-          ),
-          onChanged: onChanged,
-        ),
       ],
     ),
   );

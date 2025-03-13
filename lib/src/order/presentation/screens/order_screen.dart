@@ -199,6 +199,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                           child: Column(
                             children: [
                               RefreshLoadingAnimation(
+                                provider: ref.watch(orderControllerProvider),
                                 children: [
                                   Expanded(
                                     flex: 5,
@@ -311,7 +312,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                               ),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  const Text(
+                                    'Petunjuk: Ketuk logo dua kali untuk menyegarkan halaman*',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                   const Spacer(),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
