@@ -371,26 +371,6 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                                     },
                                                     onAdd: () {
                                                       setState(() {
-                                                        // if (widget.orderMenu.isNotEmpty && widget.orderList.isNotEmpty) {
-                                                        //   // widget.orderList.where((e) => );
-                                                        // }
-                                                        // widget.orderMenu.add(
-                                                        //   (
-                                                        //     menu.name,
-                                                        //     menu.price,
-                                                        //     qty,
-                                                        //     notes.text
-                                                        //   ),
-                                                        // );
-                                                        // widget.orderList.add({
-                                                        //   'id': menu.id,
-                                                        //   'quantity': qty,
-                                                        //   if (notes
-                                                        //       .text.isNotEmpty)
-                                                        //     'note': notes.text,
-                                                        // });
-
-                                                        // 1. Cek apakah menu sudah ada di orderMenu berdasarkan nama menu
                                                         final menuIndex = widget
                                                             .orderMenu
                                                             .indexWhere(
@@ -428,8 +408,6 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                                             ),
                                                           );
                                                         }
-
-                                                        // 2. Cek apakah menu sudah ada di orderList berdasarkan id
                                                         final orderIndex =
                                                             widget.orderList
                                                                 .indexWhere(
@@ -439,7 +417,6 @@ class _InputMenuScreenState extends ConsumerState<InputMenuScreen> {
                                                         );
 
                                                         if (orderIndex != -1) {
-                                                          // Jika menu sudah ada, update quantity dan notes
                                                           // ignore: avoid_dynamic_calls
                                                           widget.orderList[
                                                                   orderIndex][

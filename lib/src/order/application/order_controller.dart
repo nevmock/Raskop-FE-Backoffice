@@ -45,7 +45,7 @@ class OrderController extends _$OrderController {
   /// auto build widget when calling the controller
   FutureOr<List<OrderEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 3));
+    ref.cacheFor(const Duration(seconds: 5));
     return fetchOrders();
   }
 

@@ -44,7 +44,7 @@ class MenuController extends _$MenuController {
   /// auto build widget when calling the controller
   FutureOr<List<MenuEntity>> build() async {
     _setupScrollListener();
-    ref.cacheFor(const Duration(minutes: 10));
+    ref.cacheFor(const Duration(seconds: 5));
     return fetchMenus();
   }
 

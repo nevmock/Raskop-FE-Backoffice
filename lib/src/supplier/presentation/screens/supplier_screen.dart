@@ -320,6 +320,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                     child: Column(
                       children: [
                         RefreshLoadingAnimation(
+                          provider: ref.watch(supplierControllerProvider),
                           children: [
                             Expanded(
                               flex: 5,
@@ -430,7 +431,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             const Text(
-                              'Petunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
+                              'Petunjuk: Ketuk logo dua kali untuk menyegarkan halaman*\nPetunjuk: Geser ke kiri/kanan item untuk melihat tombol hapus/edit*',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,

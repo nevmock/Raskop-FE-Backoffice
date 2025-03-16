@@ -16,7 +16,7 @@ class TableController extends _$TableController {
 
   /// auto build widget when calling the controller
   FutureOr<List<TableEntity>> build() async {
-    ref.cacheFor(const Duration(minutes: 10));
+    ref.cacheFor(const Duration(seconds: 5));
     return fetchTables();
   }
 
