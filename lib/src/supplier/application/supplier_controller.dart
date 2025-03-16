@@ -39,6 +39,9 @@ class SupplierController extends _$SupplierController {
 
   ///
   Map<String, dynamic> advSearch = {};
+
+  ///
+  String search = '';
   @override
 
   /// auto build widget when calling the controller
@@ -89,6 +92,7 @@ class SupplierController extends _$SupplierController {
           start: start,
           length: length,
           advSearch: advSearch.isEmpty ? null : advSearch,
+          search: search.isEmpty ? null : search,
           order: column == '' || direction == ''
               ? null
               : [
@@ -220,9 +224,11 @@ class SupplierController extends _$SupplierController {
   }
 
   ///
-  void onSearch({required Map<String, dynamic> advSearch}) {
+  void onSearch(
+      {required Map<String, dynamic> advSearch, required String search}) {
     if (this.advSearch == advSearch) return;
     this.advSearch = advSearch;
+    this.search = search;
 
     refresh();
   }

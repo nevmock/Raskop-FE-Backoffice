@@ -26,6 +26,7 @@ class ReservationRepository implements ReservationRepositoryInterface {
     int? start,
     int? length,
     Map<String, dynamic>? advSearch,
+    String? search,
     List<Map<String, dynamic>>? order,
   }) {
     return client.request<List<ReservationEntity>>(
@@ -46,6 +47,7 @@ class ReservationRepository implements ReservationRepositoryInterface {
               'withDeleted': false,
             },
           ),
+        if (search != null) 'search': search,
         if (order != null) 'order': jsonEncode(order),
       },
     );

@@ -324,6 +324,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
 
     void onSearchPhone() {
       ref.read(reservationControllerProvider.notifier).onSearch(
+        search:
+            advSearchTabletController.selectedItems.isEmpty ? search.text : '',
         advSearch: {
           'withRelation': true,
           'withDeleted': false,
@@ -335,6 +337,8 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
 
     void onSearchTablet() {
       ref.read(reservationControllerProvider.notifier).onSearch(
+        search:
+            advSearchTabletController.selectedItems.isEmpty ? search.text : '',
         advSearch: {
           'withRelation': true,
           'withDeleted': false,
@@ -419,14 +423,9 @@ class _ReservationScreenState extends ConsumerState<ReservationScreen> {
                                                 flex: 3,
                                                 child: TextFormField(
                                                   controller: search,
-                                                  onChanged:
-                                                      advSearchTabletController
-                                                              .selectedItems
-                                                              .isEmpty
-                                                          ? (value) {}
-                                                          : (value) {
-                                                              debounceOnTablet();
-                                                            },
+                                                  onChanged: (value) {
+                                                    debounceOnTablet();
+                                                  },
                                                   onFieldSubmitted:
                                                       advSearchTabletController
                                                               .selectedItems

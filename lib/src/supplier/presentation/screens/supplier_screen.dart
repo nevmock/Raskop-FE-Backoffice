@@ -255,6 +255,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
 
     void onSearchPhone() {
       ref.read(supplierControllerProvider.notifier).onSearch(
+        search:
+            advSearchTabletController.selectedItems.isEmpty ? search.text : '',
         advSearch: {
           'withDeleted': false,
           for (final item in advSearchPhoneController.selectedItems)
@@ -271,6 +273,8 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
 
     void onSearchTablet() {
       ref.read(supplierControllerProvider.notifier).onSearch(
+        search:
+            advSearchTabletController.selectedItems.isEmpty ? search.text : '',
         advSearch: {
           'withDeleted': false,
           for (final item in advSearchTabletController.selectedItems)
@@ -345,12 +349,9 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                                       flex: 3,
                                       child: TextFormField(
                                         controller: search,
-                                        onChanged: advSearchTabletController
-                                                .selectedItems.isEmpty
-                                            ? (value) {}
-                                            : (value) {
-                                                debounceOnTablet();
-                                              },
+                                        onChanged: (value) {
+                                          debounceOnTablet();
+                                        },
                                         onFieldSubmitted:
                                             advSearchTabletController
                                                     .selectedItems.isEmpty

@@ -38,6 +38,9 @@ class ReservationController extends _$ReservationController {
   String column = 'reserveBy';
 
   ///
+  String search = '';
+
+  ///
   String direction = '';
 
   ///
@@ -69,6 +72,7 @@ class ReservationController extends _$ReservationController {
       start: start,
       length: length,
       advSearch: advSearch.isEmpty ? null : advSearch,
+      search: search.isEmpty ? null : search,
       order: [
         if (column != '' && direction != '')
           <String, dynamic>{
@@ -224,9 +228,13 @@ class ReservationController extends _$ReservationController {
   }
 
   ///
-  void onSearch({required Map<String, dynamic> advSearch}) {
+  void onSearch({
+    required Map<String, dynamic> advSearch,
+    required String search,
+  }) {
     if (this.advSearch == advSearch) return;
     this.advSearch = advSearch;
+    this.search = search;
 
     refresh();
   }

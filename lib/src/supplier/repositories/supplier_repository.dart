@@ -22,6 +22,7 @@ class SupplierRepository implements SupplierRepositoryInterface {
     int? start,
     int? length,
     Map<String, dynamic>? advSearch,
+    String? search,
     List<Map<String, dynamic>>? order,
   }) async {
     return client.request<List<SupplierEntity>>(
@@ -37,6 +38,7 @@ class SupplierRepository implements SupplierRepositoryInterface {
           'advSearch': jsonEncode(advSearch)
         else
           'advSearch': jsonEncode({'withDeleted': false}),
+        if (search != null) 'search': search,
         if (order != null) 'order': jsonEncode(order),
       },
     );
