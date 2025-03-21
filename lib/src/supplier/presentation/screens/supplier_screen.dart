@@ -207,7 +207,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
           text: CurrencyInputFormatter()
               .formatEditUpdate(
                 TextEditingValue.empty,
-                TextEditingValue(text: request.price.toString()),
+                TextEditingValue(text: request.price.toInt().toString()),
               )
               .text,
         );
@@ -215,7 +215,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
           text: CurrencyInputFormatter()
               .formatEditUpdate(
                 TextEditingValue.empty,
-                TextEditingValue(text: request.shippingFee.toString()),
+                TextEditingValue(text: request.shippingFee.toInt().toString()),
               )
               .text,
         );

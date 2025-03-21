@@ -56,31 +56,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth > 700) {
-                return Column(
-                  children: [
-                    _buildDashboardFilter(constraints.maxWidth),
-                    Row(
-                      spacing: 24,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          flex: 3,
-                          child: Column(
-                            spacing: 24,
-                            children: [
-                              _buildDashboardChart('total_sales'),
-                              _buildDashboardChart('total_orders'),
-                              _buildDashboardChart('total_items_sold'),
-                            ],
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    children: [
+                      _buildDashboardFilter(constraints.maxWidth),
+                      Row(
+                        spacing: 24,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            flex: 3,
+                            child: Column(
+                              spacing: 24,
+                              children: [
+                                _buildDashboardChart('total_sales'),
+                                _buildDashboardChart('total_orders'),
+                                _buildDashboardChart('total_items_sold'),
+                              ],
+                            ),
                           ),
-                        ),
-                        Flexible(
-                          flex: 2,
-                          child: _buildDashboardMenu(constraints, context),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Flexible(
+                            flex: 2,
+                            child: _buildDashboardMenu(constraints, context),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 );
               } else {
                 return Column(
@@ -629,7 +632,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               } else {
                 return Column(
                   children: [
-                    for (final FavMenuEntity menu in favMenu.value ?? []) ...[
+                    for (final FavMenuEntity menu in data) ...[
                       Container(
                         decoration: const BoxDecoration(
                           color: Colors.white,
@@ -655,7 +658,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                     clipBehavior: Clip.antiAliasWithSaveLayer,
                                     child: Image.network(
-                                      'https://${BasePaths.baseAPIURL}${menu.image_uri}',
+                                      menu.image_uri == '' ||
+                                              menu.image_uri == null
+                                          ? 'https://placehold.co/600x400@2x.png'
+                                          : 'https://${BasePaths.baseAPIURL}${menu.image_uri}',
                                       errorBuilder:
                                           (context, object, stackTrace) =>
                                               const Text('Error'),
@@ -720,7 +726,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
             },
             error: (error, stackTrace) {
-              return const Text('Error');
+              return Text('Error $error');
             },
             loading: () {
               return const Center(child: CustomLoadingIndicator());
@@ -735,7 +741,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(
         vertical: 24,
-        horizontal: 12,
+        horizontal: 2,
       ),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
