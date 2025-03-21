@@ -151,7 +151,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
       setState(() {
         isEditPanelVisible = !isEditPanelVisible;
         nama.value = TextEditingValue(text: request.name);
-        harga.value = TextEditingValue(text: request.price.toString());
+        harga.value = CurrencyInputFormatter().formatEditUpdate(
+          TextEditingValue.empty,
+          TextEditingValue(text: request.price.toInt().toString()),
+        );
         kategori.value = TextEditingValue(text: request.category);
         jumlah.value = TextEditingValue(text: request.qty.toString());
         deskripsi.value = TextEditingValue(text: request.description);
@@ -241,6 +244,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
           imageFile = image.path;
         });
       }
+    }
+
+    String unformatCurrency(String formattedValue) {
+      return formattedValue.replaceAll('.', '');
     }
 
     final controller = ref.watch(menuControllerProvider.notifier);
@@ -1369,7 +1376,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               request: MenuEntity(
                                                 name: nama.text,
                                                 price: double.parse(
-                                                  harga.text,
+                                                  unformatCurrency(harga.text),
                                                 ),
                                                 qty: int.parse(
                                                   jumlah.text,
@@ -1726,7 +1733,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen>
                                               request: MenuEntity(
                                                 name: nama.text,
                                                 price: double.parse(
-                                                  harga.text,
+                                                  unformatCurrency(harga.text),
                                                 ),
                                                 qty: int.parse(
                                                   jumlah.text,
