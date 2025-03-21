@@ -15,9 +15,10 @@ class FavMenuEntity with _$FavMenuEntity {
   const factory FavMenuEntity({
     required String menu_name,
     required double qty,
-    required String image_uri,
+    @JsonKey(includeIfNull: true) String? image_uri,
   }) = _FavMenuEntity;
 
   /// from json mapper
-  factory FavMenuEntity.fromJson(Map<String, dynamic> json) => _$FavMenuEntityFromJson(json);
+  factory FavMenuEntity.fromJson(Map<String, dynamic> json) =>
+      _$FavMenuEntityFromJson(json);
 }
